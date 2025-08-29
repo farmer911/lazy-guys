@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.next/
+.vscode/
+*.min.js
+*.min.css
+coverage/
+.husky/
+.git/
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
