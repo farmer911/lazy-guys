@@ -1,11 +1,14 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
 import App from './App';
-import Home from './pages/Home';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import ErrorTest from './pages/ErrorTest';
-import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Lazy load components
+const Home = lazy(() => import('./pages/Home'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const ErrorTest = lazy(() => import('./pages/ErrorTest'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 export const router = createBrowserRouter([
   {
