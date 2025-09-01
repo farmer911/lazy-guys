@@ -1,9 +1,12 @@
-name: Deploy React App to GitHub Pages
+name: Deploy Vite App to GitHub Pages
 
 on:
   push:
     branches:
-      - main   # hoặc master nếu bạn dùng branch master
+      - main   # hoặc master nếu repo của bạn dùng branch này
+
+permissions:
+  contents: write   # cần để push lên branch gh-pages
 
 jobs:
   build:
@@ -16,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'   # hoặc phiên bản Node bạn dùng
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
@@ -28,4 +31,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          publish_dir: ./dist   # 👈 Vite build ra thư mục dist
