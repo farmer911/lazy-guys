@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 import './App.scss';
+import Mylove from './assets/img/IMG_4082.jpeg';
 
 function App() {
   return (
@@ -13,6 +14,8 @@ function App() {
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   Lazy Guys
                 </h1>
+
+                <img src={Mylove} alt="my-love" />
               </div>
             </div>
           </div>
