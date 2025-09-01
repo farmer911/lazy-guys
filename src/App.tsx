@@ -9,13 +9,12 @@ function App() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
+            <img className="w-full h-full" src={Mylove} alt="my-love" />
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   Lazy Guys
                 </h1>
-
-                <img src={Mylove} alt="my-love" />
               </div>
             </div>
           </div>
