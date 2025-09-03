@@ -1,6 +1,5 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
-import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load components
@@ -13,7 +12,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />,
+    element: <Home />,
     errorElement: (
       <ErrorBoundary>
         <div>Something went wrong with routing</div>
