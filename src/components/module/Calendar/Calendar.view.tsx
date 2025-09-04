@@ -1,10 +1,24 @@
-import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
-import { cn } from '@utils/classNames';
 import { buttonVariants } from '@components/base/Button/Button.variants';
+import { cn } from '@utils/classNames';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import * as React from 'react';
+import { DayPicker } from 'react-day-picker';
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+
+// Custom chevron component for react-day-picker v9
+const ChevronComponent = ({
+  orientation,
+  ...props
+}: {
+  className?: string;
+  size?: number;
+  disabled?: boolean;
+  orientation?: 'left' | 'right' | 'up' | 'down';
+}) => {
+  const Icon = orientation === 'left' ? ChevronLeft : ChevronRight;
+  return <Icon className="h-4 w-4" {...props} />;
+};
 
 function Calendar({
   className,
@@ -51,8 +65,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ChevronLeft className="h-4 w-4" />,
-        IconRight: () => <ChevronRight className="h-4 w-4" />,
+        Chevron: ChevronComponent,
       }}
       {...props}
     />

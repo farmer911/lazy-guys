@@ -19,6 +19,7 @@ import {
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import ProjectCard from './ProjectCard';
+// import TailwindTest from '@components/TailwindTest';
 
 // Mock data - in a real app, this would come from an API or CMS
 const personalInfo = {
@@ -35,12 +36,20 @@ const skills = [
   {
     category: 'Frontend',
     icon: Code,
-    techs: ['React', 'TypeScript', 'Vue.js', 'Angular', 'Tailwind CSS', 'SASS'],
+    techs: [
+      'React',
+      'TypeScript',
+      'Tailwind CSS',
+      'Redux',
+      'React-Native',
+      'SASS',
+      'React-Query',
+    ],
   },
   {
     category: 'Backend',
     icon: Database,
-    techs: ['Node.js', 'Python', 'Express', 'Django', 'MongoDB', 'PostgreSQL'],
+    techs: ['Node.js', 'Python', 'Express', 'MongoDB', 'PostgreSQL'],
   },
   {
     category: 'Design',
@@ -93,6 +102,7 @@ const Home = (): JSX.Element => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* <TailwindTest /> */}
       {/* Theme Toggle */}
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />

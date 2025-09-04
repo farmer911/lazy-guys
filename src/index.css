@@ -1,0 +1,415 @@
+@import 'tailwindcss';
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Light mode colors */
+  --color-background: 42 15% 95%;
+  --color-foreground: 25 15% 15%;
+  --color-card: 42 20% 92%;
+  --color-card-foreground: 25 15% 15%;
+  --color-popover: 42 20% 92%;
+  --color-popover-foreground: 25 15% 15%;
+  --color-primary: 25 35% 25%;
+  --color-primary-foreground: 42 20% 95%;
+  --color-secondary: 35 25% 75%;
+  --color-secondary-foreground: 25 15% 15%;
+  --color-muted: 42 15% 88%;
+  --color-muted-foreground: 25 10% 45%;
+  --color-accent: 15 45% 60%;
+  --color-accent-foreground: 42 20% 95%;
+  --color-destructive: 0 65% 50%;
+  --color-destructive-foreground: 42 20% 95%;
+  --color-border: 35 20% 80%;
+  --color-input: 35 20% 80%;
+  --color-ring: 25 35% 25%;
+
+  /* Vintage Colors - These will generate .bg-vintage-*, .text-vintage-*, etc. */
+  --color-vintage-sepia: 35 25% 85%;
+  --color-vintage-brown: 25 35% 25%;
+  --color-vintage-cream: 42 20% 95%;
+  --color-vintage-gold: 45 60% 70%;
+  --color-vintage-rust: 15 45% 60%;
+
+  /* Sidebar colors */
+  --color-sidebar-background: 42 15% 95%;
+  --color-sidebar-foreground: 25 15% 15%;
+  --color-sidebar-primary: 25 35% 25%;
+  --color-sidebar-primary-foreground: 42 20% 95%;
+  --color-sidebar-accent: 35 25% 75%;
+  --color-sidebar-accent-foreground: 25 15% 15%;
+  --color-sidebar-border: 35 20% 80%;
+  --color-sidebar-ring: 25 35% 25%;
+
+  /* Border Radius */
+  --radius: 0.375rem;
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Font Family */
+  --font-family-serif: Georgia, serif;
+
+  /* Converted SCSS Variables - App Colors */
+  --app-primary-color: #646cff;
+  --app-secondary-color: #535bf2;
+  --app-accent-color: #61dafb;
+  --app-primary-color-hover: #4c54d9;
+  --app-secondary-color-hover: #3d42d4;
+  --app-accent-color-hover: #4bb3d3;
+
+  /* App Layout & Component Variables */
+  --logo-size: 6em;
+  --logo-padding: 1.5em;
+  --card-padding-app: 2em;
+  --root-max-width: 1280px;
+  --root-padding: 2rem;
+  --docs-color: #888;
+  --button-padding: 0.6em 1.2em;
+  --button-border-radius: 8px;
+  --card-border-radius: 12px;
+  --transition-default: all 0.3s ease;
+  --logo-filter-transition: filter 300ms;
+}
+
+/* Dark mode styles - outside @theme block */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Core Tailwind colors */
+    --color-background: 25 15% 8%;
+    --color-foreground: 42 20% 90%;
+    --color-card: 25 15% 12%;
+    --color-card-foreground: 42 20% 90%;
+    --color-popover: 25 15% 12%;
+    --color-popover-foreground: 42 20% 90%;
+    --color-primary: 42 30% 80%;
+    --color-primary-foreground: 25 15% 8%;
+    --color-secondary: 25 15% 18%;
+    --color-secondary-foreground: 42 20% 90%;
+    --color-muted: 25 10% 15%;
+    --color-muted-foreground: 42 15% 65%;
+    --color-accent: 15 45% 55%;
+    --color-accent-foreground: 42 20% 90%;
+    --color-destructive: 0 65% 45%;
+    --color-destructive-foreground: 42 20% 90%;
+    --color-border: 25 15% 20%;
+    --color-input: 25 15% 20%;
+    --color-ring: 42 30% 80%;
+
+    /* Dark mode vintage colors */
+    --color-vintage-sepia: 25 15% 20%;
+    --color-vintage-brown: 42 30% 80%;
+    --color-vintage-cream: 25 15% 8%;
+    --color-vintage-gold: 45 50% 60%;
+    --color-vintage-rust: 15 45% 55%;
+
+    /* Dark mode sidebar colors */
+    --color-sidebar-background: 25 15% 8%;
+    --color-sidebar-foreground: 42 20% 90%;
+    --color-sidebar-primary: 42 30% 80%;
+    --color-sidebar-primary-foreground: 25 15% 8%;
+    --color-sidebar-accent: 25 15% 18%;
+    --color-sidebar-accent-foreground: 42 20% 90%;
+    --color-sidebar-border: 25 15% 20%;
+    --color-sidebar-ring: 42 30% 80%;
+
+    /* App Colors Dark Mode */
+    --app-primary-color: #8087ff;
+    --app-secondary-color: #7c84ff;
+    --app-accent-color: #87efff;
+    --app-primary-color-hover: #6b72e6;
+    --app-secondary-color-hover: #6b72e6;
+    --app-accent-color-hover: #6dd9ed;
+
+    /* Layout & Component Variables Dark Mode */
+    --docs-color: #ccc;
+  }
+}
+
+/* Dark mode with .dark class for manual theme switching */
+:root.dark {
+  /* Core Tailwind colors */
+  --color-background: 25 15% 8%;
+  --color-foreground: 42 20% 90%;
+  --color-card: 25 15% 12%;
+  --color-card-foreground: 42 20% 90%;
+  --color-popover: 25 15% 12%;
+  --color-popover-foreground: 42 20% 90%;
+  --color-primary: 42 30% 80%;
+  --color-primary-foreground: 25 15% 8%;
+  --color-secondary: 25 15% 18%;
+  --color-secondary-foreground: 42 20% 90%;
+  --color-muted: 25 10% 15%;
+  --color-muted-foreground: 42 15% 65%;
+  --color-accent: 15 45% 55%;
+  --color-accent-foreground: 42 20% 90%;
+  --color-destructive: 0 65% 45%;
+  --color-destructive-foreground: 42 20% 90%;
+  --color-border: 25 15% 20%;
+  --color-input: 25 15% 20%;
+  --color-ring: 42 30% 80%;
+
+  /* Dark mode vintage colors */
+  --color-vintage-sepia: 25 15% 20%;
+  --color-vintage-brown: 42 30% 80%;
+  --color-vintage-cream: 25 15% 8%;
+  --color-vintage-gold: 45 50% 60%;
+  --color-vintage-rust: 15 45% 55%;
+
+  /* Dark mode sidebar colors */
+  --color-sidebar-background: 25 15% 8%;
+  --color-sidebar-foreground: 42 20% 90%;
+  --color-sidebar-primary: 42 30% 80%;
+  --color-sidebar-primary-foreground: 25 15% 8%;
+  --color-sidebar-accent: 25 15% 18%;
+  --color-sidebar-accent-foreground: 42 20% 90%;
+  --color-sidebar-border: 25 15% 20%;
+  --color-sidebar-ring: 42 30% 80%;
+
+  /* App Colors Dark Mode */
+  --app-primary-color: #8087ff;
+  --app-secondary-color: #7c84ff;
+  --app-accent-color: #87efff;
+  --app-primary-color-hover: #6b72e6;
+  --app-secondary-color-hover: #6b72e6;
+  --app-accent-color-hover: #6dd9ed;
+
+  /* Layout & Component Variables Dark Mode */
+  --docs-color: #ccc;
+}
+
+/* Base styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+/* Utility classes (converted from SCSS mixins) */
+@layer utilities {
+  /* Flex utilities */
+  .flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Vintage color background utilities */
+  .bg-vintage-sepia {
+    background-color: hsl(var(--color-vintage-sepia));
+  }
+
+  .bg-vintage-brown {
+    background-color: hsl(var(--color-vintage-brown));
+  }
+
+  .bg-vintage-cream {
+    background-color: hsl(var(--color-vintage-cream));
+  }
+
+  .bg-vintage-gold {
+    background-color: hsl(var(--color-vintage-gold));
+  }
+
+  .bg-vintage-rust {
+    background-color: hsl(var(--color-vintage-rust));
+  }
+
+  /* Vintage color text utilities */
+  .text-vintage-sepia {
+    color: hsl(var(--color-vintage-sepia));
+  }
+
+  .text-vintage-brown {
+    color: hsl(var(--color-vintage-brown));
+  }
+
+  .text-vintage-cream {
+    color: hsl(var(--color-vintage-cream));
+  }
+
+  .text-vintage-gold {
+    color: hsl(var(--color-vintage-gold));
+  }
+
+  .text-vintage-rust {
+    color: hsl(var(--color-vintage-rust));
+  }
+
+  /* Vintage color border utilities */
+  .border-vintage-sepia {
+    border-color: hsl(var(--color-vintage-sepia));
+  }
+
+  .border-vintage-brown {
+    border-color: hsl(var(--color-vintage-brown));
+  }
+
+  .border-vintage-cream {
+    border-color: hsl(var(--color-vintage-cream));
+  }
+
+  .border-vintage-gold {
+    border-color: hsl(var(--color-vintage-gold));
+  }
+
+  .border-vintage-rust {
+    border-color: hsl(var(--color-vintage-rust));
+  }
+
+  /* Sidebar utilities */
+  .bg-sidebar {
+    background-color: hsl(var(--color-sidebar-background));
+  }
+
+  .text-sidebar-foreground {
+    color: hsl(var(--color-sidebar-foreground));
+  }
+
+  .bg-sidebar-primary {
+    background-color: hsl(var(--color-sidebar-primary));
+  }
+
+  .text-sidebar-primary-foreground {
+    color: hsl(var(--color-sidebar-primary-foreground));
+  }
+
+  .bg-sidebar-accent {
+    background-color: hsl(var(--color-sidebar-accent));
+  }
+
+  .text-sidebar-accent-foreground {
+    color: hsl(var(--color-sidebar-accent-foreground));
+  }
+
+  .border-sidebar-border {
+    border-color: hsl(var(--color-sidebar-border));
+  }
+
+  /* App-specific button utilities */
+  .button-style {
+    background-color: var(--app-primary-color);
+    border: 1px solid transparent;
+    padding: var(--button-padding);
+    border-radius: var(--button-border-radius);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .button-style:hover {
+    background-color: var(--app-primary-color-hover);
+    transform: translateY(-1px);
+  }
+
+  .button-style.accent {
+    background-color: var(--app-accent-color);
+    color: white;
+    font-weight: 600;
+  }
+
+  .button-style.accent:hover {
+    background-color: var(--app-accent-color-hover);
+  }
+
+  .button-style.secondary {
+    background-color: var(--app-secondary-color);
+    color: white;
+    font-weight: 600;
+  }
+
+  .button-style.secondary:hover {
+    background-color: var(--app-secondary-color-hover);
+  }
+}
+
+/* Component styles (converted from SCSS) */
+@layer components {
+  .custom-card {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--app-primary-color) 10%, transparent) 0%,
+      color-mix(in srgb, var(--app-accent-color) 10%, transparent) 100%
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--app-primary-color) 20%, transparent);
+    border-radius: var(--card-border-radius);
+    padding: var(--card-padding-app);
+    backdrop-filter: blur(10px);
+  }
+
+  .custom-card .custom-button {
+    background-color: var(--app-accent-color);
+    border: 1px solid transparent;
+    padding: var(--button-padding);
+    border-radius: var(--button-border-radius);
+    cursor: pointer;
+    transition: var(--transition-default);
+    color: white;
+    font-weight: 600;
+  }
+
+  .custom-card .custom-button:hover {
+    background-color: var(--app-accent-color-hover);
+    transform: translateY(-1px);
+  }
+
+  .custom-card .custom-button.secondary {
+    background-color: var(--app-secondary-color);
+  }
+
+  .custom-card .custom-button.secondary:hover {
+    background-color: var(--app-secondary-color-hover);
+  }
+
+  /* App-specific component styles */
+  #root {
+    max-width: var(--root-max-width);
+    margin: 0 auto;
+    padding: var(--root-padding);
+    text-align: center;
+  }
+
+  .logo {
+    height: var(--logo-size);
+    padding: var(--logo-padding);
+    will-change: filter;
+    transition: var(--logo-filter-transition);
+  }
+
+  .logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+  }
+
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+
+  .card {
+    padding: var(--card-padding-app);
+  }
+
+  .read-the-docs {
+    color: var(--docs-color);
+  }
+}

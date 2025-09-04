@@ -1,0 +1,97 @@
+/* CSS Custom Properties (converted from SCSS variables) */
+:root {
+  /* Color Variables */
+  --primary-color: #646cff;
+  --secondary-color: #535bf2;
+  --accent-color: #61dafb;
+
+  /* Derived colors for hover effects */
+  --primary-color-hover: #4c54d9;
+  --secondary-color-hover: #3d42d4;
+  --accent-color-hover: #4bb3d3;
+
+  /* Component styles */
+  --button-padding: 0.6em 1.2em;
+  --button-border-radius: 8px;
+  --card-border-radius: 12px;
+  --card-padding: 2rem;
+  --transition-default: all 0.3s ease;
+}
+
+/* Utility classes (converted from SCSS mixins) */
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.button-style {
+  background-color: var(--primary-color);
+  border: 1px solid transparent;
+  padding: var(--button-padding);
+  border-radius: var(--button-border-radius);
+  cursor: pointer;
+  transition: var(--transition-default);
+}
+
+.button-style:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+}
+
+.button-style.accent {
+  background-color: var(--accent-color);
+  color: white;
+  font-weight: 600;
+}
+
+.button-style.accent:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.button-style.secondary {
+  background-color: var(--secondary-color);
+  color: white;
+  font-weight: 600;
+}
+
+.button-style.secondary:hover {
+  background-color: var(--secondary-color-hover);
+}
+
+/* Custom component styles */
+.custom-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color) 10%, transparent) 0%,
+    color-mix(in srgb, var(--accent-color) 10%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
+  backdrop-filter: blur(10px);
+}
+
+.custom-card .custom-button {
+  background-color: var(--accent-color);
+  border: 1px solid transparent;
+  padding: var(--button-padding);
+  border-radius: var(--button-border-radius);
+  cursor: pointer;
+  transition: var(--transition-default);
+  color: white;
+  font-weight: 600;
+}
+
+.custom-card .custom-button:hover {
+  background-color: var(--accent-color-hover);
+  transform: translateY(-1px);
+}
+
+.custom-card .custom-button.secondary {
+  background-color: var(--secondary-color);
+}
+
+.custom-card .custom-button.secondary:hover {
+  background-color: var(--secondary-color-hover);
+}

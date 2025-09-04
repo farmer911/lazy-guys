@@ -7,9 +7,10 @@ const Home = lazy(() => import('./pages/Home'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const ErrorTest = lazy(() => import('./pages/ErrorTest'));
+const Test = lazy(() => import('./pages/Test'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
   {
     path: '/',
     element: <Home />,
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
         element: <Contact />,
       },
       {
+        path: 'test',
+        element: <Test />,
+      },
+      {
         path: 'error-test',
         element: (
           <ErrorBoundary>
@@ -46,3 +51,5 @@ export const router = createBrowserRouter([
     element: <NotFound />,
   },
 ]);
+
+export default router;

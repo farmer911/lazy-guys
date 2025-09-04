@@ -1,13 +1,13 @@
-import './App.scss';
+import { ThemeProvider } from '@components/ThemeToggle/ThemeProvider';
+import { Toaster as Sonner } from '@components/module/Sonner/Sonner.view';
+import { Toaster } from '@components/module/Toaster/Toaster.view';
+import { TooltipProvider } from '@components/module/Tooltip/Tooltip.view';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, Suspense } from 'react';
 import { RouterProvider } from 'react-router';
+import './App.css';
 import LoadingSpinner from './components/LoadingSpinner';
-import { router } from './router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@components/ThemeToggle/ThemeProvider';
-import { TooltipProvider } from '@components/module/Tooltip/Tooltip.view';
-import { Toaster } from '@components/module/Toaster/Toaster.view';
-import { Toaster as Sonner } from '@components/module/Sonner/Sonner.view';
+import router from './router';
 
 const queryClient = new QueryClient();
 
