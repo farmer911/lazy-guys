@@ -2,34 +2,33 @@
 
 ## Current Objective
 
-- Goal: Ready to begin `feat-005` (Recruiter Portfolio Polish) on `lazy-guy` portfolio monorepo.
-- Current status: `feat-001` through `feat-004` done; Git + mechanical + API + Web + E2E harness 100% operational.
+- Goal: Ready to begin `feat-005` (Recruiter Portfolio Polish) under full Generator–Evaluator harness.
+- Current status: `feat-001` through `feat-004` independently audited and certified `PASS` in `evaluations/feat-001.json`..`feat-004.json`.
 
 ## Completed This Session
 
-- [x] Initialized Git repository (`main`) and created baseline checkpoint commit
-- [x] Installed Playwright Chromium and configured `webServer` auto-boot in `apps/e2e/playwright.config.ts`
-- [x] Closed `feat-004` with strict E2E assertions against PostgreSQL-seeded `Acme Tech` and `Lazy Guy Portfolio Platform`
-- [x] Added `apps/api` Vitest integration suite (`portfolio.test.ts`) and fixed whitespace-only `/api/contact` validation via TDD
-- [x] Added `scripts/check-harness.mjs` (+ `check-harness.test.mjs`) to mechanically enforce `SKILL.md <= 250` lines, `feature_list.json` integrity, and ESM `import.meta.dirname` inside `./init.sh`
+- [x] Designed and pressure-tested `.agents/skills/evaluating-features/SKILL.md` (`89` lines) + `evaluator-prompt.md` via `writing-skills` TDD (`RED` -> `GREEN`)
+- [x] Enforced `ready-for-eval` -> Independent Evaluator `PASS` -> `done` mechanically in `scripts/check-harness.mjs` (8/8 unit tests) and `AGENTS.md`
+- [x] Dispatched standalone `feature-evaluator` subagent across `feat-001`..`feat-004`, caught 7 live API/UI/mobile/timezone defects on `feat-002` & `feat-003`, fixed all 7 via TDD, and obtained clean `PASS` verdicts on Round 2 (`b4c6985`)
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Bootstrap & Full Gate | `./init.sh` | PASS | 0 errors, 0 warnings; Postgres healthy on port 5434 |
-| Mechanical Harness | `npm run check:harness` | PASS | Artifacts, `feature_list.json`, `SKILL.md <= 250`, no `__dirname` |
+| Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; Postgres healthy on port 5434 |
+| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified `evaluations/feat-001..004.json` (`PASS`, all rubrics `>= 7`) |
 | Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` |
-| Unit & API Tests | `npm run test:unit` | PASS | 4 harness + 3 API + 3 Web RTL tests (10/10) |
-| Production Build | `npm run build` | PASS | `tsc` + `vite build` with 0 warnings |
-| Playwright E2E | `npm run test:e2e` | PASS | Chromium 1/1 against live API + Web |
+| Unit & Integration Suite | `npm run test:unit` | PASS | 8 harness + 7 API + 5 Web RTL = 20/20 passed |
+| Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
+| Playwright E2E | `npm run test:e2e` | PASS | 2/2 Chromium tests (smoke + `375x812` mobile overflow) |
 
 ## Files Changed
 
-- `.gitignore`, `package.json`, `init.sh`, `AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md`
-- `apps/api/package.json`, `apps/api/src/config/env.ts`, `apps/api/src/routes/portfolio.ts`, `apps/api/src/__tests__/portfolio.test.ts`
-- `apps/e2e/playwright.config.ts`, `apps/e2e/tests/portfolio.spec.ts`
+- `.agents/skills/evaluating-features/SKILL.md`, `.agents/skills/evaluating-features/evaluator-prompt.md`
+- `evaluations/feat-001.json`, `evaluations/feat-002.json`, `evaluations/feat-003.json`, `evaluations/feat-004.json`
 - `scripts/check-harness.mjs`, `scripts/check-harness.test.mjs`
+- `apps/api/*`, `apps/web/*`, `apps/e2e/*`
+- `AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md`
 
 ## Blockers / Risks
 
@@ -43,4 +42,4 @@
 
 ## Recommended Next Step
 
-- Clarify the preferred recruiter enhancement for `feat-005` (e.g., CV download, project detail modal, or admin CRUD) and implement with TDD.
+- Implement `feat-005` (e.g., downloadable CV CTA + project detail modal + minor polish items noted in `evaluations/feat-003.json`), stage `"ready-for-eval"`, and dispatch `feature-evaluator`.

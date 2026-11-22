@@ -6,23 +6,23 @@
       "description": "Set up npm workspaces (apps/web, apps/api, apps/e2e), docker-compose.yml, .env.example, and idempotent ./init.sh with 0 errors and 0 warnings.",
       "dependencies": [],
       "status": "done",
-      "evidence": "./init.sh exited 0; PostgreSQL ready on port 5434; typecheck, test:unit, and build passed with 0 errors and 0 warnings."
+      "evidence": "./init.sh exited 0; independent evaluator PASS at 3a0f893 (rubric 9/8/8/8, evaluations/feat-001.json)."
     },
     {
       "id": "feat-002",
       "name": "PostgreSQL Schema, Seed & Express REST API",
       "description": "Create db/schema.sql and db/seed.sql for profiles, experiences, projects, tech_stacks and expose Express REST endpoints.",
       "dependencies": ["feat-001"],
-      "status": "ready-for-eval",
-      "evidence": "Fixed malformed JSON 400 handler, email validation, YYYY-MM-DD experience dates, featured=false filter, and numeric years_exp; 7/7 API integration tests green."
+      "status": "done",
+      "evidence": "7/7 API integration tests green; independent evaluator PASS at b4c6985 (rubric 9/8/8/9, evaluations/feat-002.json)."
     },
     {
       "id": "feat-003",
       "name": "Portfolio UI & RTL Unit Test",
       "description": "Build About, Experience, Projects, Tech Stack (Zustand filter), and ContactForm (react-hook-form) with shadcn/ui, Tailwind CSS, TanStack Query, and sample RTL unit test.",
       "dependencies": ["feat-002"],
-      "status": "ready-for-eval",
-      "evidence": "Fixed mobile 375x812 header overflow, UTC-safe date formatting, ContactForm labels/whitespace/error alert state; 5/5 RTL tests and 2/2 E2E tests green."
+      "status": "done",
+      "evidence": "5/5 RTL suites and 2/2 Playwright E2E green (desktop + mobile 375x812 + UTC-5 safe); independent evaluator PASS at b4c6985 (rubric 9/8/8/9, evaluations/feat-003.json)."
     },
     {
       "id": "feat-004",
@@ -30,7 +30,7 @@
       "description": "Install Playwright Chromium browser and run apps/e2e smoke test against running API + Web dev servers.",
       "dependencies": ["feat-003"],
       "status": "done",
-      "evidence": "Installed Chromium headless shell v1255, configured Playwright webServer for dev:api + dev:web, and verified npm run test:e2e passes (1/1) asserting live PostgreSQL-seeded Experience ('Acme Tech') and Project ('Lazy Guy Portfolio Platform')."
+      "evidence": "Playwright Chromium v1255 + dual webServer auto-boot verified; independent evaluator PASS at 3a0f893 (rubric 8/7/7/8, evaluations/feat-004.json)."
     },
     {
       "id": "feat-005",
