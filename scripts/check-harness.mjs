@@ -12,6 +12,27 @@ const REQUIRED_FILES = [
   'init.sh',
   '.github/workflows/ci.yml',
   '.agents/skills/task-guardrail/SKILL.md',
+  '.agents/hooks.json',
+  'scripts/agent-hooks.mjs',
+  '.githooks/pre-commit',
+  '.githooks/pre-push',
+];
+const GIT_HOOK_REQUIRED_COMMANDS = {
+  '.githooks/pre-commit': ['npm run check:harness', 'npm run typecheck'],
+  '.githooks/pre-push': [
+    'npm run check:harness',
+    'npm run typecheck',
+    'npm run test:unit',
+    'npm run build',
+  ],
+};
+const REQUIRED_TSCONFIG_FLAGS = [
+  'strict',
+  'noUnusedLocals',
+  'noUnusedParameters',
+  'noImplicitReturns',
+  'noFallthroughCasesInSwitch',
+  'noUncheckedSideEffectImports',
 ];
 const CI_REQUIRED_PATTERNS = [
   ['push:', /\bpush\s*:/],
@@ -34,11 +55,22 @@ const RUBRIC_KEYS = [
 ];
 const MIN_RUBRIC_SCORE = 7;
 const CONFIG_RE = /^(vite|vitest|playwright)\.config\.[cm]?[jt]s$/;
+const TSCONFIG_RE = /^tsconfig(\..+)?\.json$/;
+const TS_SOURCE_RE = /\.[cm]?tsx?$/;
+const TEST_FILE_RE = /(^|\/)__tests__\/|\.(test|spec)\.[cm]?tsx?$/;
 
 function walkFiles(dir, predicate, out = []) {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist') continue;
+    if (
+      entry.name === 'node_modules' ||
+      entry.name === '.git' ||
+      entry.name === 'dist' ||
+      entry.name === 'test-results' ||
+      entry.name === 'playwright-report'
+    ) {
+      continue;
+    }
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walkFiles(full, predicate, out);
     else if (predicate(entry.name, full)) out.push(full);
@@ -55,6 +87,99 @@ function commitExistsInGit(rootDir, sha) {
     return true;
   } catch {
     return false;
+  }
+}
+
+function commitIsAncestorOfHead(rootDir, sha) {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], {
+      cwd: rootDir,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateHooks(rootDir, errors) {
+  const agentHooksPath = path.join(rootDir, '.agents', 'hooks.json');
+  if (fs.existsSync(agentHooksPath)) {
+    const raw = fs.readFileSync(agentHooksPath, 'utf8');
+    if (!/"PreToolUse"/.test(raw) || !/"Stop"/.test(raw) || !/agent-hooks\.mjs/.test(raw)) {
+      errors.push('.agents/hooks.json must wire PreToolUse and Stop to scripts/agent-hooks.mjs');
+    }
+  }
+
+  for (const [rel, requiredCmds] of Object.entries(GIT_HOOK_REQUIRED_COMMANDS)) {
+    const full = path.join(rootDir, rel);
+    if (!fs.existsSync(full)) continue;
+    const mode = fs.statSync(full).mode;
+    if ((mode & 0o111) === 0) {
+      errors.push(`${rel} must be executable (chmod +x)`);
+    }
+    const raw = fs.readFileSync(full, 'utf8');
+    for (const cmd of requiredCmds) {
+      if (!raw.includes(cmd)) {
+        errors.push(`${rel} is missing required gate command: ${cmd}`);
+      }
+    }
+  }
+}
+
+function validateTsconfigs(rootDir, errors) {
+  const appsDir = path.join(rootDir, 'apps');
+  for (const tsPath of walkFiles(appsDir, (name) => TSCONFIG_RE.test(name))) {
+    const rel = path.relative(rootDir, tsPath).replace(/\\/g, '/');
+    try {
+      const parsed = JSON.parse(fs.readFileSync(tsPath, 'utf8'));
+      const opts = parsed.compilerOptions ?? {};
+      for (const flag of REQUIRED_TSCONFIG_FLAGS) {
+        if (opts[flag] !== true) {
+          errors.push(`${rel}: compilerOptions.${flag} must be true`);
+        }
+      }
+    } catch (err) {
+      errors.push(`${rel} is not valid JSON: ${err.message}`);
+    }
+  }
+}
+
+function validateCodeHygiene(rootDir, errors) {
+  const appsDir = path.join(rootDir, 'apps');
+  for (const srcPath of walkFiles(appsDir, (name) => TS_SOURCE_RE.test(name))) {
+    if (srcPath.endsWith('.d.ts')) continue;
+    const rel = path.relative(rootDir, srcPath).replace(/\\/g, '/');
+    const isTestFile = TEST_FILE_RE.test(rel);
+    const isApiEntry = rel === 'apps/api/src/index.ts';
+    const lines = fs.readFileSync(srcPath, 'utf8').split(/\r?\n/);
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const loc = `${rel}:${i + 1}`;
+
+      if (/@(ts-ignore|ts-nocheck)\b/.test(line)) {
+        errors.push(`${loc} uses forbidden @ts-ignore/@ts-nocheck suppression`);
+      }
+
+      if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+
+      if (/(:\s*any\b|\bas\s+any\b|<any>)/.test(line)) {
+        errors.push(`${loc} uses forbidden explicit any type`);
+      }
+      if (/\bdebugger\b/.test(line)) {
+        errors.push(`${loc} leaves forbidden debugger statement`);
+      }
+      if (isTestFile) {
+        const focusMatch = line.match(/\b(describe|it|test)\.(only|skip)\s*\(/);
+        if (focusMatch) {
+          errors.push(`${loc} leaves focused or skipped test (${focusMatch[1]}.${focusMatch[2]})`);
+        }
+      } else if (!isApiEntry && /\bconsole\.log\s*\(/.test(line)) {
+        errors.push(`${loc} leaves stray console.log in production source`);
+      }
+    }
   }
 }
 
@@ -80,8 +205,12 @@ function validateEvaluationFile(rootDir, featId, errors, hasGitRepo) {
   const commit = String(report.evaluatedCommit ?? '');
   if (!/^[0-9a-f]{7,40}$/i.test(commit)) {
     errors.push(`${relPath}: evaluatedCommit must be a 7-40 char git commit SHA`);
-  } else if (hasGitRepo && !commitExistsInGit(rootDir, commit)) {
-    errors.push(`${relPath}: evaluatedCommit "${commit}" does not exist in git history`);
+  } else if (hasGitRepo) {
+    if (!commitExistsInGit(rootDir, commit)) {
+      errors.push(`${relPath}: evaluatedCommit "${commit}" does not exist in git history`);
+    } else if (!commitIsAncestorOfHead(rootDir, commit)) {
+      errors.push(`${relPath}: evaluatedCommit "${commit}" is not an ancestor of HEAD`);
+    }
   }
   if (report.evaluatorRole !== 'independent-evaluator') {
     errors.push(`${relPath}: evaluatorRole must be "independent-evaluator" (self-grading forbidden)`);
@@ -117,6 +246,8 @@ export function validateHarness(rootDir) {
       errors.push(`Missing required harness file: ${rel}`);
     }
   }
+
+  validateHooks(rootDir, errors);
 
   const ciPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
   if (fs.existsSync(ciPath)) {
@@ -201,6 +332,9 @@ export function validateHarness(rootDir) {
     }
   }
 
+  validateTsconfigs(rootDir, errors);
+  validateCodeHygiene(rootDir, errors);
+
   return errors;
 }
 
@@ -211,6 +345,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exit(1);
   }
   console.log(
-    'Harness checks passed (artifacts, CI workflow gates, feature_list.json, git-verified evaluator PASS gates, SKILL.md <= 250 lines, ESM configs).'
+    'Harness checks passed (artifacts, lifecycle & git hooks, CI gates, feature DAG, git-ancestor evaluator PASS gates, strict tsconfig & code hygiene, SKILL.md <= 250 lines, ESM configs).'
   );
 }

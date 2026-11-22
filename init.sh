@@ -27,6 +27,10 @@ require_cmd node
 require_cmd npm
 require_cmd docker
 
+if [ -d .git ]; then
+  git config core.hooksPath .githooks
+fi
+
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 if [ "$NODE_MAJOR" -lt 20 ]; then
   echo "Node.js >= 20 is required (found $(node -v))." >&2
@@ -105,6 +109,10 @@ for i in $(seq 1 30); do
   fi
   sleep 1
 done
+
+echo "Applying PostgreSQL schema and seed idempotently..."
+docker compose exec -T -e PGOPTIONS="--client-min-messages=warning" postgres psql -q -U "$POSTGRES_USER_VAL" -d "$POSTGRES_DB_VAL" -v ON_ERROR_STOP=1 < db/schema.sql >/dev/null
+docker compose exec -T -e PGOPTIONS="--client-min-messages=warning" postgres psql -q -U "$POSTGRES_USER_VAL" -d "$POSTGRES_DB_VAL" -v ON_ERROR_STOP=1 < db/seed.sql >/dev/null
 
 echo "[5/5] Verifying harness rules, typecheck, unit tests, and build..."
 npm run check:harness

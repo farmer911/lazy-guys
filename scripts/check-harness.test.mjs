@@ -54,8 +54,30 @@ function makeTempFixture() {
   for (const file of ['AGENTS.md', 'GEMINI.md', 'progress.md', 'session-handoff.md', 'init.sh']) {
     fs.writeFileSync(path.join(dir, file), '# ok\n');
   }
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'scripts', 'agent-hooks.mjs'), '// hook\n');
   fs.mkdirSync(path.join(dir, '.agents', 'skills', 'task-guardrail'), { recursive: true });
   fs.writeFileSync(path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'), '# ok\n');
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'hooks.json'),
+    JSON.stringify({
+      'repo-harness-guard': {
+        PreToolUse: [{ matcher: 'write_file|edit_file|run_command', hooks: [{ command: 'node ../scripts/agent-hooks.mjs' }] }],
+        Stop: [{ command: 'node ../scripts/agent-hooks.mjs' }],
+      },
+    })
+  );
+  fs.mkdirSync(path.join(dir, '.githooks'), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, '.githooks', 'pre-commit'),
+    '#!/usr/bin/env bash\nnpm run check:harness\nnpm run typecheck\n',
+    { mode: 0o755 }
+  );
+  fs.writeFileSync(
+    path.join(dir, '.githooks', 'pre-push'),
+    '#!/usr/bin/env bash\nnpm run check:harness\nnpm run typecheck\nnpm run test:unit\nnpm run build\n',
+    { mode: 0o755 }
+  );
   fs.mkdirSync(path.join(dir, '.github', 'workflows'), { recursive: true });
   fs.writeFileSync(path.join(dir, '.github', 'workflows', 'ci.yml'), VALID_CI_WORKFLOW);
   fs.mkdirSync(path.join(dir, 'evaluations'), { recursive: true });
@@ -341,6 +363,87 @@ test('flags missing portable .agents/skills/task-guardrail/SKILL.md', () => {
   const errors = validateHarness(dir);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /\.agents\/skills\/task-guardrail\/SKILL\.md/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags missing or non-executable .githooks and .agents/hooks.json', () => {
+  const dir = makeTempFixture();
+  fs.chmodSync(path.join(dir, '.githooks', 'pre-commit'), 0o644);
+  fs.unlinkSync(path.join(dir, '.agents', 'hooks.json'));
+
+  const errors = validateHarness(dir);
+  assert.match(errors.join('\n'), /pre-commit.*executable/i);
+  assert.match(errors.join('\n'), /\.agents\/hooks\.json/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags workspace tsconfig missing required strict compiler flags', () => {
+  const dir = makeTempFixture();
+  const apiDir = path.join(dir, 'apps', 'api');
+  fs.mkdirSync(apiDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(apiDir, 'tsconfig.json'),
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noUnusedLocals: false,
+      },
+    })
+  );
+
+  const errors = validateHarness(dir);
+  assert.match(errors.join('\n'), /noUnusedLocals/);
+  assert.match(errors.join('\n'), /noUnusedParameters/);
+  assert.match(errors.join('\n'), /noImplicitReturns/);
+  assert.match(errors.join('\n'), /noFallthroughCasesInSwitch/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags code hygiene violations in apps source and test files', () => {
+  const dir = makeTempFixture();
+  const srcDir = path.join(dir, 'apps', 'web', 'src');
+  const testDir = path.join(srcDir, '__tests__');
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(srcDir, 'Bad.tsx'),
+    '// @ts-ignore\nexport const x: any = 1;\nconsole.log(x);\ndebugger;\n'
+  );
+  fs.writeFileSync(
+    path.join(testDir, 'Bad.test.tsx'),
+    'it.only("focuses test", () => {});\n'
+  );
+
+  const errors = validateHarness(dir);
+  const joined = errors.join('\n');
+  assert.match(joined, /@ts-ignore/);
+  assert.match(joined, /\bany\b/);
+  assert.match(joined, /console\.log/);
+  assert.match(joined, /debugger/);
+  assert.match(joined, /it\.only/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags evaluatedCommit that exists in git objects but is not an ancestor of HEAD', () => {
+  const dir = makeTempFixture();
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--allow-empty', '-m', 'base'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--allow-empty', '-m', 'orphaned'], { cwd: dir, stdio: 'ignore' });
+  const orphanSha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    cwd: dir,
+    encoding: 'utf8',
+  }).trim();
+  execFileSync('git', ['reset', '--hard', 'HEAD~1'], { cwd: dir, stdio: 'ignore' });
+
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-001.json'),
+    JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: orphanSha }))
+  );
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ancestor of HEAD/i);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

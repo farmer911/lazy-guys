@@ -25,31 +25,51 @@ INSERT INTO profiles (
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO experiences (profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, sort_order)
-VALUES
-  (
-    '11111111-1111-1111-1111-111111111111',
-    'Acme Tech',
-    'Senior Full-Stack Engineer',
-    'Ho Chi Minh City',
-    '2024-01-01',
-    NULL,
-    TRUE,
-    'Architecting customer-facing web apps and scalable Node.js/PostgreSQL services.',
-    ARRAY['Designed multi-tenant REST APIs serving 50k+ DAU', 'Established Playwright E2E gate in CI/CD'],
-    1
-  ),
-  (
-    '11111111-1111-1111-1111-111111111111',
-    'Beta Studio',
-    'Frontend Engineer',
-    'Remote',
-    '2022-03-01',
-    '2023-12-31',
-    FALSE,
-    'Built interactive dashboards with React, TypeScript, Tailwind CSS, and TanStack Query.',
-    ARRAY['Cut bundle size by 32% with route-level code splitting', 'Implemented accessible UI primitives with shadcn/ui'],
-    2
-  );
+SELECT
+  v.profile_id::uuid,
+  v.company,
+  v.role,
+  v.location,
+  v.start_date::date,
+  v.end_date::date,
+  v.is_current,
+  v.summary,
+  v.highlights,
+  v.sort_order
+FROM (
+  VALUES
+    (
+      '11111111-1111-1111-1111-111111111111',
+      'Acme Tech',
+      'Senior Full-Stack Engineer',
+      'Ho Chi Minh City',
+      '2024-01-01',
+      NULL,
+      TRUE,
+      'Architecting customer-facing web apps and scalable Node.js/PostgreSQL services.',
+      ARRAY['Designed multi-tenant REST APIs serving 50k+ DAU', 'Established Playwright E2E gate in CI/CD'],
+      1
+    ),
+    (
+      '11111111-1111-1111-1111-111111111111',
+      'Beta Studio',
+      'Frontend Engineer',
+      'Remote',
+      '2022-03-01',
+      '2023-12-31',
+      FALSE,
+      'Built interactive dashboards with React, TypeScript, Tailwind CSS, and TanStack Query.',
+      ARRAY['Cut bundle size by 32% with route-level code splitting', 'Implemented accessible UI primitives with shadcn/ui'],
+      2
+    )
+) AS v(profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, sort_order)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM experiences e
+  WHERE e.profile_id = v.profile_id::uuid
+    AND e.company = v.company
+    AND e.role = v.role
+);
 
 INSERT INTO projects (profile_id, title, slug, summary, role, highlights, tech_tags, repo_url, live_url, featured, sort_order)
 VALUES
@@ -78,13 +98,29 @@ VALUES
     NULL,
     TRUE,
     2
-  );
+  )
+ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO tech_stacks (profile_id, name, category, proficiency, years_exp, sort_order)
-VALUES
-  ('11111111-1111-1111-1111-111111111111', 'React & TypeScript', 'Frontend', 95, 4.0, 1),
-  ('11111111-1111-1111-1111-111111111111', 'Tailwind CSS & shadcn/ui', 'Frontend', 92, 3.0, 2),
-  ('11111111-1111-1111-1111-111111111111', 'Node.js & Express', 'Backend', 90, 4.0, 3),
-  ('11111111-1111-1111-1111-111111111111', 'PostgreSQL', 'Database', 85, 3.5, 4),
-  ('11111111-1111-1111-1111-111111111111', 'Playwright & RTL', 'Testing', 88, 3.0, 5),
-  ('11111111-1111-1111-1111-111111111111', 'Docker Compose', 'DevOps', 82, 3.0, 6);
+SELECT
+  v.profile_id::uuid,
+  v.name,
+  v.category,
+  v.proficiency::smallint,
+  v.years_exp::numeric(3,1),
+  v.sort_order
+FROM (
+  VALUES
+    ('11111111-1111-1111-1111-111111111111', 'React & TypeScript', 'Frontend', 95, 4.0, 1),
+    ('11111111-1111-1111-1111-111111111111', 'Tailwind CSS & shadcn/ui', 'Frontend', 92, 3.0, 2),
+    ('11111111-1111-1111-1111-111111111111', 'Node.js & Express', 'Backend', 90, 4.0, 3),
+    ('11111111-1111-1111-1111-111111111111', 'PostgreSQL', 'Database', 85, 3.5, 4),
+    ('11111111-1111-1111-1111-111111111111', 'Playwright & RTL', 'Testing', 88, 3.0, 5),
+    ('11111111-1111-1111-1111-111111111111', 'Docker Compose', 'DevOps', 82, 3.0, 6)
+) AS v(profile_id, name, category, proficiency, years_exp, sort_order)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM tech_stacks t
+  WHERE t.profile_id = v.profile_id::uuid
+    AND t.name = v.name
+);

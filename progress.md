@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 01:18
+**Last Updated:** 2026-11-23 01:53
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -24,6 +24,12 @@
   - Distilled orphan-cleanup vs pre-existing dead-code rule, assumption/pushback rule, and diff-to-spec traceability rubric into `AGENTS.md`, `.agents/skills/evaluating-features/SKILL.md`, and `evaluator-prompt.md` (plus replaced hardcoded workspace path with `{WORKSPACE_ROOT}`)
   - Added dependency-graph validation (unknown dependency ID, DFS cycle detection, and active/done feature depending on unfinished parent) + portable `.agents/skills/task-guardrail/SKILL.md` presence gate to `scripts/check-harness.mjs` (`15/15` harness unit tests)
   - Authored and pressure-tested `task-guardrail/SKILL.md` (`72` lines, verified `RED -> GREEN -> REFACTOR` closing 5 rationalizations/loopholes) identically in `.agents/skills/task-guardrail/SKILL.md` (repo-portable) and `~/.gemini/config/skills/task-guardrail/SKILL.md` (machine-global), wired into both repo `AGENTS.md` and global `superpowers/rules/AGENTS.md`
+- [x] Full Repository Hard-Lock Package (Lifecycle Hooks, Git Hooks, Zero-Dep Compiler/Hygiene Gate & Idempotent DB):
+  - Added `.agents/hooks.json` + `scripts/agent-hooks.mjs` (`5` unit tests in `scripts/agent-hooks.test.mjs`) enforcing `PreToolUse` anti-self-grading lock on `evaluations/*.json` + `--no-verify`/`core.hooksPath` protection and `Stop` turn-completion harness gate
+  - Added `.githooks/pre-commit` and `.githooks/pre-push` auto-wired in `./init.sh` via `git config core.hooksPath .githooks`
+  - Hardened all 4 workspace `tsconfig*.json` (`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports`) + mechanical compiler/hygiene/hook/git-ancestor (`git merge-base --is-ancestor`) gates in `scripts/check-harness.mjs` (`19` harness unit tests)
+  - Made `db/seed.sql` 100% re-run idempotent (`ON CONFLICT` / `WHERE NOT EXISTS`) and updated `./init.sh` to re-apply `db/schema.sql` + `db/seed.sql` on every startup (`8/8` API integration tests)
+  - Updated `.agents/skills/using-superpowers/references/antigravity-tools.md` to current `write_file` / `edit_file` tool names
 
 ### What's In Progress
 
@@ -57,9 +63,9 @@
 
 ## Evidence of Completion
 
-- [x] `./init.sh`: exit code 0, 0 errors, 0 warnings
-- [x] `npm run check:harness`: pass (CI workflow + all 4 `evaluations/feat-00*.json` SHAs verified `PASS`)
-- [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`)
-- [x] `npm run test:unit`: pass (15 harness + 7 API + 5 Web RTL = 27/27 tests)
+- [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
+- [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene)
+- [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
+- [x] `npm run test:unit`: pass (19 harness + 5 agent-hooks + 8 API + 5 Web RTL = 37/37 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

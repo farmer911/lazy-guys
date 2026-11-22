@@ -20,11 +20,15 @@ If baseline verification fails, fix it before adding new scope.
 - **Task Execution Guardrail (`.agents/skills/task-guardrail/SKILL.md`)**: For any task modifying `>= 2` files or verification steps, read and follow `task-guardrail` (emit Pre-Edit Brief with `Goal & Scope`, `Assumptions / Non-Goals`, and `Step | Verify` list before editing; run step-gated checks; end with `Changes`, `Skipped / Unchanged`, and `Empirical Proof`).
 - **Surface assumptions & push back**: If a spec in `feature_list.json` has multiple interpretations or a simpler approach exists, state assumptions and ask before writing the first test.
 - **Stay in scope & clean only your own orphans**: Every changed line must trace directly to the active feature. Remove imports, variables, or helpers made unused by your changes; never delete pre-existing dead code or reformat adjacent code (log unrelated dead code in `progress.md` instead).
-- **Zero-error, zero-warning**: `./init.sh`, `typecheck`, `test:unit`, `build`, and `test:e2e` must pass with 0 errors and 0 warnings.
+- **Zero-error, zero-warning & Mechanical Hygiene**: `./init.sh`, `typecheck`, `test:unit`, `build`, and `test:e2e` must pass with 0 errors and 0 warnings. All workspace `tsconfig*.json` enforce `strict`, `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, and `noUncheckedSideEffectImports`, while `check:harness` bans `@ts-ignore`/`@ts-nocheck`, explicit `any`, `debugger`, stray `console.log`, and `.only`/`.skip` tests.
+- **Lifecycle & Git Hooks (`.agents/hooks.json`, `.githooks/`)**:
+  - `PreToolUse` (`scripts/agent-hooks.mjs`) mechanically blocks Generator sessions from writing/forging `evaluations/*.json`, using `--no-verify`, or altering `core.hooksPath`.
+  - `Stop` (`scripts/agent-hooks.mjs`) blocks turn completion whenever `npm run check:harness` has violations.
+  - `./init.sh` configures `git config core.hooksPath .githooks` (`pre-commit` runs `check:harness` + `typecheck`; `pre-push` adds `test:unit` + `build`) and idempotently applies `db/schema.sql` and `db/seed.sql`.
 - **Strict Generator–Evaluator Split (`.agents/skills/evaluating-features/SKILL.md`)**:
   - The implementing agent (**Generator**) MUST NEVER self-grade a feature as `"done"` or write/edit `evaluations/<feat-id>.json`.
   - When implementation and tests pass, the Generator sets `"status": "ready-for-eval"`, commits `HEAD`, and dispatches a fresh-context **Independent AI Evaluator** subagent (`feature-evaluator`) using `.agents/skills/evaluating-features/evaluator-prompt.md`.
-  - Only after the independent Evaluator probes the live running app/API and writes `evaluations/<feat-id>.json` with `"verdict": "PASS"` (all 4 rubric criteria `>= 7/10` and `blockingIssues: []`) may the feature be marked `"status": "done"`.
+  - Only after the independent Evaluator probes the live running app/API and writes `evaluations/<feat-id>.json` with `"verdict": "PASS"` (all 4 rubric criteria `>= 7/10`, `blockingIssues: []`, and `evaluatedCommit` verified as an ancestor of `HEAD`) may the feature be marked `"status": "done"`.
 - **Update artifacts**: Before ending a session, update `progress.md`, `feature_list.json`, and `session-handoff.md`.
 - **Leave clean state**: Next session must be able to run `./init.sh` immediately.
 

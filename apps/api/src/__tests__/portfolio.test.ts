@@ -1,5 +1,7 @@
+import fs from 'node:fs';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
 import { pool } from '../db/pool.js';
@@ -101,5 +103,35 @@ describe('portfolio API integration', () => {
     await expect(res.json()).resolves.toEqual({
       error: 'Invalid JSON payload',
     });
+  });
+
+  it('re-applies db/schema.sql and db/seed.sql idempotently without duplicate rows or errors', async () => {
+    const repoRoot = path.resolve(import.meta.dirname, '../../../..');
+    const schemaSql = fs.readFileSync(path.join(repoRoot, 'db', 'schema.sql'), 'utf8');
+    const seedSql = fs.readFileSync(path.join(repoRoot, 'db', 'seed.sql'), 'utf8');
+
+    const countAll = async () => {
+      const { rows } = await pool.query<{
+        profiles: number;
+        experiences: number;
+        projects: number;
+        tech_stacks: number;
+      }>(`
+        SELECT
+          (SELECT COUNT(*)::int FROM profiles) AS profiles,
+          (SELECT COUNT(*)::int FROM experiences) AS experiences,
+          (SELECT COUNT(*)::int FROM projects) AS projects,
+          (SELECT COUNT(*)::int FROM tech_stacks) AS tech_stacks
+      `);
+      return rows[0];
+    };
+
+    const before = await countAll();
+    await pool.query(schemaSql);
+    await pool.query(seedSql);
+    await pool.query(seedSql);
+    const after = await countAll();
+
+    expect(after).toEqual(before);
   });
 });
