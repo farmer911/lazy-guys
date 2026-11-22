@@ -106,7 +106,8 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-echo "[5/5] Verifying typecheck, unit tests, and build..."
+echo "[5/5] Verifying harness rules, typecheck, unit tests, and build..."
+npm run check:harness
 npm run typecheck
 npm run test:unit
 npm run build
@@ -115,5 +116,5 @@ echo ""
 echo "Environment ready. Start dev servers with:"
 echo "  npm run dev:api"
 echo "  npm run dev:web"
-echo "Run E2E tests (first time: npx playwright install chromium):"
+echo "Run E2E tests (Playwright auto-starts dev:api and dev:web if needed):"
 echo "  npm run test:e2e"

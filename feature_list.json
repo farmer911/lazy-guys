@@ -29,8 +29,8 @@
       "name": "Live Playwright E2E Smoke Verification",
       "description": "Install Playwright Chromium browser and run apps/e2e smoke test against running API + Web dev servers.",
       "dependencies": ["feat-003"],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Installed Chromium headless shell v1255, configured Playwright webServer for dev:api + dev:web, and verified npm run test:e2e passes (1/1) asserting live PostgreSQL-seeded Experience ('Acme Tech') and Project ('Lazy Guy Portfolio Platform')."
     },
     {
       "id": "feat-005",

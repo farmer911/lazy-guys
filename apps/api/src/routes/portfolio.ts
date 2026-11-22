@@ -77,7 +77,9 @@ portfolioRouter.get(
 
 portfolioRouter.post('/contact', (req, res) => {
   const { name, email, message } = req.body ?? {};
-  if (!name || !email || !message) {
+  const isNonEmpty = (val: unknown): val is string =>
+    typeof val === 'string' && val.trim().length > 0;
+  if (!isNonEmpty(name) || !isNonEmpty(email) || !isNonEmpty(message)) {
     res.status(400).json({ error: 'name, email, and message are required' });
     return;
   }

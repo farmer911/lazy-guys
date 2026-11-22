@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-22 23:01
-**Active Feature:** feat-004 - Live Playwright E2E Smoke Verification
+**Last Updated:** 2026-11-22 23:43
+**Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
 
@@ -11,47 +11,54 @@
 
 - [x] `feat-001`: Monorepo, Docker PostgreSQL & `./init.sh` bootstrap (0 errors, 0 warnings)
 - [x] `feat-002`: PostgreSQL schema (`db/schema.sql`), seed (`db/seed.sql`), and Express REST API (`apps/api`)
-- [x] `feat-003`: Portfolio UI (`apps/web`) with shadcn/ui, Zustand, TanStack Query, `react-hook-form`, and RTL unit test
-- [x] Local project skills installed in `.agents/skills/` (all `<= 250` lines)
-- [x] Agent harness files added (`AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md`)
+- [x] `feat-003`: Portfolio UI (`apps/web`) with shadcn/ui, Zustand, TanStack Query, `react-hook-form`, and RTL unit tests (3/3)
+- [x] `feat-004`: Live Playwright E2E Smoke Verification (`npm run test:e2e` auto-starting `dev:api` + `dev:web`, asserting PostgreSQL-seeded data)
+- [x] Full Agent Harness hardening:
+  - Initialized Git repository on `main` with clean baseline commit
+  - Added `apps/api` Vitest integration test suite against real Express + PostgreSQL and fixed `/api/contact` whitespace validation via TDD
+  - Added `scripts/check-harness.mjs` (+ `scripts/check-harness.test.mjs`) enforcing required artifacts, `feature_list.json` schema/evidence, `SKILL.md <= 250` lines, and no `__dirname` in configs
 
 ### What's In Progress
 
-- [ ] `feat-004`: Live Playwright E2E smoke test execution (`npm run test:e2e`)
-  - Blockers: Chromium browser binary not yet installed (`npx playwright install chromium`)
+- [ ] `feat-005`: Recruiter Portfolio Polish (next user-facing enhancement)
 
 ### What's Next
 
-1. Run `npx playwright install chromium` in `apps/e2e`
-2. Start `npm run dev:api` and `npm run dev:web`, then run `npm run test:e2e`
-3. Record E2E verification evidence in `feature_list.json` and `progress.md`
+1. Run `./init.sh` to verify green baseline
+2. Align with user on specific scope for `feat-005` (e.g., CV download, project detail modal, or admin CRUD)
+3. Implement `feat-005` following strict TDD (RED -> Verify RED -> GREEN -> Verify GREEN)
 
 ## Blockers / Risks
 
-- [ ] Port `5432` was occupied by another container on this host; `./init.sh` auto-selected port `5434` in `.env` (gitignored).
+- None. Port `5434` is configured in `.env` for Docker PostgreSQL; Playwright `webServer` reuses or starts `4000` and `5173` automatically.
 
 ## Decisions Made
 
-- **ESM `import.meta.dirname` in Vite/Vitest configs**: Eliminates Vite 8 `configLoader: 'native'` warning.
-- **`happy-dom` for Vitest**: Replaces `jsdom@31` to avoid `EBADENGINE` mismatch with Node `v22.14.0`.
-- **Project-local skills in `.agents/skills/`**: Keeps `lazy-guys` skills scoped to this repo with `SKILL.md <= 250` lines.
+- **Playwright dual `webServer`**: `apps/e2e/playwright.config.ts` launches `dev:api` (polling `/api/health`) and `dev:web` automatically using `import.meta.dirname`.
+- **Stdlib `scripts/check-harness.mjs`**: Zero-dependency mechanical enforcement of `GEMINI.md` and `AGENTS.md` invariants inside `./init.sh`.
+- **Real PostgreSQL integration tests in `apps/api`**: Uses native `fetch` + ephemeral port (`app.listen(0)`) instead of `supertest` mocks.
 
 ## Files Modified This Session
 
-- `AGENTS.md` - Root harness instructions, startup workflow, DoD, and verification commands
-- `GEMINI.md` - Gemini rules (`SKILL.md <= 250` lines, 0-error/0-warning build, `AGENTS.md` link)
-- `feature_list.json` - Feature tracker with dependencies and verification evidence
-- `progress.md` - Session continuity log
-- `session-handoff.md` - Restart checklist and handoff state
+- `.gitignore` - Ignore `*.tsbuildinfo`
+- `apps/api/package.json` - Added `vitest` test script and excluded `src/__tests__` from `dist` build
+- `apps/api/src/config/env.ts` - Enabled `quiet: true` on `dotenv.config` for 0 stderr noise
+- `apps/api/src/routes/portfolio.ts` - Rejected whitespace-only strings in `POST /api/contact`
+- `apps/api/src/__tests__/portfolio.test.ts` - Added real Express + PostgreSQL integration tests
+- `apps/e2e/playwright.config.ts` - Added `webServer` auto-startup for API + Web
+- `apps/e2e/tests/portfolio.spec.ts` - Tightened strict-mode heading locators and verified live seeded PostgreSQL rows
+- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Mechanical harness validator and unit tests
+- `package.json`, `init.sh`, `AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md` - Wired harness checks and recorded `feat-004` completion
 
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings
-- [x] `npm run typecheck`: pass (`apps/api` and `apps/web`)
-- [x] `npm run test:unit`: 1 file, 1 test passed (`AboutSection.test.tsx`)
-- [x] `npm run build`: pass (`apps/api` + `apps/web` Vite v8.3.8)
-- [ ] `npm run test:e2e`: pending Playwright browser install (`feat-004`)
+- [x] `npm run check:harness`: pass
+- [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`)
+- [x] `npm run test:unit`: pass (4 harness tests + 3 API tests + 3 Web RTL tests = 10/10)
+- [x] `npm run build`: pass (`apps/api` + `apps/web`)
+- [x] `npm run test:e2e`: pass (1/1 Chromium smoke test against live API + PostgreSQL)
 
 ## Notes for Next Session
 
-Run `./init.sh` first to confirm PostgreSQL and builds are green, then proceed with `feat-004`.
+Run `./init.sh` first, review `git log --oneline -5`, and start `feat-005`.

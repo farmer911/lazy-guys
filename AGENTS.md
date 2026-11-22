@@ -55,8 +55,9 @@ Before ending a session:
 ./init.sh
 
 # Individual checks
+npm run check:harness  # Mechanical check: artifacts, feature_list.json, SKILL.md <= 250 lines, ESM configs
 npm run typecheck
-npm run test:unit   # Frontend unit tests (Vitest + React Testing Library + user-event)
+npm run test:unit      # Harness + API integration (Vitest) + Web unit tests (Vitest + RTL)
 npm run build
-npm run test:e2e
+npm run test:e2e       # Playwright E2E (auto-starts dev:api & dev:web via webServer)
 ```
