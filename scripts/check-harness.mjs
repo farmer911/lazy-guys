@@ -10,7 +10,14 @@ const REQUIRED_FILES = [
   'session-handoff.md',
   'init.sh',
 ];
-const VALID_STATUSES = new Set(['not-started', 'in-progress', 'done']);
+const VALID_STATUSES = new Set(['not-started', 'in-progress', 'ready-for-eval', 'done']);
+const RUBRIC_KEYS = [
+  'functionalCompleteness',
+  'recruiterUxClarity',
+  'visualCraftResponsiveness',
+  'codeTestHygiene',
+];
+const MIN_RUBRIC_SCORE = 7;
 const CONFIG_RE = /^(vite|vitest|playwright)\.config\.[cm]?[jt]s$/;
 
 function walkFiles(dir, predicate, out = []) {
@@ -22,6 +29,53 @@ function walkFiles(dir, predicate, out = []) {
     else if (predicate(entry.name, full)) out.push(full);
   }
   return out;
+}
+
+function validateEvaluationFile(rootDir, featId, errors) {
+  const relPath = path.join('evaluations', `${featId}.json`);
+  const evalPath = path.join(rootDir, relPath);
+  if (!fs.existsSync(evalPath)) {
+    errors.push(`Feature ${featId} is marked done without ${relPath.replace(/\\/g, '/')}`);
+    return;
+  }
+
+  let report;
+  try {
+    report = JSON.parse(fs.readFileSync(evalPath, 'utf8'));
+  } catch (err) {
+    errors.push(`${relPath} is not valid JSON: ${err.message}`);
+    return;
+  }
+
+  if (report.featureId !== featId) {
+    errors.push(`${relPath}: featureId "${report.featureId}" does not match "${featId}"`);
+  }
+  if (!/^[0-9a-f]{7,40}$/i.test(String(report.evaluatedCommit ?? ''))) {
+    errors.push(`${relPath}: evaluatedCommit must be a 7-40 char git commit SHA`);
+  }
+  if (report.evaluatorRole !== 'independent-evaluator') {
+    errors.push(`${relPath}: evaluatorRole must be "independent-evaluator" (self-grading forbidden)`);
+  }
+  if (!Array.isArray(report.liveChecks) || report.liveChecks.length === 0) {
+    errors.push(`${relPath}: liveChecks must contain at least one executed runtime probe`);
+  }
+  if (!Array.isArray(report.blockingIssues) || report.blockingIssues.length > 0) {
+    errors.push(`${relPath}: blockingIssues must be an empty array for a done feature`);
+  }
+  if (report.verdict !== 'PASS') {
+    errors.push(`${relPath}: verdict must be "PASS" (got "${report.verdict}")`);
+  }
+  if (!report.summary || !String(report.summary).trim()) {
+    errors.push(`${relPath}: summary must be non-empty`);
+  }
+
+  const rubric = report.rubric ?? {};
+  for (const key of RUBRIC_KEYS) {
+    const score = rubric[key];
+    if (typeof score !== 'number' || score < MIN_RUBRIC_SCORE || score > 10) {
+      errors.push(`${relPath}: rubric.${key} must be between ${MIN_RUBRIC_SCORE} and 10 (got ${score})`);
+    }
+  }
 }
 
 export function validateHarness(rootDir) {
@@ -47,8 +101,11 @@ export function validateHarness(rootDir) {
           if (!VALID_STATUSES.has(feat.status)) {
             errors.push(`Feature ${feat.id} has invalid status "${feat.status}"`);
           }
-          if (feat.status === 'done' && (!feat.evidence || !String(feat.evidence).trim())) {
-            errors.push(`Feature ${feat.id} is marked done without verification evidence`);
+          if (feat.status === 'done') {
+            if (!feat.evidence || !String(feat.evidence).trim()) {
+              errors.push(`Feature ${feat.id} is marked done without verification evidence`);
+            }
+            validateEvaluationFile(rootDir, feat.id, errors);
           }
         }
       }
@@ -81,5 +138,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     for (const v of violations) console.error(`[harness-error] ${v}`);
     process.exit(1);
   }
-  console.log('Harness checks passed (artifacts, feature_list.json, SKILL.md <= 250 lines, ESM configs).');
+  console.log(
+    'Harness checks passed (artifacts, feature_list.json, independent evaluator PASS gates, SKILL.md <= 250 lines, ESM configs).'
+  );
 }

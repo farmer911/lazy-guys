@@ -51,9 +51,9 @@ export function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/85 backdrop-blur">
-        <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 text-sm">
-          <span className="font-semibold text-sky-400">lazy-guy</span>
-          <div className="flex gap-5 text-slate-300">
+        <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm">
+          <span className="whitespace-nowrap font-semibold text-sky-400">lazy-guy</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300 sm:gap-5 sm:text-sm">
             <a href="#about" className="hover:text-slate-50">About</a>
             <a href="#experience" className="hover:text-slate-50">Experience</a>
             <a href="#projects" className="hover:text-slate-50">Projects</a>

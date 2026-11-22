@@ -8,45 +8,50 @@ Before writing code:
 
 1. **Confirm working directory** with `pwd`
 2. **Read `AGENTS.md` and `GEMINI.md`** completely
-3. **Run `./init.sh`** to verify Docker PostgreSQL, typecheck, unit tests, and build are healthy
+3. **Run `./init.sh`** to verify Docker PostgreSQL, harness rules, typecheck, unit tests, and build are healthy
 4. **Read `feature_list.json` and `progress.md`** to see current feature state and next step
-5. **Review recent commits** with `git log --oneline -5` (if git is initialized)
+5. **Review recent commits** with `git log --oneline -5`
 
 If baseline verification fails, fix it before adding new scope.
 
-## Working Rules
+## Working Rules & Generator–Evaluator Separation
 
 - **One feature at a time**: Pick exactly one unfinished feature from `feature_list.json`.
 - **Stay in scope**: Do not modify files unrelated to the active feature.
-- **Zero-error, zero-warning**: `./init.sh`, `typecheck`, `test:unit`, and `build` must pass with 0 errors and 0 warnings.
+- **Zero-error, zero-warning**: `./init.sh`, `typecheck`, `test:unit`, `build`, and `test:e2e` must pass with 0 errors and 0 warnings.
+- **Strict Generator–Evaluator Split (`.agents/skills/evaluating-features/SKILL.md`)**:
+  - The implementing agent (**Generator**) MUST NEVER self-grade a feature as `"done"` or write/edit `evaluations/<feat-id>.json`.
+  - When implementation and tests pass, the Generator sets `"status": "ready-for-eval"`, commits `HEAD`, and dispatches a fresh-context **Independent AI Evaluator** subagent (`feature-evaluator`) using `.agents/skills/evaluating-features/evaluator-prompt.md`.
+  - Only after the independent Evaluator probes the live running app/API and writes `evaluations/<feat-id>.json` with `"verdict": "PASS"` (all 4 rubric criteria `>= 7/10` and `blockingIssues: []`) may the feature be marked `"status": "done"`.
 - **Update artifacts**: Before ending a session, update `progress.md`, `feature_list.json`, and `session-handoff.md`.
 - **Leave clean state**: Next session must be able to run `./init.sh` immediately.
 
 ## Required Artifacts
 
-- `feature_list.json` — Feature state tracker (source of truth)
+- `feature_list.json` — Feature state tracker (`not-started` | `in-progress` | `ready-for-eval` | `done`)
+- `evaluations/<feat-id>.json` — Independent AI Evaluator rubric & `PASS` sign-off required for every `done` feature
 - `progress.md` — Session continuity log
-- `init.sh` — Standard startup and verification path
+- `init.sh` — Standard startup and mechanical verification gate
 - `session-handoff.md` — Session handoff and restart checklist
 
 ## Definition of Done
 
-A feature is done only when ALL of the following are true:
+A feature is `"done"` only when ALL of the following are true:
 
-- [ ] Target behavior is implemented
-- [ ] Frontend unit tests with React Testing Library (`npm run test:unit`) pass with 0 warnings
-- [ ] `./init.sh` (typecheck, RTL unit tests, production build) passes with 0 errors and 0 warnings
-- [ ] Evidence is recorded in `feature_list.json` and `progress.md`
-- [ ] Repository remains restartable from `./init.sh`
+- [ ] Target behavior is implemented via TDD
+- [ ] Unit/integration tests (`npm run test:unit`) and Playwright E2E (`npm run test:e2e`) pass with 0 warnings
+- [ ] Generator staged `"status": "ready-for-eval"` and dispatched an independent Evaluator subagent
+- [ ] Independent Evaluator verified live runtime UX/API and wrote `evaluations/<feat-id>.json` with `"verdict": "PASS"` (all rubric scores `>= 7`)
+- [ ] Evidence is recorded in `feature_list.json` and `progress.md`, and `./init.sh` passes with 0 errors and 0 warnings
 
 ## End of Session
 
 Before ending a session:
 
 1. Update `progress.md` with current state and verification evidence
-2. Update `feature_list.json` with new feature status and evidence
+2. Update `feature_list.json` (`ready-for-eval` if awaiting evaluation, or `done` only with `evaluations/<feat-id>.json` PASS)
 3. Update `session-handoff.md` with next-session startup steps and blockers
-4. Leave the repository clean enough for `./init.sh` to pass immediately
+4. Run `./init.sh` fresh after final edits and commit a clean checkpoint
 
 ## Verification Commands
 
@@ -55,7 +60,7 @@ Before ending a session:
 ./init.sh
 
 # Individual checks
-npm run check:harness  # Mechanical check: artifacts, feature_list.json, SKILL.md <= 250 lines, ESM configs
+npm run check:harness  # Mechanical check: artifacts, feature_list.json, evaluations/*.json PASS gates, SKILL.md <= 250, ESM
 npm run typecheck
 npm run test:unit      # Harness + API integration (Vitest) + Web unit tests (Vitest + RTL)
 npm run build

@@ -9,7 +9,12 @@ interface ExperienceSectionProps {
 
 function formatDate(value: string | null): string {
   if (!value) return 'Present';
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00Z` : value;
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 export function ExperienceSection({ experiences }: ExperienceSectionProps) {

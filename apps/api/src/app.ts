@@ -11,7 +11,11 @@ export function createApp() {
 
   app.use('/api', portfolioRouter);
 
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof SyntaxError && err.status === 400) {
+      res.status(400).json({ error: 'Invalid JSON payload' });
+      return;
+    }
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   });

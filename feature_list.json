@@ -13,16 +13,16 @@
       "name": "PostgreSQL Schema, Seed & Express REST API",
       "description": "Create db/schema.sql and db/seed.sql for profiles, experiences, projects, tech_stacks and expose Express REST endpoints.",
       "dependencies": ["feat-001"],
-      "status": "done",
-      "evidence": "GET /api/health returned {status:'ok',service:'lazy-guy-api'} and GET /api/profile returned seeded PostgreSQL profile."
+      "status": "ready-for-eval",
+      "evidence": "Fixed malformed JSON 400 handler, email validation, YYYY-MM-DD experience dates, featured=false filter, and numeric years_exp; 7/7 API integration tests green."
     },
     {
       "id": "feat-003",
       "name": "Portfolio UI & RTL Unit Test",
       "description": "Build About, Experience, Projects, Tech Stack (Zustand filter), and ContactForm (react-hook-form) with shadcn/ui, Tailwind CSS, TanStack Query, and sample RTL unit test.",
       "dependencies": ["feat-002"],
-      "status": "done",
-      "evidence": "npm run test:unit passed (1/1 AboutSection.test.tsx); vite build succeeded with 0 warnings."
+      "status": "ready-for-eval",
+      "evidence": "Fixed mobile 375x812 header overflow, UTC-safe date formatting, ContactForm labels/whitespace/error alert state; 5/5 RTL tests and 2/2 E2E tests green."
     },
     {
       "id": "feat-004",

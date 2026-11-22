@@ -3,6 +3,8 @@ import { pool } from '../db/pool.js';
 
 export const portfolioRouter = Router();
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const asyncHandler =
   (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
   (req: Request, res: Response, next: NextFunction) => {
@@ -38,7 +40,7 @@ portfolioRouter.get(
   '/experiences',
   asyncHandler(async (_req, res) => {
     const { rows } = await pool.query(
-      `SELECT id, company, role, location, start_date, end_date, is_current, summary, highlights
+      `SELECT id, company, role, location, start_date::text AS start_date, end_date::text AS end_date, is_current, summary, highlights
        FROM experiences
        ORDER BY sort_order ASC, start_date DESC`
     );
@@ -49,12 +51,14 @@ portfolioRouter.get(
 portfolioRouter.get(
   '/projects',
   asyncHandler(async (req, res) => {
-    const featuredOnly = req.query.featured === 'true';
+    const featuredParam =
+      req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : null;
     const { rows } = await pool.query(
       `SELECT id, title, slug, summary, role, highlights, tech_tags, repo_url, live_url, featured
        FROM projects
-       ${featuredOnly ? 'WHERE featured = TRUE' : ''}
-       ORDER BY sort_order ASC, created_at DESC`
+       ${featuredParam !== null ? 'WHERE featured = $1' : ''}
+       ORDER BY sort_order ASC, created_at DESC`,
+      featuredParam !== null ? [featuredParam] : []
     );
     res.json(rows);
   })
@@ -65,7 +69,7 @@ portfolioRouter.get(
   asyncHandler(async (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : null;
     const { rows } = await pool.query(
-      `SELECT id, name, category, proficiency, years_exp
+      `SELECT id, name, category, proficiency, years_exp::float8 AS years_exp
        FROM tech_stacks
        ${category ? 'WHERE category = $1' : ''}
        ORDER BY sort_order ASC, proficiency DESC`,
@@ -81,6 +85,10 @@ portfolioRouter.post('/contact', (req, res) => {
     typeof val === 'string' && val.trim().length > 0;
   if (!isNonEmpty(name) || !isNonEmpty(email) || !isNonEmpty(message)) {
     res.status(400).json({ error: 'name, email, and message are required' });
+    return;
+  }
+  if (!EMAIL_RE.test(email.trim())) {
+    res.status(400).json({ error: 'Valid email is required' });
     return;
   }
   res.status(201).json({
