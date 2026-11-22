@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 00:43
+**Last Updated:** 2026-11-23 01:18
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -20,6 +20,10 @@
 - [x] CI/CD & Harness Commit-Verification Upgrade:
   - Added `.github/workflows/ci.yml` covering `push`, `pull_request`, weekly Monday `schedule` (`0 2 * * 1` + `npm audit --audit-level=high`), and `workflow_dispatch` with PostgreSQL 16 service container, full git history (`fetch-depth: 0`), `check:harness`, `typecheck`, `test:unit`, `build`, and Playwright Chromium `test:e2e`
   - Tightened `scripts/check-harness.mjs` (+ `3` new TDD unit tests in `scripts/check-harness.test.mjs`, `11/11` total) to enforce `.github/workflows/ci.yml` presence/triggers/gates and verify `evaluatedCommit` exists in real git history via `git cat-file -e`
+- [x] Karpathy Surgical Hygiene, Dependency Graph Validation & Portable `task-guardrail` Skill:
+  - Distilled orphan-cleanup vs pre-existing dead-code rule, assumption/pushback rule, and diff-to-spec traceability rubric into `AGENTS.md`, `.agents/skills/evaluating-features/SKILL.md`, and `evaluator-prompt.md` (plus replaced hardcoded workspace path with `{WORKSPACE_ROOT}`)
+  - Added dependency-graph validation (unknown dependency ID, DFS cycle detection, and active/done feature depending on unfinished parent) + portable `.agents/skills/task-guardrail/SKILL.md` presence gate to `scripts/check-harness.mjs` (`15/15` harness unit tests)
+  - Authored and pressure-tested `task-guardrail/SKILL.md` (`72` lines, verified `RED -> GREEN -> REFACTOR` closing 5 rationalizations/loopholes) identically in `.agents/skills/task-guardrail/SKILL.md` (repo-portable) and `~/.gemini/config/skills/task-guardrail/SKILL.md` (machine-global), wired into both repo `AGENTS.md` and global `superpowers/rules/AGENTS.md`
 
 ### What's In Progress
 
@@ -56,6 +60,6 @@
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings
 - [x] `npm run check:harness`: pass (CI workflow + all 4 `evaluations/feat-00*.json` SHAs verified `PASS`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`)
-- [x] `npm run test:unit`: pass (11 harness + 7 API + 5 Web RTL = 23/23 tests)
+- [x] `npm run test:unit`: pass (15 harness + 7 API + 5 Web RTL = 27/27 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

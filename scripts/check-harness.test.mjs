@@ -54,6 +54,8 @@ function makeTempFixture() {
   for (const file of ['AGENTS.md', 'GEMINI.md', 'progress.md', 'session-handoff.md', 'init.sh']) {
     fs.writeFileSync(path.join(dir, file), '# ok\n');
   }
+  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'task-guardrail'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'), '# ok\n');
   fs.mkdirSync(path.join(dir, '.github', 'workflows'), { recursive: true });
   fs.writeFileSync(path.join(dir, '.github', 'workflows', 'ci.yml'), VALID_CI_WORKFLOW);
   fs.mkdirSync(path.join(dir, 'evaluations'), { recursive: true });
@@ -237,6 +239,108 @@ test('flags .github/workflows/ci.yml missing required triggers or verification g
   assert.match(errors.join('\n'), /schedule/);
   assert.match(errors.join('\n'), /fetch-depth:\s*0/);
   assert.match(errors.join('\n'), /npm run test:e2e/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags feature referencing unknown dependency id', () => {
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Test',
+          description: 'Desc',
+          dependencies: ['feat-999'],
+          status: 'not-started',
+          evidence: '',
+        },
+      ],
+    })
+  );
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /feat-001.*unknown dependency.*feat-999/i);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags dependency cycle in feature_list.json', () => {
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'One',
+          description: 'Desc',
+          dependencies: ['feat-002'],
+          status: 'not-started',
+          evidence: '',
+        },
+        {
+          id: 'feat-002',
+          name: 'Two',
+          description: 'Desc',
+          dependencies: ['feat-001'],
+          status: 'not-started',
+          evidence: '',
+        },
+      ],
+    })
+  );
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /cycle/i);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags done or active feature whose dependency is not done', () => {
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-002.json'),
+    JSON.stringify(makeValidEvaluation('feat-002'), null, 2)
+  );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Base',
+          description: 'Desc',
+          dependencies: [],
+          status: 'in-progress',
+          evidence: '',
+        },
+        {
+          id: 'feat-002',
+          name: 'Child',
+          description: 'Desc',
+          dependencies: ['feat-001'],
+          status: 'done',
+          evidence: 'Passed ./init.sh and evaluator PASS',
+        },
+      ],
+    })
+  );
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /feat-002.*feat-001.*not done/i);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags missing portable .agents/skills/task-guardrail/SKILL.md', () => {
+  const dir = makeTempFixture();
+  fs.unlinkSync(path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'));
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /\.agents\/skills\/task-guardrail\/SKILL\.md/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

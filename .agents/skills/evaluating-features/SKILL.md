@@ -54,7 +54,7 @@ digraph eval_gate {
    - Commit your work so `git rev-parse --short HEAD` identifies the exact snapshot under test.
 2. **Dispatch Standalone Evaluator:**
    - Define/invoke a fresh subagent (`define_subagent` / `invoke_subagent` with `EnableWriteTools: true`, never sharing your conversation history) using [evaluator-prompt.md](evaluator-prompt.md).
-   - Pass only `{FEATURE_ID}`, `{FEATURE_SPEC}` (from `feature_list.json`), and `{COMMIT_SHA}`.
+   - Pass only `{FEATURE_ID}`, `{FEATURE_SPEC}` (from `feature_list.json`), `{COMMIT_SHA}`, and `{WORKSPACE_ROOT}`.
    - If visual UI changed, the Evaluator inspects the live app via Playwright/headless browser or the `browser` subagent in addition to live API probes.
 3. **Act on the Verdict:**
    - **`FAIL`:** Keep `"status": "in-progress"`. Fix every item in `blockingIssues` using **REQUIRED SUB-SKILL:** `superpowers:test-driven-development`, commit the new SHA, and dispatch a fresh Evaluator pass.
@@ -67,7 +67,7 @@ digraph eval_gate {
 | `functionalCompleteness` | `7 / 10` | Live Express + PostgreSQL data flows, edge/invalid payloads |
 | `recruiterUxClarity` | `7 / 10` | Scannable hierarchy, clear CTAs, realistic recruiter value |
 | `visualCraftResponsiveness` | `7 / 10` | Layout polish, mobile/desktop viewport, `0` console/network errors |
-| `codeTestHygiene` | `7 / 10` | Minimal diff (`git show`), real behavioral tests, `0` warnings |
+| `codeTestHygiene` | `7 / 10` | Every diff line (`git show`) traces to spec, no drive-by edits or orphan imports, real behavioral tests, `0` warnings |
 
 ## Common Rationalizations
 

@@ -11,6 +11,7 @@
 - [x] Enforced `ready-for-eval` -> Independent Evaluator `PASS` -> `done` mechanically in `scripts/check-harness.mjs` (11/11 unit tests) and `AGENTS.md`
 - [x] Dispatched standalone `feature-evaluator` subagent across `feat-001`..`feat-004`, caught 7 live API/UI/mobile/timezone defects on `feat-002` & `feat-003`, fixed all 7 via TDD, and obtained clean `PASS` verdicts on Round 2 (`b4c6985`)
 - [x] Added GitHub Actions CI + weekly mechanical sweep (`.github/workflows/ci.yml`) and hardened `scripts/check-harness.mjs` to verify `evaluatedCommit` SHAs exist in git history and enforce CI workflow triggers/gates
+- [x] Added Karpathy surgical/orphan rules, `{WORKSPACE_ROOT}` portability, `feature_list.json` dependency-graph validation, and dual-synced `task-guardrail/SKILL.md` (`72` lines, `15/15` harness tests) across `.agents/skills/` and `~/.gemini/config/skills/`
 
 ## Verification Evidence
 
@@ -19,7 +20,7 @@
 | Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; Postgres healthy on port 5434 |
 | Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified `.github/workflows/ci.yml` + `evaluations/feat-001..004.json` git SHAs |
 | Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` |
-| Unit & Integration Suite | `npm run test:unit` | PASS | 11 harness + 7 API + 5 Web RTL = 23/23 passed |
+| Unit & Integration Suite | `npm run test:unit` | PASS | 15 harness + 7 API + 5 Web RTL = 27/27 passed |
 | Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
 | Playwright E2E | `npm run test:e2e` | PASS | 2/2 Chromium tests (smoke + `375x812` mobile overflow) |
 

@@ -11,6 +11,7 @@ const REQUIRED_FILES = [
   'session-handoff.md',
   'init.sh',
   '.github/workflows/ci.yml',
+  '.agents/skills/task-guardrail/SKILL.md',
 ];
 const CI_REQUIRED_PATTERNS = [
   ['push:', /\bpush\s*:/],
@@ -134,9 +135,40 @@ export function validateHarness(rootDir) {
       if (!Array.isArray(parsed.features) || parsed.features.length === 0) {
         errors.push('feature_list.json must contain a non-empty "features" array');
       } else {
+        const byId = new Map();
+        for (const feat of parsed.features) {
+          if (feat.id) byId.set(feat.id, feat);
+        }
+
+        const visitState = new Map();
+        const detectCycles = (id, trail) => {
+          visitState.set(id, 1);
+          const node = byId.get(id);
+          for (const depId of Array.isArray(node?.dependencies) ? node.dependencies : []) {
+            if (!byId.has(depId)) continue;
+            const depState = visitState.get(depId) ?? 0;
+            if (depState === 1) {
+              errors.push(`Dependency cycle detected in feature_list.json: ${[...trail, depId].join(' -> ')}`);
+            } else if (depState === 0) {
+              detectCycles(depId, [...trail, depId]);
+            }
+          }
+          visitState.set(id, 2);
+        };
+
         for (const feat of parsed.features) {
           if (!feat.id || !feat.name || !feat.description || !Array.isArray(feat.dependencies)) {
             errors.push(`Invalid feature entry schema: ${JSON.stringify(feat.id ?? feat)}`);
+          } else {
+            for (const depId of feat.dependencies) {
+              const dep = byId.get(depId);
+              if (!dep) {
+                errors.push(`Feature ${feat.id} references unknown dependency "${depId}"`);
+              } else if (feat.status !== 'not-started' && dep.status !== 'done') {
+                errors.push(`Feature ${feat.id} (${feat.status}) depends on ${depId} (${dep.status}) which is not done`);
+              }
+            }
+            if (!visitState.has(feat.id)) detectCycles(feat.id, [feat.id]);
           }
           if (!VALID_STATUSES.has(feat.status)) {
             errors.push(`Feature ${feat.id} has invalid status "${feat.status}"`);

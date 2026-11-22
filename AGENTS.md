@@ -17,7 +17,9 @@ If baseline verification fails, fix it before adding new scope.
 ## Working Rules & Generator–Evaluator Separation
 
 - **One feature at a time**: Pick exactly one unfinished feature from `feature_list.json`.
-- **Stay in scope**: Do not modify files unrelated to the active feature.
+- **Task Execution Guardrail (`.agents/skills/task-guardrail/SKILL.md`)**: For any task modifying `>= 2` files or verification steps, read and follow `task-guardrail` (emit Pre-Edit Brief with `Goal & Scope`, `Assumptions / Non-Goals`, and `Step | Verify` list before editing; run step-gated checks; end with `Changes`, `Skipped / Unchanged`, and `Empirical Proof`).
+- **Surface assumptions & push back**: If a spec in `feature_list.json` has multiple interpretations or a simpler approach exists, state assumptions and ask before writing the first test.
+- **Stay in scope & clean only your own orphans**: Every changed line must trace directly to the active feature. Remove imports, variables, or helpers made unused by your changes; never delete pre-existing dead code or reformat adjacent code (log unrelated dead code in `progress.md` instead).
 - **Zero-error, zero-warning**: `./init.sh`, `typecheck`, `test:unit`, `build`, and `test:e2e` must pass with 0 errors and 0 warnings.
 - **Strict Generator–Evaluator Split (`.agents/skills/evaluating-features/SKILL.md`)**:
   - The implementing agent (**Generator**) MUST NEVER self-grade a feature as `"done"` or write/edit `evaluations/<feat-id>.json`.
