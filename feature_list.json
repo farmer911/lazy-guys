@@ -1,0 +1,44 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Monorepo, Docker PostgreSQL & init.sh Bootstrap",
+      "description": "Set up npm workspaces (apps/web, apps/api, apps/e2e), docker-compose.yml, .env.example, and idempotent ./init.sh with 0 errors and 0 warnings.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "./init.sh exited 0; PostgreSQL ready on port 5434; typecheck, test:unit, and build passed with 0 errors and 0 warnings."
+    },
+    {
+      "id": "feat-002",
+      "name": "PostgreSQL Schema, Seed & Express REST API",
+      "description": "Create db/schema.sql and db/seed.sql for profiles, experiences, projects, tech_stacks and expose Express REST endpoints.",
+      "dependencies": ["feat-001"],
+      "status": "done",
+      "evidence": "GET /api/health returned {status:'ok',service:'lazy-guy-api'} and GET /api/profile returned seeded PostgreSQL profile."
+    },
+    {
+      "id": "feat-003",
+      "name": "Portfolio UI & RTL Unit Test",
+      "description": "Build About, Experience, Projects, Tech Stack (Zustand filter), and ContactForm (react-hook-form) with shadcn/ui, Tailwind CSS, TanStack Query, and sample RTL unit test.",
+      "dependencies": ["feat-002"],
+      "status": "done",
+      "evidence": "npm run test:unit passed (1/1 AboutSection.test.tsx); vite build succeeded with 0 warnings."
+    },
+    {
+      "id": "feat-004",
+      "name": "Live Playwright E2E Smoke Verification",
+      "description": "Install Playwright Chromium browser and run apps/e2e smoke test against running API + Web dev servers.",
+      "dependencies": ["feat-003"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-005",
+      "name": "Recruiter Portfolio Polish",
+      "description": "Add next user-facing enhancement (e.g., CV download, project detail modal, or admin CRUD) while maintaining 0-error/0-warning gate.",
+      "dependencies": ["feat-004"],
+      "status": "not-started",
+      "evidence": ""
+    }
+  ]
+}
