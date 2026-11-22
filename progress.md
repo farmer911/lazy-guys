@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 00:18
+**Last Updated:** 2026-11-23 00:43
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -17,6 +17,9 @@
   - Created `.agents/skills/evaluating-features/SKILL.md` (`89` lines, verified RED -> GREEN under combined pressure scenario) and `evaluator-prompt.md`
   - Upgraded `scripts/check-harness.mjs` (+ `8` unit tests in `scripts/check-harness.test.mjs`) to mechanically block `"status": "done"` without a valid `evaluations/<feat-id>.json` (`evaluatorRole: "independent-evaluator"`, 4 rubric scores `>= 7/10`, `blockingIssues: []`, `verdict: "PASS"`)
   - Updated `AGENTS.md` to enforce `ready-for-eval` -> Independent `feature-evaluator` subagent -> `done`
+- [x] CI/CD & Harness Commit-Verification Upgrade:
+  - Added `.github/workflows/ci.yml` covering `push`, `pull_request`, weekly Monday `schedule` (`0 2 * * 1` + `npm audit --audit-level=high`), and `workflow_dispatch` with PostgreSQL 16 service container, full git history (`fetch-depth: 0`), `check:harness`, `typecheck`, `test:unit`, `build`, and Playwright Chromium `test:e2e`
+  - Tightened `scripts/check-harness.mjs` (+ `3` new TDD unit tests in `scripts/check-harness.test.mjs`, `11/11` total) to enforce `.github/workflows/ci.yml` presence/triggers/gates and verify `evaluatedCommit` exists in real git history via `git cat-file -e`
 
 ### What's In Progress
 
@@ -39,9 +42,10 @@
 
 ## Files Modified This Session
 
+- `.github/workflows/ci.yml` - Unified GitHub Actions CI + weekly mechanical drift sweep workflow
 - `.agents/skills/evaluating-features/SKILL.md` & `evaluator-prompt.md` - Standalone AI Evaluator skill and prompt contract
 - `evaluations/feat-001.json` .. `evaluations/feat-004.json` - Independent AI Evaluator `PASS` artifacts
-- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Mechanical Evaluator gate and unit tests (8/8)
+- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Mechanical Evaluator, git commit SHA, and CI workflow gate (`11/11` unit tests)
 - `apps/api/src/app.ts`, `apps/api/src/routes/portfolio.ts`, `apps/api/src/__tests__/portfolio.test.ts`, `apps/api/package.json` - Fixed malformed JSON 400, email validation, date/numeric serialization, and `featured=false` filter (7/7 tests)
 - `apps/web/src/App.tsx`, `apps/web/src/components/ExperienceSection.tsx`, `apps/web/src/components/ContactForm.tsx`, `apps/web/src/components/__tests__/ContactForm.test.tsx`, `apps/web/src/components/__tests__/ExperienceSection.test.tsx` - Fixed mobile `375px` overflow, UTC date formatting, accessible labels, and error alerts (5/5 RTL suites)
 - `apps/e2e/tests/portfolio.spec.ts` - Added mobile `375x812` horizontal-overflow E2E assertion (2/2 E2E tests)
@@ -50,8 +54,8 @@
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings
-- [x] `npm run check:harness`: pass (all 4 `evaluations/feat-00*.json` verified `PASS`)
+- [x] `npm run check:harness`: pass (CI workflow + all 4 `evaluations/feat-00*.json` SHAs verified `PASS`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`)
-- [x] `npm run test:unit`: pass (8 harness + 7 API + 5 Web RTL = 20/20 tests)
+- [x] `npm run test:unit`: pass (11 harness + 7 API + 5 Web RTL = 23/23 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

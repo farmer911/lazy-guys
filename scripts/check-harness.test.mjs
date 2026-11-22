@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,11 +28,34 @@ function makeValidEvaluation(featureId = 'feat-001', overrides = {}) {
   };
 }
 
+const VALID_CI_WORKFLOW = `name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npm run check:harness
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm run test:e2e
+`;
+
 function makeTempFixture() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-check-'));
   for (const file of ['AGENTS.md', 'GEMINI.md', 'progress.md', 'session-handoff.md', 'init.sh']) {
     fs.writeFileSync(path.join(dir, file), '# ok\n');
   }
+  fs.mkdirSync(path.join(dir, '.github', 'workflows'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.github', 'workflows', 'ci.yml'), VALID_CI_WORKFLOW);
   fs.mkdirSync(path.join(dir, 'evaluations'), { recursive: true });
   fs.writeFileSync(
     path.join(dir, 'evaluations', 'feat-001.json'),
@@ -162,6 +186,57 @@ test('flags __dirname in Vite/Vitest/Playwright config files', () => {
   const errors = validateHarness(dir);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /__dirname/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags done feature when evaluatedCommit does not exist in git history', () => {
+  const dir = makeTempFixture();
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--allow-empty', '-m', 'init'], { cwd: dir, stdio: 'ignore' });
+  const realSha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    cwd: dir,
+    encoding: 'utf8',
+  }).trim();
+
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-001.json'),
+    JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: 'deadbeef' }))
+  );
+  const badErrors = validateHarness(dir);
+  assert.equal(badErrors.length, 1);
+  assert.match(badErrors[0], /evaluatedCommit.*deadbeef.*git history/);
+
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-001.json'),
+    JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: realSha }))
+  );
+  assert.deepEqual(validateHarness(dir), []);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags missing .github/workflows/ci.yml workflow file', () => {
+  const dir = makeTempFixture();
+  fs.unlinkSync(path.join(dir, '.github', 'workflows', 'ci.yml'));
+
+  const errors = validateHarness(dir);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /\.github\/workflows\/ci\.yml/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags .github/workflows/ci.yml missing required triggers or verification gates', () => {
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, '.github', 'workflows', 'ci.yml'),
+    'on:\n  push:\n  pull_request:\n  workflow_dispatch:\njobs:\n  verify:\n    steps:\n      - run: npm run check:harness\n      - run: npm run typecheck\n      - run: npm run test:unit\n      - run: npm run build\n'
+  );
+
+  const errors = validateHarness(dir);
+  assert.match(errors.join('\n'), /schedule/);
+  assert.match(errors.join('\n'), /fetch-depth:\s*0/);
+  assert.match(errors.join('\n'), /npm run test:e2e/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

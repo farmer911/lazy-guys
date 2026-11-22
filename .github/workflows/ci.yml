@@ -1,0 +1,94 @@
+name: CI & Harness Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Monday 02:00 UTC mechanical sweep for dependency & browser drift
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.event_name != 'schedule' }}
+
+jobs:
+  verify:
+    name: Verify Harness, Build, Unit & E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lazyguy
+          POSTGRES_PASSWORD: lazyguy_secret
+          POSTGRES_DB: lazy_guy_portfolio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U lazyguy -d lazy_guy_portfolio"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PORT: 4000
+      DATABASE_URL: postgresql://lazyguy:lazyguy_secret@localhost:5432/lazy_guy_portfolio
+      CORS_ORIGIN: http://localhost:5173
+      VITE_API_URL: http://localhost:4000/api
+
+    steps:
+      - name: Checkout full repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Initialize PostgreSQL schema and seed
+        run: |
+          PGPASSWORD=lazyguy_secret psql -h localhost -p 5432 -U lazyguy -d lazy_guy_portfolio -v ON_ERROR_STOP=1 -f db/schema.sql
+          PGPASSWORD=lazyguy_secret psql -h localhost -p 5432 -U lazyguy -d lazy_guy_portfolio -v ON_ERROR_STOP=1 -f db/seed.sql
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Audit high-severity dependency drift on scheduled sweep
+        if: github.event_name == 'schedule'
+        run: npm audit --audit-level=high
+
+      - name: Verify mechanical harness and evaluator artifacts
+        run: npm run check:harness
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Run harness, API integration, and Web RTL unit tests
+        run: npm run test:unit
+
+      - name: Build production bundles
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E suite
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: apps/e2e/test-results/
+          if-no-files-found: ignore
+
+  # ponytail: add event-gated AI triage job (needs: verify, if: failure() && github.event_name == 'schedule') when agent PR volume exceeds 10/week

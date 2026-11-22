@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,19 @@ const REQUIRED_FILES = [
   'progress.md',
   'session-handoff.md',
   'init.sh',
+  '.github/workflows/ci.yml',
+];
+const CI_REQUIRED_PATTERNS = [
+  ['push:', /\bpush\s*:/],
+  ['pull_request:', /\bpull_request\s*:/],
+  ['schedule:', /\bschedule\s*:/],
+  ['workflow_dispatch:', /\bworkflow_dispatch\s*:/],
+  ['fetch-depth: 0', /\bfetch-depth\s*:\s*0\b/],
+  ['npm run check:harness', /\bnpm run check:harness\b/],
+  ['npm run typecheck', /\bnpm run typecheck\b/],
+  ['npm run test:unit', /\bnpm run test:unit\b/],
+  ['npm run build', /\bnpm run build\b/],
+  ['npm run test:e2e', /\bnpm run test:e2e\b/],
 ];
 const VALID_STATUSES = new Set(['not-started', 'in-progress', 'ready-for-eval', 'done']);
 const RUBRIC_KEYS = [
@@ -31,7 +45,19 @@ function walkFiles(dir, predicate, out = []) {
   return out;
 }
 
-function validateEvaluationFile(rootDir, featId, errors) {
+function commitExistsInGit(rootDir, sha) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
+      cwd: rootDir,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateEvaluationFile(rootDir, featId, errors, hasGitRepo) {
   const relPath = path.join('evaluations', `${featId}.json`);
   const evalPath = path.join(rootDir, relPath);
   if (!fs.existsSync(evalPath)) {
@@ -50,8 +76,11 @@ function validateEvaluationFile(rootDir, featId, errors) {
   if (report.featureId !== featId) {
     errors.push(`${relPath}: featureId "${report.featureId}" does not match "${featId}"`);
   }
-  if (!/^[0-9a-f]{7,40}$/i.test(String(report.evaluatedCommit ?? ''))) {
+  const commit = String(report.evaluatedCommit ?? '');
+  if (!/^[0-9a-f]{7,40}$/i.test(commit)) {
     errors.push(`${relPath}: evaluatedCommit must be a 7-40 char git commit SHA`);
+  } else if (hasGitRepo && !commitExistsInGit(rootDir, commit)) {
+    errors.push(`${relPath}: evaluatedCommit "${commit}" does not exist in git history`);
   }
   if (report.evaluatorRole !== 'independent-evaluator') {
     errors.push(`${relPath}: evaluatorRole must be "independent-evaluator" (self-grading forbidden)`);
@@ -80,10 +109,21 @@ function validateEvaluationFile(rootDir, featId, errors) {
 
 export function validateHarness(rootDir) {
   const errors = [];
+  const hasGitRepo = fs.existsSync(path.join(rootDir, '.git'));
 
   for (const rel of REQUIRED_FILES) {
     if (!fs.existsSync(path.join(rootDir, rel))) {
       errors.push(`Missing required harness file: ${rel}`);
+    }
+  }
+
+  const ciPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
+  if (fs.existsSync(ciPath)) {
+    const ciRaw = fs.readFileSync(ciPath, 'utf8');
+    for (const [label, pattern] of CI_REQUIRED_PATTERNS) {
+      if (!pattern.test(ciRaw)) {
+        errors.push(`.github/workflows/ci.yml is missing required CI gate or trigger: ${label}`);
+      }
     }
   }
 
@@ -105,7 +145,7 @@ export function validateHarness(rootDir) {
             if (!feat.evidence || !String(feat.evidence).trim()) {
               errors.push(`Feature ${feat.id} is marked done without verification evidence`);
             }
-            validateEvaluationFile(rootDir, feat.id, errors);
+            validateEvaluationFile(rootDir, feat.id, errors, hasGitRepo);
           }
         }
       }
@@ -139,6 +179,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exit(1);
   }
   console.log(
-    'Harness checks passed (artifacts, feature_list.json, independent evaluator PASS gates, SKILL.md <= 250 lines, ESM configs).'
+    'Harness checks passed (artifacts, CI workflow gates, feature_list.json, git-verified evaluator PASS gates, SKILL.md <= 250 lines, ESM configs).'
   );
 }
