@@ -42,7 +42,7 @@ if "be" in targets:
     )
 
 if "fe" in targets:
-    await agent(
+    fe_fix = await agent(
         prompt=build_role_prompt(
             "fe",
             ".agents/skills/fe-shadcn-clean/SKILL.md",
@@ -51,11 +51,18 @@ if "fe" in targets:
         schema=FE_SCHEMA,
         role="FE Bugfix Agent",
     )
+    if fe_fix.get("status") != "READY":
+        raise RuntimeError(f"FE bugfix blocked by contract mismatch: {fe_fix}")
 
-phase("3. Hard Mechanical Gate (0% LLM — ./init.sh)")
+phase("3. Hard Mechanical Gate & Commit Snapshot")
 gate = run_mechanical_gate(ROOT)
 if not gate["ok"]:
     raise RuntimeError(f"Mechanical gate failed (exit {gate['exitCode']}):\n{gate['outputTail']}")
+
+dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
+if dirty:
+    subprocess.run(["git", "add", "-A"], cwd=ROOT, check=True)
+    subprocess.run(["git", "commit", "-m", f"fix({feature_id}): apply verified bugfix"], cwd=ROOT, check=True)
 
 head_sha = subprocess.check_output(
     ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True

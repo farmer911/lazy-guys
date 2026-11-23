@@ -71,6 +71,6 @@
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
 - [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
-- [x] `npm run test:unit`: pass (21 harness + 7 agent-hooks + 6 Python workflow + 8 API + 5 Web RTL = 47/47 tests)
+- [x] `npm run test:unit`: pass (22 harness + 8 agent-hooks + 7 Python workflow + 8 API + 5 Web RTL = 50/50 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

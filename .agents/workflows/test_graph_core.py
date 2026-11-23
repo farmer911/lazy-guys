@@ -10,6 +10,7 @@ from graph_core import (
     build_role_prompt,
     route_bugfix_domain,
     run_escalation_loop,
+    run_qa_gate_loop,
 )
 
 
@@ -129,6 +130,50 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(route_bugfix_domain({"domain": "fullstack"}), ["be", "fe"])
         with self.assertRaises(ValueError):
             route_bugfix_domain({"domain": "unknown"})
+
+    async def test_run_qa_gate_loop_routes_fail_to_tech_lead_and_finalizes_pass(self):
+        events = []
+
+        async def stage_and_commit(attempt):
+            events.append(("stage_commit", attempt))
+            return f"sha000{attempt}"
+
+        qa_verdicts = [
+            {
+                "verdict": "FAIL",
+                "evaluationPath": "evaluations/feat-005.json",
+                "blockingIssues": ["Missing aria-pressed on filter buttons"],
+            },
+            {
+                "verdict": "PASS",
+                "evaluationPath": "evaluations/feat-005.json",
+                "blockingIssues": [],
+            },
+        ]
+
+        async def run_qa(commit_sha, attempt):
+            events.append(("qa", commit_sha))
+            return qa_verdicts[attempt]
+
+        async def run_remediation(blocking_issues, attempt):
+            events.append(("remediate", attempt, blocking_issues[0]))
+
+        async def finalize_done(commit_sha, eval_path):
+            events.append(("finalize_done", commit_sha, eval_path))
+
+        out = await run_qa_gate_loop(
+            stage_and_commit=stage_and_commit,
+            run_qa=run_qa,
+            run_remediation=run_remediation,
+            finalize_done=finalize_done,
+            max_qa_retries=1,
+        )
+        self.assertEqual(out["verdict"], "PASS")
+        self.assertEqual(out["evaluatedCommit"], "sha0001")
+        self.assertEqual(
+            [e[0] for e in events],
+            ["stage_commit", "qa", "remediate", "stage_commit", "qa", "finalize_done"],
+        )
 
     def test_all_workflow_scripts_compile_with_top_level_await(self):
         wf_dir = os.path.dirname(os.path.abspath(__file__))

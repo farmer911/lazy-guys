@@ -503,6 +503,28 @@ test('flags missing hierarchical AGENTS.md or SKILL.md without valid Use when fr
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('flags syntax errors in apps/web/src, allows class constructors/getters, and blocks markdown body frontmatter spoofing', () => {
+  const dir = makeTempFixture();
+  const srcDir = path.join(dir, 'apps', 'web', 'src');
+  fs.mkdirSync(srcDir, { recursive: true });
+  fs.writeFileSync(path.join(srcDir, 'Broken.tsx'), 'export function Broken( {\n');
+  fs.writeFileSync(
+    path.join(srcDir, 'ValidClassError.ts'),
+    'export class ApiError extends Error { constructor(msg: string) { super(msg); } get code(): number { return 400; } }\n'
+  );
+  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'spoof-skill'), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'skills', 'spoof-skill', 'SKILL.md'),
+    '---\nname: spoof-skill\ndescription: Wrong summary.\n---\nBody text\ndescription: Use when spoofing\n---\n'
+  );
+
+  const errors = validateHarness(dir);
+  assert.ok(errors.some((e) => e.includes('Broken.tsx')));
+  assert.ok(!errors.some((e) => e.includes('ValidClassError.ts')));
+  assert.ok(errors.some((e) => e.includes('spoof-skill/SKILL.md')));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('passes on current repository root', () => {
   assert.deepEqual(validateHarness(process.cwd()), []);
 });

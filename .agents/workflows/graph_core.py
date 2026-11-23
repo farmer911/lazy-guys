@@ -1,3 +1,5 @@
+import json
+import os
 import subprocess
 
 MAX_ESCALATION_RETRIES = 2
@@ -203,3 +205,102 @@ def run_mechanical_gate(cwd: str) -> dict:
         "exitCode": proc.returncode,
         "outputTail": (proc.stdout + "\n" + proc.stderr)[-4000:],
     }
+
+
+def stage_ready_for_eval_and_commit(cwd: str, feature_id: str, evidence_note: str) -> str:
+    feature_path = os.path.join(cwd, "feature_list.json")
+    if os.path.exists(feature_path):
+        with open(feature_path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        for item in data.get("features", []):
+            if item.get("id") == feature_id and item.get("status") != "done":
+                item["status"] = "ready-for-eval"
+                item["evidence"] = evidence_note
+        with open(feature_path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2)
+            handle.write("\n")
+
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=cwd, text=True
+    ).strip()
+    if dirty:
+        subprocess.run(["git", "add", "-A"], cwd=cwd, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"feat({feature_id}): stage ready-for-eval snapshot"],
+            cwd=cwd,
+            check=True,
+        )
+
+    return subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"], cwd=cwd, text=True
+    ).strip()
+
+
+def finalize_done_after_eval(
+    cwd: str, feature_id: str, commit_sha: str, evaluation_path: str
+) -> None:
+    feature_path = os.path.join(cwd, "feature_list.json")
+    if os.path.exists(feature_path):
+        with open(feature_path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        for item in data.get("features", []):
+            if item.get("id") == feature_id:
+                item["status"] = "done"
+                item["evidence"] = (
+                    f"./init.sh exited 0; independent evaluator PASS at {commit_sha} "
+                    f"({evaluation_path})."
+                )
+        with open(feature_path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2)
+            handle.write("\n")
+
+    gate = run_mechanical_gate(cwd)
+    if not gate["ok"]:
+        raise RuntimeError(
+            f"Post-evaluation harness gate failed:\n{gate['outputTail']}"
+        )
+
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=cwd, text=True
+    ).strip()
+    if dirty:
+        subprocess.run(["git", "add", "feature_list.json", evaluation_path], cwd=cwd, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"chore(eval): certify {feature_id} PASS at {commit_sha}"],
+            cwd=cwd,
+            check=True,
+        )
+
+
+async def run_qa_gate_loop(
+    stage_and_commit,
+    run_qa,
+    run_remediation,
+    finalize_done,
+    max_qa_retries: int = 1,
+) -> dict:
+    for qa_attempt in range(max_qa_retries + 1):
+        commit_sha = await stage_and_commit(qa_attempt)
+        qa_verdict = await run_qa(commit_sha, qa_attempt)
+        if qa_verdict.get("verdict") == "PASS":
+            await finalize_done(commit_sha, qa_verdict["evaluationPath"])
+            return {
+                "verdict": "PASS",
+                "evaluatedCommit": commit_sha,
+                "qaAttempts": qa_attempt + 1,
+                "qa": qa_verdict,
+            }
+
+        blocking_issues = qa_verdict.get("blockingIssues") or []
+        if qa_attempt >= max_qa_retries:
+            return {
+                "verdict": "HUMAN_ESCALATION_REQUIRED",
+                "evaluatedCommit": commit_sha,
+                "qaAttempts": qa_attempt + 1,
+                "blockingIssues": blocking_issues,
+                "qa": qa_verdict,
+            }
+
+        await run_remediation(blocking_issues, qa_attempt)
+
+    return {"verdict": "HUMAN_ESCALATION_REQUIRED"}

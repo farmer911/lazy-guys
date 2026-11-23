@@ -94,26 +94,72 @@ if delivery["status"] != "READY":
     log("Circuit breaker tripped — escalating to human:", delivery)
     print(delivery)
 else:
-    phase("3. Hard Mechanical Gate (0% LLM — ./init.sh)")
-    gate = run_mechanical_gate(ROOT)
-    if not gate["ok"]:
-        raise RuntimeError(f"Mechanical gate failed (exit {gate['exitCode']}):\n{gate['outputTail']}")
+    async def _stage_and_commit(qa_attempt):
+        phase(f"3. Hard Mechanical Gate & Stage Commit (Pass #{qa_attempt + 1})")
+        gate = run_mechanical_gate(ROOT)
+        if not gate["ok"]:
+            raise RuntimeError(
+                f"Mechanical gate failed (exit {gate['exitCode']}):\n{gate['outputTail']}"
+            )
+        return stage_ready_for_eval_and_commit(
+            ROOT,
+            feature_id,
+            f"./init.sh green on QA pass #{qa_attempt + 1}; awaiting independent evaluator.",
+        )
 
-    head_sha = subprocess.check_output(
-        ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
-    ).strip()
+    async def _run_qa(commit_sha, qa_attempt):
+        phase(f"4. White-Room QA & Vercel Guidelines Evaluator (Pass #{qa_attempt + 1})")
+        return await agent(
+            prompt=build_evaluator_prompt(feature_id, commit_sha, ROOT),
+            schema=QA_EVAL_SCHEMA,
+            role=f"Independent QA Evaluator (#{qa_attempt + 1})",
+        )
 
-    phase("4. White-Room QA & Vercel Guidelines Evaluator")
-    qa_verdict = await agent(
-        prompt=build_evaluator_prompt(feature_id, head_sha, ROOT),
-        schema=QA_EVAL_SCHEMA,
-        role="Independent QA Evaluator",
+    async def _run_remediation(blocking_issues, qa_attempt):
+        phase(f"4b. Tech Lead QA Remediation Triage (#{qa_attempt + 1})")
+        fix_plan = await agent(
+            prompt=build_role_prompt(
+                "tech-lead",
+                ".agents/skills/tech-lead-contract/SKILL.md",
+                (
+                    f"Independent QA Evaluator failed `{feature_id}` with blockingIssues:\n"
+                    f"{blocking_issues}\n"
+                    f"Classify target `domain` (`be`, `fe`, or `fullstack`) and issue TDD fix instructions."
+                ),
+            ),
+            schema=BUGFIX_TRIAGE_SCHEMA,
+            role="Tech Lead (QA Remediation)",
+        )
+        for domain in route_bugfix_domain(fix_plan):
+            if domain == "be":
+                await _run_be(fix_plan["fixDirective"])
+            else:
+                re_fe = await agent(
+                    prompt=build_role_prompt(
+                        "fe",
+                        ".agents/skills/fe-shadcn-clean/SKILL.md",
+                        f"Fix QA blocking issues via TDD:\n{fix_plan['fixDirective']}",
+                    ),
+                    schema=FE_SCHEMA,
+                    role="FE QA Remediation",
+                )
+                if re_fe.get("status") != "READY":
+                    raise RuntimeError(f"FE remediation returned {re_fe}")
+
+    async def _finalize_done(commit_sha, eval_path):
+        finalize_done_after_eval(ROOT, feature_id, commit_sha, eval_path)
+
+    qa_outcome = await run_qa_gate_loop(
+        stage_and_commit=_stage_and_commit,
+        run_qa=_run_qa,
+        run_remediation=_run_remediation,
+        finalize_done=_finalize_done,
+        max_qa_retries=1,
     )
     print(
         {
             "featureId": feature_id,
             "escalationsUsed": delivery["escalationsUsed"],
-            "mechanicalGate": "PASS",
-            "qa": qa_verdict,
+            "outcome": qa_outcome,
         }
     )

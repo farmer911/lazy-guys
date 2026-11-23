@@ -22,7 +22,7 @@
 | Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; `core.hooksPath=.githooks` + idempotent schema/seed applied |
 | Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified hooks, CI, DAG, strict `tsconfig`, hygiene, and `evaluations/feat-001..004.json` ancestor SHAs |
 | Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` (`noUnusedLocals`/`Parameters`/`ImplicitReturns`) |
-| Unit & Integration Suite | `npm run test:unit` | PASS | 21 harness + 7 agent-hooks + 6 Python workflow + 8 API + 5 Web RTL = 47/47 passed |
+| Unit & Integration Suite | `npm run test:unit` | PASS | 22 harness + 8 agent-hooks + 7 Python workflow + 8 API + 5 Web RTL = 50/50 passed |
 | Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
 | Playwright E2E | `npm run test:e2e` | PASS | 2/2 Chromium tests (smoke + `375x812` mobile overflow) |
 

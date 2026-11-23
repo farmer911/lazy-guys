@@ -13,6 +13,8 @@ stitch_project_id = str((args or {}).get("stitchProjectId", "")).strip()
 
 if not requirement and not stitch_approved:
     raise ValueError("args.requirement is required to start project_init.py")
+if stitch_approved and not stitch_project_id:
+    raise ValueError("args.stitchProjectId is required when stitchApproved=True")
 
 if not stitch_approved:
     phase("1. PM — Product Requirements & User Stories")

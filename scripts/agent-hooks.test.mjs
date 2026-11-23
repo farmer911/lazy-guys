@@ -211,3 +211,72 @@ test('PreToolUse blocks cross-boundary shell file writes for scoped roles while 
   );
   assert.equal(qaEvalWithSig.decision, 'allow');
 });
+
+test('PreToolUse closes brain-path traversal, evaluations dot-segment, unanchored role tag, and compound shell bypasses', () => {
+  const brainTraversal = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: fe]\nBuild modal',
+      toolCall: {
+        name: 'write_file',
+        args: {
+          Path: '/Users/dev/.gemini/antigravity/brain/123/../../../../../repo/apps/api/src/index.ts',
+        },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(brainTraversal.decision, 'deny');
+
+  const dotSegmentEval = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: qa]\nRun E2E without evaluator signature',
+      toolCall: {
+        name: 'write_file',
+        args: { Path: '/repo/evaluations/./feat-005.json' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(dotSegmentEval.decision, 'deny');
+
+  const proseMentionNotAnchored = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: 'Please update docs explaining how [AGENT_ROLE: pm] works in AGENTS.md',
+      toolCall: {
+        name: 'edit_file',
+        args: { Path: '/repo/AGENTS.md' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(proseMentionNotAnchored.decision, 'allow');
+
+  const compoundGitRedirect = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: fe]\nCheck git',
+      toolCall: {
+        name: 'run_command',
+        args: { CommandLine: 'git status && echo hacked > apps/api/src/index.ts' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(compoundGitRedirect.decision, 'deny');
+
+  const cdRelativeBypass = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: fe]\nBypass via cd',
+      toolCall: {
+        name: 'run_command',
+        args: { CommandLine: 'cd apps/api && echo x > index.ts' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(cdRelativeBypass.decision, 'deny');
+});

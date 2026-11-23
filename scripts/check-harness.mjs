@@ -211,11 +211,22 @@ function validateFrontendArrowFunctions(rootDir, errors) {
 
     const raw = fs.readFileSync(srcPath, 'utf8');
     const parsed = parseSync(rel, raw);
+    if (Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+      errors.push(`${rel}: syntax error prevented AST verification (${parsed.errors[0].message})`);
+      continue;
+    }
 
-    const visit = (node) => {
+    const visit = (node, parent = null) => {
       if (!node || typeof node !== 'object') return;
+      const isClassOrAccessorMethod =
+        node.type === 'FunctionExpression' &&
+        (parent?.type === 'MethodDefinition' ||
+          (parent?.type === 'Property' &&
+            (parent.kind === 'get' || parent.kind === 'set' || parent.method === true)));
+
       if (
-        (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') &&
+        (node.type === 'FunctionDeclaration' ||
+          (node.type === 'FunctionExpression' && !isClassOrAccessorMethod)) &&
         node.declare !== true
       ) {
         const line = offsetToLine(raw, node.start ?? 0);
@@ -226,14 +237,14 @@ function validateFrontendArrowFunctions(rootDir, errors) {
       }
       for (const value of Object.values(node)) {
         if (Array.isArray(value)) {
-          for (const item of value) visit(item);
+          for (const item of value) visit(item, node);
         } else if (value && typeof value === 'object') {
-          visit(value);
+          visit(value, node);
         }
       }
     };
 
-    visit(parsed.program);
+    visit(parsed.program, null);
   }
 }
 
@@ -378,7 +389,13 @@ export function validateHarness(rootDir) {
     if (lines > 250) {
       errors.push(`${relSkill} has ${lines} lines (must be <= 250 lines)`);
     }
-    if (!/^---\r?\n[\s\S]*?\r?\ndescription:\s*["']?(?:Use when|You MUST use this before)\b[\s\S]*?\r?\n---/m.test(raw)) {
+    const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+    if (
+      !fmMatch ||
+      !/^description:\s*(?:[>|][-+]?\s*\r?\n\s*)?["']?(?:Use when|You MUST use this before)\b/m.test(
+        fmMatch[1]
+      )
+    ) {
       errors.push(
         `${relSkill} must include YAML frontmatter with trigger-only description starting with "Use when..."`
       );

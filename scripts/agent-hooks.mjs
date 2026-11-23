@@ -16,10 +16,10 @@ const ROLE_WRITE_ALLOWLIST = {
 };
 
 const REPO_PATH_TOKEN_RE =
-  /\b(?:(?:specs|designs|apps|db|evaluations|scripts|\.agents|\.githooks)\/[^\s'";|&)>]+|feature_list\.json|progress\.md|session-handoff\.md|AGENTS\.md|GEMINI\.md|package\.json)\b/g;
+  /\b(?:(?:specs|designs|apps|db|evaluations|scripts|\.agents|\.githooks)\/[^\s'";|&)>]+|feature_list\.json|progress\.md|session-handoff\.md|AGENTS\.md|GEMINI\.md|package\.json|init\.sh)\b/g;
 
 const SHELL_MUTATION_RE =
-  /(?:>>?|\btee\b|\bsed\s+-i|\bcp\b|\bmv\b|\brm\b|writeFile|fs\.write)/;
+  /(?:>>?(?!\s*&|\s*\/dev\/null)|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bcp\b|\bmv\b|\brm\b|\btouch\b|\btruncate\b|\bdd\b|writeFile|appendFile|copyFile|fs\.write|open\([^)]*['"][wa])/;
 
 function isEvaluatorSession(lastUserInput) {
   return String(lastUserInput ?? '').includes(EVALUATOR_SIGNATURE);
@@ -27,26 +27,26 @@ function isEvaluatorSession(lastUserInput) {
 
 export function extractAgentRole(lastUserInput) {
   const match = String(lastUserInput ?? '').match(
-    /\[AGENT_ROLE:\s*(pm|design|tech-lead|be|fe|qa)\s*\]/i
+    /^\s*\[AGENT_ROLE:\s*(pm|design|tech-lead|be|fe|qa)\s*\]/i
   );
   return match ? match[1].toLowerCase() : null;
+}
+
+function resolveRepoRelativePath(rawPath, rootDir) {
+  const resolvedRoot = path.resolve(rootDir);
+  const resolvedTarget = path.resolve(resolvedRoot, String(rawPath ?? ''));
+  const rel = path.relative(resolvedRoot, resolvedTarget).replace(/\\/g, '/');
+  return { resolvedTarget: resolvedTarget.replace(/\\/g, '/'), rel };
 }
 
 function isPathAllowedForRole(role, rawPath, rootDir) {
   const allowlist = ROLE_WRITE_ALLOWLIST[role];
   if (!allowlist) return true;
 
-  const normalizedRaw = String(rawPath ?? '').replace(/\\/g, '/');
-  if (normalizedRaw.includes('/.gemini/antigravity/brain/')) {
-    return true;
-  }
-
-  const resolvedRoot = path.resolve(rootDir);
-  const resolvedTarget = path.resolve(resolvedRoot, String(rawPath ?? ''));
-  const rel = path.relative(resolvedRoot, resolvedTarget).replace(/\\/g, '/');
+  const { resolvedTarget, rel } = resolveRepoRelativePath(rawPath, rootDir);
 
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
-    return false;
+    return resolvedTarget.includes('/.gemini/antigravity/brain/');
   }
 
   return allowlist.some((prefix) =>
@@ -66,8 +66,12 @@ export function evaluateHookEvent(payload, options = {}) {
     const role = extractAgentRole(payload?.lastUserInput);
 
     if (toolName === 'write_file' || toolName === 'edit_file') {
+      const { rel } = resolveRepoRelativePath(args.Path, rootDir);
       const targetPath = String(args.Path ?? '').replace(/\\/g, '/');
-      if (/(^|\/)evaluations\/[^/]+\.json$/.test(targetPath) && !isEvaluator) {
+      if (
+        (/^evaluations\/[^/]+\.json$/.test(rel) || /(^|\/)evaluations\/[^/]+\.json$/.test(targetPath)) &&
+        !isEvaluator
+      ) {
         return {
           decision: 'deny',
           reason:
@@ -115,9 +119,28 @@ export function evaluateHookEvent(payload, options = {}) {
         };
       }
 
-      if (role && SHELL_MUTATION_RE.test(cmd) && !/^\s*git\s+(add|status|diff|log)\b/.test(cmd)) {
+      if (role && SHELL_MUTATION_RE.test(cmd)) {
+        if (/\bcd\s+/.test(cmd)) {
+          return {
+            decision: 'deny',
+            reason: `Harness Role Lock: Role "${role}" cannot combine directory switching (cd) with shell file mutations; use write_file/edit_file on allowed repo paths.`,
+          };
+        }
         const targets = cmd.match(REPO_PATH_TOKEN_RE) ?? [];
+        if (targets.length === 0) {
+          return {
+            decision: 'deny',
+            reason: `Harness Role Lock: Role "${role}" cannot run shell file mutations without an explicit allowed path (${ROLE_WRITE_ALLOWLIST[role].join(', ')}).`,
+          };
+        }
         for (const token of targets) {
+          if (/^evaluations\/[^/]+\.json$/.test(token) && !isEvaluator) {
+            return {
+              decision: 'deny',
+              reason:
+                'Harness Lock: Generator cannot forge or modify evaluations/*.json via shell commands.',
+            };
+          }
           if (!isPathAllowedForRole(role, token, rootDir)) {
             return {
               decision: 'deny',
