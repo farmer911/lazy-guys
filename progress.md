@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 01:53
+**Last Updated:** 2026-11-23 14:52
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -30,6 +30,11 @@
   - Hardened all 4 workspace `tsconfig*.json` (`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports`) + mechanical compiler/hygiene/hook/git-ancestor (`git merge-base --is-ancestor`) gates in `scripts/check-harness.mjs` (`19` harness unit tests)
   - Made `db/seed.sql` 100% re-run idempotent (`ON CONFLICT` / `WHERE NOT EXISTS`) and updated `./init.sh` to re-apply `db/schema.sql` + `db/seed.sql` on every startup (`8/8` API integration tests)
   - Updated `.agents/skills/using-superpowers/references/antigravity-tools.md` to current `write_file` / `edit_file` tool names
+- [x] Multi-Agent Branching Graph System + Google Stitch Freeze-to-Git + FE Arrow-Function AST Gate:
+  - Added Oxc AST (`parseSync`) gate in `scripts/check-harness.mjs` enforcing 100% arrow functions across `apps/web/src/**/*.{ts,tsx}` and normalized 10 existing frontend files (`21/21` harness tests)
+  - Extended `scripts/agent-hooks.mjs` (`PreToolUse`) with `[AGENT_ROLE: pm | design | tech-lead | be | fe | qa]` directory allowlists blocking path traversal and cross-boundary shell writes (`7/7` hook tests)
+  - Authored hierarchical `apps/{web,api,e2e}/AGENTS.md`, `designs/` + `specs/contracts/` + `.agents/mcp.stitch.example.json`, and 5 RED -> GREEN subagent pressure-tested role skills (`pm-prd-story`, `design-stitch-flow`, `tech-lead-contract`, `fe-shadcn-clean`, `qa-vercel-audit`, `42–53` lines each)
+  - Implemented 3 executable `run_workflow` Python DAGs in `.agents/workflows/` (`project_init.py`, `feature_delivery.py`, `bugfix.py`, `graph_core.py`) with `max_retries=2` Tech Lead escalation circuit breaker (`6/6` Python unit tests wired into `npm run test:unit`)
 
 ### What's In Progress
 
@@ -66,6 +71,6 @@
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
 - [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
-- [x] `npm run test:unit`: pass (19 harness + 5 agent-hooks + 8 API + 5 Web RTL = 37/37 tests)
+- [x] `npm run test:unit`: pass (21 harness + 7 agent-hooks + 6 Python workflow + 8 API + 5 Web RTL = 47/47 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)
