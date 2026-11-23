@@ -136,3 +136,78 @@ test('Stop hook forces continuation on harness failure unless continuationActive
 
   fs.rmSync(brokenDir, { recursive: true, force: true });
 });
+
+test('PreToolUse enforces strict directory allowlists per [AGENT_ROLE: ...] including path traversal', () => {
+  const cases = [
+    { role: 'pm', path: '/repo/specs/prd.md', expected: 'allow' },
+    { role: 'pm', path: '/repo/apps/web/src/App.tsx', expected: 'deny' },
+    { role: 'design', path: '/repo/designs/screens/home.html', expected: 'allow' },
+    { role: 'design', path: '/repo/apps/web/src/App.tsx', expected: 'deny' },
+    { role: 'tech-lead', path: '/repo/specs/contracts/feat-005.ts', expected: 'allow' },
+    { role: 'tech-lead', path: '/repo/db/schema.sql', expected: 'allow' },
+    { role: 'tech-lead', path: '/repo/apps/web/src/components/AboutSection.tsx', expected: 'deny' },
+    { role: 'be', path: '/repo/apps/api/src/routes/portfolio.ts', expected: 'allow' },
+    { role: 'be', path: '/repo/apps/web/src/App.tsx', expected: 'deny' },
+    { role: 'be', path: '/repo/specs/contracts/feat-005.ts', expected: 'deny' },
+    { role: 'fe', path: '/repo/apps/web/src/components/Modal.tsx', expected: 'allow' },
+    { role: 'fe', path: '/repo/apps/web/../api/src/index.ts', expected: 'deny' },
+    { role: 'fe', path: '/repo/specs/contracts/feat-005.ts', expected: 'deny' },
+    { role: 'fe', path: '/repo/apps/e2e/tests/portfolio.spec.ts', expected: 'deny' },
+    { role: 'qa', path: '/repo/apps/e2e/tests/portfolio.spec.ts', expected: 'allow' },
+    { role: 'qa', path: '/repo/apps/web/src/App.tsx', expected: 'deny' },
+  ];
+
+  for (const item of cases) {
+    const res = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: `[AGENT_ROLE: ${item.role}]\nExecute assigned graph node`,
+        toolCall: { name: 'write_file', args: { Path: item.path } },
+      },
+      { rootDir: '/repo' }
+    );
+    assert.equal(res.decision, item.expected, `role=${item.role} path=${item.path}`);
+  }
+});
+
+test('PreToolUse blocks cross-boundary shell file writes for scoped roles while allowing test/read commands', () => {
+  const feShellHack = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: fe]\nWire frontend API',
+      toolCall: {
+        name: 'run_command',
+        args: { CommandLine: 'cat <<EOF > apps/api/src/routes/portfolio.ts' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(feShellHack.decision, 'deny');
+  assert.match(feShellHack.reason, /fe/i);
+
+  const feRunTests = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: '[AGENT_ROLE: fe]\nRun unit tests',
+      toolCall: {
+        name: 'run_command',
+        args: { CommandLine: 'npm run test --workspace=apps/web && npm run typecheck' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(feRunTests.decision, 'allow');
+
+  const qaEvalWithSig = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: `[AGENT_ROLE: qa]\n${EVALUATOR_PROMPT}`,
+      toolCall: {
+        name: 'write_file',
+        args: { Path: '/repo/evaluations/feat-005.json' },
+      },
+    },
+    { rootDir: '/repo' }
+  );
+  assert.equal(qaEvalWithSig.decision, 'allow');
+});
