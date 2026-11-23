@@ -7,6 +7,12 @@ import { parseSync } from 'vite';
 const REQUIRED_FILES = [
   'AGENTS.md',
   'GEMINI.md',
+  'apps/web/AGENTS.md',
+  'apps/api/AGENTS.md',
+  'apps/e2e/AGENTS.md',
+  'designs/README.md',
+  'specs/contracts/README.md',
+  '.agents/mcp.stitch.example.json',
   'feature_list.json',
   'progress.md',
   'session-handoff.md',
@@ -363,9 +369,15 @@ export function validateHarness(rootDir) {
 
   for (const skillFile of walkFiles(path.join(rootDir, '.agents', 'skills'), (name) => name === 'SKILL.md')) {
     const raw = fs.readFileSync(skillFile, 'utf8');
+    const relSkill = path.relative(rootDir, skillFile).replace(/\\/g, '/');
     const lines = raw.length === 0 ? 0 : raw.replace(/\r?\n$/, '').split(/\r?\n/).length;
     if (lines > 250) {
-      errors.push(`${path.relative(rootDir, skillFile)} has ${lines} lines (must be <= 250 lines)`);
+      errors.push(`${relSkill} has ${lines} lines (must be <= 250 lines)`);
+    }
+    if (!/^---\r?\n[\s\S]*?\r?\ndescription:\s*["']?(?:Use when|You MUST use this before)\b[\s\S]*?\r?\n---/m.test(raw)) {
+      errors.push(
+        `${relSkill} must include YAML frontmatter with trigger-only description starting with "Use when..."`
+      );
     }
   }
 

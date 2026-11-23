@@ -54,10 +54,22 @@ function makeTempFixture() {
   for (const file of ['AGENTS.md', 'GEMINI.md', 'progress.md', 'session-handoff.md', 'init.sh']) {
     fs.writeFileSync(path.join(dir, file), '# ok\n');
   }
+  for (const appDir of ['apps/web', 'apps/api', 'apps/e2e']) {
+    fs.mkdirSync(path.join(dir, appDir), { recursive: true });
+    fs.writeFileSync(path.join(dir, appDir, 'AGENTS.md'), '# folder rules\n');
+  }
+  fs.mkdirSync(path.join(dir, 'designs'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'designs', 'README.md'), '# designs\n');
+  fs.mkdirSync(path.join(dir, 'specs', 'contracts'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'specs', 'contracts', 'README.md'), '# contracts\n');
   fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'scripts', 'agent-hooks.mjs'), '// hook\n');
   fs.mkdirSync(path.join(dir, '.agents', 'skills', 'task-guardrail'), { recursive: true });
-  fs.writeFileSync(path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'), '# ok\n');
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'),
+    '---\nname: task-guardrail\ndescription: Use when executing multi-step tasks.\n---\n# ok\n'
+  );
+  fs.writeFileSync(path.join(dir, '.agents', 'mcp.stitch.example.json'), '{"mcpServers":{}}\n');
   fs.writeFileSync(
     path.join(dir, '.agents', 'hooks.json'),
     JSON.stringify({
@@ -169,7 +181,10 @@ test('flags SKILL.md exceeding 250 lines', () => {
   const dir = makeTempFixture();
   const skillDir = path.join(dir, '.agents', 'skills', 'bloated');
   fs.mkdirSync(skillDir, { recursive: true });
-  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), 'line\n'.repeat(251));
+  fs.writeFileSync(
+    path.join(skillDir, 'SKILL.md'),
+    `---\nname: bloated\ndescription: Use when testing line limit.\n---\n${'line\n'.repeat(250)}`
+  );
 
   const errors = validateHarness(dir);
   assert.equal(errors.length, 1);
@@ -466,6 +481,21 @@ test('flags non-arrow function declarations and expressions in apps/web/src prod
   assert.equal(badCardErrors.length, 2);
   assert.match(badCardErrors[0], /arrow function/i);
   assert.equal(goodCardErrors.length, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags missing hierarchical AGENTS.md or SKILL.md without valid Use when frontmatter', () => {
+  const dir = makeTempFixture();
+  fs.rmSync(path.join(dir, 'apps', 'web', 'AGENTS.md'));
+  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'bad-skill'), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'skills', 'bad-skill', 'SKILL.md'),
+    '---\nname: bad-skill\ndescription: Summarizes workflow instead of trigger.\n---\n# Bad\n'
+  );
+
+  const errors = validateHarness(dir);
+  assert.ok(errors.some((e) => e.includes('apps/web/AGENTS.md')));
+  assert.ok(errors.some((e) => e.includes('bad-skill/SKILL.md') && /Use when/i.test(e)));
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
