@@ -4,11 +4,11 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file").
 
 | Action skills request | Antigravity equivalent |
 |----------------------|------------------------|
-| Dispatch a subagent (`Subagent (general-purpose):` template) | `invoke_subagent` with a built-in `TypeName` — `self` for full-capability work, `research` for read-only, `browser` for live UI verification |
-| Task tracking ("create a todo", "mark complete") | a **task artifact** — `write_file` in the conversation artifact directory with `ArtifactMetadata` (see [Task tracking](#task-tracking)). **Not** `manage_task`, which manages background processes. |
+| Dispatch a subagent (`Subagent (general-purpose):` template) | `invoke_subagent` with a built-in `TypeName` (`self` for full-capability work, `research` for read-only, `browser` for live UI verification) or `define_subagent` + `invoke_subagent` |
+| Live step checklist ("create a todo", "mark complete") | `update_steps` for live 3–12 step execution checklists in chat + `update_focus` for current phase status. **Not** `manage_task`, which manages background shell processes. |
+| Persistent cross-turn plan / artifact | `write_file` / `edit_file` in `<appDataDir>/brain/<conversation-id>/` with `ArtifactMetadata` when a long plan or report must survive context compaction |
 
 ## Task tracking
 
-Antigravity has **no todo tool** (`manage_task` manages background processes — `list`/`kill`/`status`/`send_input` — it is *not* a checklist). When a skill says to create a todo list or track tasks, maintain a markdown checklist artifact in `<appDataDir>/brain/<conversation-id>/` created with `write_file` (providing `ArtifactMetadata`) and updated with `edit_file` as you go.
-
-At the start of any multi-step task, create the checklist listing every step of your plan. As you complete each step, edit the artifact to mark it done (`- [x]`). If the plan changes, update the checklist and re-read it before starting each step once the conversation grows long.
+1. **In-session step checklists (`3–12` steps):** Call `update_steps` in parallel with your first tool call of each step (marking active steps `in_progress` and finished steps `done`), paired with `update_focus` for fine-grained activity.
+2. **Long plans & compaction-proof ledgers:** When executing a multi-task plan (`executing-plans`) or producing an extensive report, persist markdown checklists/ledgers on disk (`write_file` / `edit_file` with `ArtifactMetadata` for user-facing artifacts in `<appDataDir>/brain/<conversation-id>/`) so progress survives context compaction.

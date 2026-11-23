@@ -49,19 +49,19 @@ those, stop and ask.
 - Your harness has no subagent tool (see the per-platform references in
   `../using-superpowers/references/`). Never fabricate a dispatch; run
   the plan here.
-- Tasks are mostly independent — the same precondition as
-  superpowers:subagent-driven-development.
+- Tasks are mostly independent with explicit interfaces.
 
 A fully specified plan makes inline execution transcription plus testing:
 it runs well on a mid-tier session model, and the one place the most
 capable model earns its cost is the final review, which this skill
 dispatches separately. Tell your human partner so when they choose inline.
 
-Prefer superpowers:subagent-driven-development when your human partner
-wants a review gate on every task, or when the plan is long enough that
-its later tasks would run on a compacted context. Inline execution over a
-long plan still works — the ledger is what makes it recoverable — but the
-last tasks get the least of you.
+Prefer `.agents/workflows/feature_delivery.py` (`run_workflow`) when the
+feature touches full-stack contracts (`specs/contracts/`, `apps/api/`,
+`apps/web/`) and benefits from role-isolated sub-agents with Tech Lead
+escalation gates. Inline execution over a long plan still works — the
+ledger is what makes it recoverable — and still finishes through the
+mandatory `evaluating-features` gate before marking a feature `"done"`.
 
 ## The Process
 
@@ -118,13 +118,12 @@ failure as a controller re-dispatching them, paid for in your own context.
 Track progress in a ledger file, not only in todos. Harness todos are a
 live view; the ledger is the record.
 
-The workspace and ledger are shared with superpowers:subagent-driven-development
-— same directory, same format — so a plan can change executors mid-flight
-and the new one resumes from the same ledger.
+The workspace and ledger live in a deterministic git-ignored directory so
+interrupted or compacted sessions can resume cleanly from the same ledger.
 
-- Each plan owns a workspace: at skill start, run
-  `../subagent-driven-development/scripts/sdd-workspace PLAN_FILE` by its
-  absolute path, from the working tree you're executing in — it
+- Each plan owns a workspace: at skill start, run this skill's
+  `scripts/sdd-workspace PLAN_FILE` by its absolute path (`bash <executing-plans-dir>/scripts/sdd-workspace PLAN_FILE`),
+  from the working tree you're executing in — it
   prints the plan's git-ignored directory
   (`<repo-root>/.superpowers/sdd/<plan-basename>/`), home to every
   artifact for THIS plan: ledger, briefs, review packages. Another plan's

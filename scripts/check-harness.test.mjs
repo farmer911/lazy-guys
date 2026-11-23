@@ -58,9 +58,13 @@ function makeTempFixture() {
     fs.mkdirSync(path.join(dir, appDir), { recursive: true });
     fs.writeFileSync(path.join(dir, appDir, 'AGENTS.md'), '# folder rules\n');
   }
-  fs.mkdirSync(path.join(dir, 'designs'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'designs', 'screens'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'designs', 'README.md'), '# designs\n');
+  fs.writeFileSync(path.join(dir, 'designs', 'design-tokens.json'), '{"colors":{}}\n');
+  fs.writeFileSync(path.join(dir, 'designs', 'stitch-manifest.json'), '{"projectId":"baseline"}\n');
+  fs.writeFileSync(path.join(dir, 'designs', 'screens', 'portfolio-home.html'), '<main>ok</main>\n');
   fs.mkdirSync(path.join(dir, 'specs', 'contracts'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'specs', 'prd.md'), '# PRD\n');
   fs.writeFileSync(path.join(dir, 'specs', 'contracts', 'README.md'), '# contracts\n');
   fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'scripts', 'agent-hooks.mjs'), '// hook\n');
@@ -68,6 +72,11 @@ function makeTempFixture() {
   fs.writeFileSync(
     path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'),
     '---\nname: task-guardrail\ndescription: Use when executing multi-step tasks.\n---\n# ok\n'
+  );
+  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'be-express-pg'), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'skills', 'be-express-pg', 'SKILL.md'),
+    '---\nname: be-express-pg\ndescription: Use when implementing Express routes and PostgreSQL queries as the Backend role.\n---\n# ok\n'
   );
   fs.writeFileSync(path.join(dir, '.agents', 'mcp.stitch.example.json'), '{"mcpServers":{}}\n');
   fs.mkdirSync(path.join(dir, '.agents', 'workflows'), { recursive: true });
@@ -523,6 +532,99 @@ test('flags syntax errors in apps/web/src, allows class constructors/getters, an
   assert.ok(!errors.some((e) => e.includes('ValidClassError.ts')));
   assert.ok(errors.some((e) => e.includes('spoof-skill/SKILL.md')));
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('rejects imperative second-person SKILL.md description, broken relative links, and non-executable skill scripts', () => {
+  const dir = makeTempFixture();
+  const skillDir = path.join(dir, '.agents', 'skills', 'broken-skill');
+  fs.mkdirSync(path.join(skillDir, 'scripts'), { recursive: true });
+  fs.writeFileSync(
+    path.join(skillDir, 'SKILL.md'),
+    [
+      '---',
+      'name: broken-skill',
+      'description: "You MUST use this before any creative work."',
+      '---',
+      '# Broken Skill',
+      'See [missing](references/does-not-exist.md) and run `../missing-skill/scripts/tool`.',
+    ].join('\n')
+  );
+  fs.writeFileSync(path.join(skillDir, 'scripts', 'helper'), '#!/usr/bin/env bash\necho ok\n', {
+    mode: 0o644,
+  });
+
+  const errors = validateHarness(dir);
+  assert.ok(errors.some((e) => e.includes('broken-skill/SKILL.md') && /Use when/i.test(e)));
+  assert.ok(errors.some((e) => e.includes('references/does-not-exist.md')));
+  assert.ok(errors.some((e) => e.includes('../missing-skill/scripts/tool')));
+  assert.ok(errors.some((e) => e.includes('broken-skill/scripts/helper') && /executable/i.test(e)));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('executing-plans bundled scripts run end-to-end without external subagent-driven-development dependency', () => {
+  const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exec-plans-e2e-'));
+  try {
+    execFileSync('git', ['init'], { cwd: repoDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repoDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: repoDir, stdio: 'ignore' });
+    const planPath = path.join(repoDir, 'sample-plan.md');
+    fs.writeFileSync(
+      planPath,
+      [
+        '# Demo Plan',
+        '',
+        '### Task 1: First Unit',
+        '- [ ] Step 1: test task 1',
+        '',
+        '### Task 2: Second Unit',
+        '- [ ] Step 1: test task 2',
+        '',
+      ].join('\n')
+    );
+    execFileSync('git', ['add', 'sample-plan.md'], { cwd: repoDir, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'chore: add plan'], { cwd: repoDir, stdio: 'ignore' });
+    const baseMain = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+
+    const scriptsDir = path.resolve(process.cwd(), '.agents', 'skills', 'executing-plans', 'scripts');
+    const wsOut = execFileSync(path.join(scriptsDir, 'sdd-workspace'), [planPath], {
+      cwd: repoDir,
+      encoding: 'utf8',
+    }).trim();
+    assert.ok(fs.existsSync(wsOut));
+
+    const startOut = execFileSync(path.join(scriptsDir, 'task-start'), [planPath, '1'], {
+      cwd: repoDir,
+      encoding: 'utf8',
+    });
+    const briefMatch = startOut.match(/^brief:\s*(.+)$/m);
+    const baseMatch = startOut.match(/^base:\s*([0-9a-f]{40})$/m);
+    assert.ok(briefMatch && fs.existsSync(briefMatch[1].trim()));
+    assert.match(fs.readFileSync(briefMatch[1].trim(), 'utf8'), /### Task 1: First Unit/);
+    assert.ok(!/### Task 2/.test(fs.readFileSync(briefMatch[1].trim(), 'utf8')));
+    assert.ok(baseMatch);
+
+    fs.writeFileSync(path.join(repoDir, 'feature.txt'), 'done\n');
+    execFileSync('git', ['add', 'feature.txt'], { cwd: repoDir, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'feat: task 1'], { cwd: repoDir, stdio: 'ignore' });
+
+    const doneOut = execFileSync(
+      path.join(scriptsDir, 'task-done'),
+      [planPath, '1', baseMatch[1], '--', 'node', '-e', 'console.log("1 passed")'],
+      { cwd: repoDir, encoding: 'utf8' }
+    );
+    assert.match(doneOut, /Task 1: complete/);
+    assert.match(fs.readFileSync(path.join(wsOut, 'progress.md'), 'utf8'), /Task 1: complete/);
+
+    const pkgPath = execFileSync(
+      path.join(scriptsDir, 'review-package'),
+      [planPath, baseMain, 'HEAD'],
+      { cwd: repoDir, encoding: 'utf8' }
+    ).trim();
+    assert.ok(fs.existsSync(pkgPath));
+    assert.match(fs.readFileSync(pkgPath, 'utf8'), /\+done/);
+  } finally {
+    fs.rmSync(repoDir, { recursive: true, force: true });
+  }
 });
 
 test('passes on current repository root', () => {

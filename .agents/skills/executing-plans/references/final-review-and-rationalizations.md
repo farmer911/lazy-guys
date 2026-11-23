@@ -1,13 +1,13 @@
 ## Final Review
 
-Run `../subagent-driven-development/scripts/review-package PLAN_FILE MERGE_BASE HEAD`
+Run `bash <executing-plans-dir>/scripts/review-package PLAN_FILE MERGE_BASE HEAD`
 by its absolute path, from the working tree you're executing in (MERGE_BASE = the commit the branch started from, e.g.
 `git merge-base main HEAD`) and review from the file it prints.
 
 **With a subagent tool:** dispatch the reviewer on the most capable
 available model — the whole-branch review is a judgment task — using
 superpowers:requesting-code-review's
-[code-reviewer.md](../requesting-code-review/code-reviewer.md), with the
+[code-reviewer.md](../../requesting-code-review/code-reviewer.md), with the
 package path, the plan and spec paths, the plan's Review Focus section
 verbatim if it has one (the input classes and failure modes the plan's
 tests do not exercise — the reviewer checks each deliberately), and a

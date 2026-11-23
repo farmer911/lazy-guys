@@ -56,7 +56,7 @@ independently testable deliverable.
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `.agents/workflows/feature_delivery.py` (`run_workflow`) for role-isolated multi-agent feature delivery, or `executing-plans` to implement this plan inline task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -188,17 +188,17 @@ them to review the plan and choose an execution method before implementation.
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Which execution approach would you prefer?**
 
-- **Subagent-driven** - A fresh subagent implements each task and a fresh reviewer checks it before the next one starts, then a whole-branch review at the end. Most thorough; costs a fresh context per task and per review.
-- **Native** - I implement every task myself in this session, the way this harness runs work, then one fresh reviewer on the most capable model checks the whole branch. Cheapest and fastest; no independent review until the end. Runs well with a mid-tier session model, since the plan carries the design.
+- **Role-Isolated Workflow DAG (`run_workflow`)** - Dispatches dedicated Tech Lead, BE (`be-express-pg`), FE (`fe-shadcn-clean`), and Independent QA Evaluator (`qa-vercel-audit` + `evaluating-features`) sub-agents via `.agents/workflows/feature_delivery.py` with mechanical directory locks and contract escalation retries. Best for full-stack `feature_list.json` items.
+- **Inline Session (`executing-plans`)** - I implement every task myself in this session with per-task TDD and ledger tracking, followed by a fresh whole-branch review and the independent `evaluating-features` gate before marking a feature `"done"`. Fastest and lowest token cost for single-domain plans.
 
-**For this plan I recommend <one of the two>, because <one sentence from the plan: how much the tasks depend on each other's interfaces, how many there are, what a shipped mistake would cost>. Does the plan capture what you want, and which approach should we use?"**
+**For this plan I recommend <one of the two>, because <one sentence from the plan: how much the tasks span BE/FE contracts, how many there are, what a shipped mistake would cost>. Does the plan capture what you want, and which approach should we use?"**
 
 **When an execution method has already been supplied:**
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Does it capture what you want?"**
 
-**If Subagent-driven chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+**If Role-Isolated Workflow DAG chosen:**
+- Execute `.agents/workflows/feature_delivery.py` via `run_workflow` with `{"featureId": "<feat-id>"}`
 
-**If Native chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:executing-plans
+**If Inline Session chosen:**
+- **REQUIRED SUB-SKILL:** Use `executing-plans` (followed by `evaluating-features` before any `feature_list.json` `"done"` transition)

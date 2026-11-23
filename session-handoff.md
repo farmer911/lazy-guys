@@ -13,16 +13,16 @@
 - [x] Added GitHub Actions CI + weekly mechanical sweep (`.github/workflows/ci.yml`) and hardened `scripts/check-harness.mjs` to verify `evaluatedCommit` SHAs exist in git history and enforce CI workflow triggers/gates
 - [x] Added Karpathy surgical/orphan rules, `{WORKSPACE_ROOT}` portability, `feature_list.json` dependency-graph validation, and dual-synced `task-guardrail/SKILL.md` (`72` lines, `15/15` harness tests) across `.agents/skills/` and `~/.gemini/config/skills/`
 - [x] Shipped Full Repo Hard-Lock Package: `.agents/hooks.json` + `scripts/agent-hooks.mjs` (`PreToolUse` evaluator lock + `Stop` harness gate), `.githooks/pre-commit` & `pre-push`, strict TypeScript compiler + zero-dep source hygiene scanner, `git merge-base --is-ancestor` SHA verification, and idempotent `db/seed.sql` + `./init.sh` DB sync (`37/37` unit/integration tests)
-- [x] Shipped Multi-Agent Branching Graph System + Google Stitch Workflow: Oxc AST arrow-function gate across `apps/web/src/`, `[AGENT_ROLE: ...]` directory write locks in `scripts/agent-hooks.mjs`, hierarchical `apps/{web,api,e2e}/AGENTS.md`, 5 pressure-tested role skills (`pm-prd-story`, `design-stitch-flow`, `tech-lead-contract`, `fe-shadcn-clean`, `qa-vercel-audit`), Stitch `designs/` freeze layout, and 3 `run_workflow` Python DAGs (`project_init.py`, `feature_delivery.py`, `bugfix.py`) with `max_retries=2` Tech Lead escalation circuit breaker (`47/47` unit/integration tests)
+- [x] Shipped Multi-Agent Branching Graph System + Google Stitch Workflow: Oxc AST arrow-function gate across `apps/web/src/`, `[AGENT_ROLE: ...]` directory write locks in `scripts/agent-hooks.mjs`, hierarchical `apps/{web,api,e2e}/AGENTS.md`, 6 pressure-tested role skills (`pm-prd-story`, `design-stitch-flow`, `tech-lead-contract`, `be-express-pg`, `fe-shadcn-clean`, `qa-vercel-audit`), frozen baseline `specs/prd.md` + `designs/`, self-contained `executing-plans` scripts, and 3 `run_workflow` Python DAGs (`project_init.py`, `feature_delivery.py`, `bugfix.py`) with `SCHEMA_MISMATCH` / `CONTRACT_MISMATCH` Tech Lead escalation circuit breaker (`54/54` unit/integration tests)
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
 | Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; `core.hooksPath=.githooks` + idempotent schema/seed applied |
-| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified hooks, CI, DAG, strict `tsconfig`, hygiene, and `evaluations/feat-001..004.json` ancestor SHAs |
+| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified hooks, CI, DAG, strict `tsconfig`, hygiene, 16/16 skill link/script/frontmatter gates, `specs/prd.md` + `designs/`, and `evaluations/feat-001..004.json` ancestor SHAs |
 | Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` (`noUnusedLocals`/`Parameters`/`ImplicitReturns`) |
-| Unit & Integration Suite | `npm run test:unit` | PASS | 22 harness + 8 agent-hooks + 7 Python workflow + 8 API + 5 Web RTL = 50/50 passed |
+| Unit & Integration Suite | `npm run test:unit` | PASS | 24 harness + 8 agent-hooks + 9 Python workflow + 8 API + 5 Web RTL = 54/54 passed |
 | Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
 | Playwright E2E | `npm run test:e2e` | PASS | 2/2 Chromium tests (smoke + `375x812` mobile overflow) |
 

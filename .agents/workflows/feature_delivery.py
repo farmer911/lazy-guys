@@ -35,12 +35,13 @@ async def _run_be(directive):
     return await agent(
         prompt=build_role_prompt(
             "be",
-            "apps/api/AGENTS.md",
+            ".agents/skills/be-express-pg/SKILL.md",
             (
-                f"Implement backend for `{feature_id}` strictly following "
+                f"Read `apps/api/AGENTS.md` and implement backend for `{feature_id}` strictly following "
                 f"`{contract_spec['contractPath']}` and `designs/`.\n"
                 f"{contract_spec['beInstructions']}{extra}"
-                f"Run `npm run test --workspace=apps/api && npm run typecheck --workspace=apps/api` before finishing."
+                f"If `db/schema.sql` lacks required columns/constraints, return `status='SCHEMA_MISMATCH'`; "
+                f"otherwise run `npm run test --workspace=apps/api && npm run typecheck --workspace=apps/api` before finishing."
             ),
         ),
         schema=BE_SCHEMA,

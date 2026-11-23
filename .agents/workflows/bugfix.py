@@ -34,8 +34,8 @@ if "be" in targets:
     await agent(
         prompt=build_role_prompt(
             "be",
-            "apps/api/AGENTS.md",
-            f"Write a failing API test first, then fix:\n{triage['fixDirective']}",
+            ".agents/skills/be-express-pg/SKILL.md",
+            f"Read `apps/api/AGENTS.md`, write a failing API test first, then fix:\n{triage['fixDirective']}",
         ),
         schema=BE_SCHEMA,
         role="BE Bugfix Agent",

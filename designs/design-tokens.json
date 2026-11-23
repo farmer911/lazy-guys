@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "system": "lazy-guy-recruiter-dark",
+    "direction": "Restrained Slate-950 Recruiter Scannability (Impeccable Anti-Slop)",
+    "contrastTarget": "WCAG AA >= 4.5:1"
+  },
+  "colors": {
+    "background": "#020617",
+    "surface": "#0f172a",
+    "surfaceMuted": "rgba(2, 6, 23, 0.6)",
+    "border": "#1e293b",
+    "borderInput": "#334155",
+    "textPrimary": "#f8fafc",
+    "textSecondary": "#cbd5e1",
+    "textMuted": "#94a3b8",
+    "accentPrimary": "#38bdf8",
+    "statusSuccess": "#34d399",
+    "statusError": "#fb7185"
+  },
+  "typography": {
+    "fontFamilySans": "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
+    "heroTitle": { "mobile": "1.875rem", "desktop": "2.25rem", "weight": 700, "tracking": "-0.025em" },
+    "sectionTitle": { "size": "1.5rem", "weight": 600, "tracking": "-0.025em" },
+    "cardTitle": { "size": "1.125rem", "weight": 600 },
+    "body": { "size": "0.875rem", "lineHeight": "1.5rem" },
+    "caption": { "size": "0.75rem", "lineHeight": "1rem" }
+  },
+  "layout": {
+    "containerMaxWidth": "64rem",
+    "horizontalPadding": "1rem",
+    "sectionGap": "3rem",
+    "cardRadius": "0.75rem",
+    "controlRadius": "0.375rem",
+    "mobileViewport": "375x812",
+    "desktopViewport": "1280x800"
+  }
+}

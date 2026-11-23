@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 14:52
+**Last Updated:** 2026-11-23 16:02
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -34,7 +34,12 @@
   - Added Oxc AST (`parseSync`) gate in `scripts/check-harness.mjs` enforcing 100% arrow functions across `apps/web/src/**/*.{ts,tsx}` and normalized 10 existing frontend files (`21/21` harness tests)
   - Extended `scripts/agent-hooks.mjs` (`PreToolUse`) with `[AGENT_ROLE: pm | design | tech-lead | be | fe | qa]` directory allowlists blocking path traversal and cross-boundary shell writes (`7/7` hook tests)
   - Authored hierarchical `apps/{web,api,e2e}/AGENTS.md`, `designs/` + `specs/contracts/` + `.agents/mcp.stitch.example.json`, and 5 RED -> GREEN subagent pressure-tested role skills (`pm-prd-story`, `design-stitch-flow`, `tech-lead-contract`, `fe-shadcn-clean`, `qa-vercel-audit`, `42–53` lines each)
-  - Implemented 3 executable `run_workflow` Python DAGs in `.agents/workflows/` (`project_init.py`, `feature_delivery.py`, `bugfix.py`, `graph_core.py`) with `max_retries=2` Tech Lead escalation circuit breaker (`6/6` Python unit tests wired into `npm run test:unit`)
+  - Implemented 3 executable `run_workflow` Python DAGs in `.agents/workflows/` (`project_init.py`, `feature_delivery.py`, `bugfix.py`, `graph_core.py`) with `max_retries=2` Tech Lead escalation circuit breaker (`7/7` Python unit tests wired into `npm run test:unit`)
+- [x] Skill Suite Remediation, Self-Contained Plan Scripts, 6th Role Skill (`be-express-pg`) & Frozen Baseline Ground Truth:
+  - Self-contained `.agents/skills/executing-plans/` with bundled executable `sdd-repo`, `sdd-workspace`, `task-brief`, and `review-package` scripts (`0` external `subagent-driven-development` dependencies), fixed broken relative links in `executing-plans/references/final-review-and-rationalizations.md`, and updated `writing-plans/SKILL.md` handoff options to real Role-DAG (`feature_delivery.py`) vs Inline (`executing-plans` + `evaluating-features`) paths
+  - Normalized `brainstorming/SKILL.md` and `using-superpowers/SKILL.md` frontmatter to strict third-person trigger-only `Use when...`, updated `using-superpowers/references/antigravity-tools.md` (`update_steps` + `update_focus`), and clarified static diff review (`requesting-code-review`) vs mandatory live evaluation (`evaluating-features`)
+  - Authored and `RED -> GREEN` pressure-tested `.agents/skills/be-express-pg/SKILL.md` (`53` lines) with `SCHEMA_MISMATCH` escalation wired into `graph_core.py`, `feature_delivery.py`, `bugfix.py`, `AGENTS.md`, and `apps/api/AGENTS.md` (`src/db/pool.ts`)
+  - Froze baseline `specs/prd.md` and `designs/` (`design-tokens.json`, `stitch-manifest.json`, `screens/portfolio-home.html`) for `feat-005` readiness, hardened `scripts/check-harness.mjs` (strict `Use when` frontmatter, relative skill link/path check, executable skill scripts), and removed Python-repo rule leakage from `~/.gemini/config/plugins/superpowers/rules/AGENTS.md` (`54/54` unit/integration tests)
 
 ### What's In Progress
 
@@ -69,8 +74,8 @@
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
-- [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene)
+- [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene, 16/16 `SKILL.md` frontmatter/link/script gates, frozen `specs/prd.md` + `designs/`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
-- [x] `npm run test:unit`: pass (22 harness + 8 agent-hooks + 7 Python workflow + 8 API + 5 Web RTL = 50/50 tests)
+- [x] `npm run test:unit`: pass (24 harness + 8 agent-hooks + 9 Python workflow + 8 API + 5 Web RTL = 54/54 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

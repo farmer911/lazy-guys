@@ -11,6 +11,9 @@ const REQUIRED_FILES = [
   'apps/api/AGENTS.md',
   'apps/e2e/AGENTS.md',
   'designs/README.md',
+  'designs/design-tokens.json',
+  'designs/stitch-manifest.json',
+  'specs/prd.md',
   'specs/contracts/README.md',
   '.agents/mcp.stitch.example.json',
   '.agents/workflows/graph_core.py',
@@ -23,6 +26,7 @@ const REQUIRED_FILES = [
   'init.sh',
   '.github/workflows/ci.yml',
   '.agents/skills/task-guardrail/SKILL.md',
+  '.agents/skills/be-express-pg/SKILL.md',
   '.agents/hooks.json',
   'scripts/agent-hooks.mjs',
   '.githooks/pre-commit',
@@ -382,7 +386,9 @@ export function validateHarness(rootDir) {
     }
   }
 
-  for (const skillFile of walkFiles(path.join(rootDir, '.agents', 'skills'), (name) => name === 'SKILL.md')) {
+function validateSkillsIntegrity(rootDir, errors) {
+  const skillsRoot = path.join(rootDir, '.agents', 'skills');
+  for (const skillFile of walkFiles(skillsRoot, (name) => name === 'SKILL.md')) {
     const raw = fs.readFileSync(skillFile, 'utf8');
     const relSkill = path.relative(rootDir, skillFile).replace(/\\/g, '/');
     const lines = raw.length === 0 ? 0 : raw.replace(/\r?\n$/, '').split(/\r?\n/).length;
@@ -390,17 +396,48 @@ export function validateHarness(rootDir) {
       errors.push(`${relSkill} has ${lines} lines (must be <= 250 lines)`);
     }
     const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-    if (
-      !fmMatch ||
-      !/^description:\s*(?:[>|][-+]?\s*\r?\n\s*)?["']?(?:Use when|You MUST use this before)\b/m.test(
-        fmMatch[1]
-      )
-    ) {
+    if (!fmMatch || !/^description:\s*(?:[>|][-+]?\s*\r?\n\s*)?["']?Use when\b/m.test(fmMatch[1])) {
       errors.push(
         `${relSkill} must include YAML frontmatter with trigger-only description starting with "Use when..."`
       );
     }
   }
+
+  for (const mdFile of walkFiles(skillsRoot, (name) => name.endsWith('.md'))) {
+    const raw = fs.readFileSync(mdFile, 'utf8');
+    const relMd = path.relative(rootDir, mdFile).replace(/\\/g, '/');
+    const mdDir = path.dirname(mdFile);
+
+    for (const linkMatch of raw.matchAll(/\[[^\]]+\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
+      const target = linkMatch[1].trim();
+      if (target.includes('://') || target.startsWith('/') || target.startsWith('#')) continue;
+      if (!fs.existsSync(path.resolve(mdDir, target))) {
+        errors.push(`${relMd} contains broken relative markdown link: ${target}`);
+      }
+    }
+
+    for (const relMatch of raw.matchAll(/(?<![A-Za-z0-9_.-])((?:\.\.\/)+[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)/g)) {
+      const token = relMatch[1];
+      if (!fs.existsSync(path.resolve(mdDir, token))) {
+        errors.push(`${relMd} references missing relative skill path: ${token}`);
+      }
+    }
+  }
+
+  for (const anySkillFile of walkFiles(skillsRoot, () => true)) {
+    const relPath = path.relative(rootDir, anySkillFile).replace(/\\/g, '/');
+    if (!/^\.agents\/skills\/[^/]+\/scripts\/[^/]+$/.test(relPath)) continue;
+    if (/\.(?:c?js|mjs|md|html|json|txt)$/i.test(relPath)) {
+      continue;
+    }
+    const mode = fs.statSync(anySkillFile).mode;
+    if ((mode & 0o111) === 0) {
+      errors.push(`${relPath} must be executable (chmod +x)`);
+    }
+  }
+}
+
+  validateSkillsIntegrity(rootDir, errors);
 
   for (const cfgFile of walkFiles(rootDir, (name) => CONFIG_RE.test(name))) {
     const raw = fs.readFileSync(cfgFile, 'utf8');

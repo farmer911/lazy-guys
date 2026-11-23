@@ -188,6 +188,58 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
                     flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT,
                 )
 
+    def test_be_role_workflows_reference_dedicated_be_express_pg_skill(self):
+        wf_dir = os.path.dirname(os.path.abspath(__file__))
+        for name in ("feature_delivery.py", "bugfix.py"):
+            with open(os.path.join(wf_dir, name), encoding="utf-8") as handle:
+                src = handle.read()
+            self.assertIn(".agents/skills/be-express-pg/SKILL.md", src, f"{name} must wire be-express-pg skill")
+
+    async def test_escalation_loop_escalates_be_schema_mismatch_before_running_fe(self):
+        calls = []
+        be_responses = [
+            {
+                "status": "SCHEMA_MISMATCH",
+                "mismatches": [
+                    {
+                        "endpoint": "GET /api/projects",
+                        "expectedByUi": "team_size: number",
+                        "actualInContractOrApi": "projects.team_size missing in db/schema.sql",
+                    }
+                ],
+            },
+            {"status": "BE_READY", "changedFiles": ["apps/api/src/routes/portfolio.ts"]},
+        ]
+        be_idx = 0
+
+        async def run_be(directive):
+            nonlocal be_idx
+            calls.append(("be", directive))
+            resp = be_responses[be_idx]
+            be_idx += 1
+            return resp
+
+        async def run_fe(attempt):
+            calls.append(("fe", attempt))
+            return {"status": "READY", "changedFiles": []}
+
+        async def run_tech_lead_triage(mismatches, attempt):
+            calls.append(("tech-lead", attempt, len(mismatches)))
+            return {
+                "classification": "CONTRACT_GAP",
+                "beDirective": "Schema updated with team_size; expose in GET /api/projects",
+            }
+
+        result = await run_escalation_loop(
+            run_be=run_be,
+            run_fe=run_fe,
+            run_tech_lead_triage=run_tech_lead_triage,
+            max_retries=MAX_ESCALATION_RETRIES,
+        )
+        self.assertEqual(result["status"], "READY")
+        self.assertEqual(result["escalationsUsed"], 1)
+        self.assertEqual([c[0] for c in calls], ["be", "tech-lead", "be", "fe"])
+
 
 if __name__ == "__main__":
     unittest.main()

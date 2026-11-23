@@ -11,15 +11,14 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 ## When to Request Review
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+**Scope boundary vs `evaluating-features`:**
+- `requesting-code-review` performs an **optional static git-diff review** mid-branch (architecture, readability, logic bugs) before final verification.
+- `evaluating-features` + `qa-vercel-audit` performs the **mandatory live HTTP + PostgreSQL + rendered DOM evaluation** required to write `evaluations/<feat-id>.json` (`PASS`) before any feature in `feature_list.json` can become `"done"`. Static diff review NEVER substitutes for `evaluating-features`.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+**Recommended checkpoints:**
+- After completing a multi-file task or complex refactor in inline execution
+- When stuck or questioning an architectural trade-off
+- Before staging a large branch for final live evaluation
 
 ## How to Request
 

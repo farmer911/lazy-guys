@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Assemble whole-branch review context for PLAN_FILE across MERGE_BASE..HEAD_REF
+# and print the generated package path.
+set -euo pipefail
+
+if [ $# -ne 3 ]; then
+  echo "usage: review-package PLAN_FILE MERGE_BASE HEAD_REF" >&2
+  exit 2
+fi
+
+plan=$1
+merge_base=$2
+head_ref=$3
+[ -f "$plan" ] || { echo "review-package: plan file not found: $plan" >&2; exit 2; }
+
+here="$(cd "$(dirname "$0")" && pwd)"
+repo=$("${BASH:-bash}" "$here/sdd-repo" --with-commit)
+dir=$("${BASH:-bash}" "$here/sdd-workspace" "$plan")
+pkg="$dir/review-package.md"
+
+{
+  printf '# Review Package — %s\n\n' "$plan"
+  printf 'Range: `%s..%s`\n\n' "$merge_base" "$head_ref"
+  printf '## Commits\n\n```\n'
+  git -C "$repo" log --oneline "${merge_base}..${head_ref}"
+  printf '```\n\n'
+  if [ -f "$dir/progress.md" ]; then
+    printf '## Execution Ledger\n\n'
+    cat "$dir/progress.md"
+    printf '\n'
+  fi
+  printf '## Diff\n\n```diff\n'
+  git -C "$repo" diff "${merge_base}..${head_ref}"
+  printf '```\n'
+} > "$pkg"
+
+printf '%s\n' "$pkg"

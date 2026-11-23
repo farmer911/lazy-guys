@@ -1,0 +1,15 @@
+{
+  "stitchProjectId": "baseline-lazy-guy-portfolio-v1",
+  "status": "FROZEN_TO_GIT",
+  "approvedAt": "2026-11-23T15:30:00+07:00",
+  "tokensPath": "designs/design-tokens.json",
+  "screens": [
+    {
+      "slug": "portfolio-home",
+      "title": "Recruiter Portfolio Single-Page Flow",
+      "path": "designs/screens/portfolio-home.html",
+      "sections": ["about", "experience", "projects", "tech-stack", "contact"],
+      "variantsCovered": ["default", "loading", "empty", "validation-error", "network-error", "mobile-375px"]
+    }
+  ]
+}

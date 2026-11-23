@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Extract Task N from PLAN_FILE into <workspace>/task-<N>-brief.md and report:
+#   wrote <brief-path>: <lines> lines
+set -euo pipefail
+
+if [ $# -ne 2 ]; then
+  echo "usage: task-brief PLAN_FILE TASK_NUMBER" >&2
+  exit 2
+fi
+
+plan=$1
+n=$2
+[ -f "$plan" ] || { echo "task-brief: plan file not found: $plan" >&2; exit 2; }
+
+here="$(cd "$(dirname "$0")" && pwd)"
+dir=$("${BASH:-bash}" "$here/sdd-workspace" "$plan")
+out="$dir/task-${n}-brief.md"
+
+awk -v target="$n" '
+  /^##+ Task [0-9]+([: .-]|$)/ {
+    line = $0
+    sub(/^##+ Task /, "", line)
+    sub(/[^0-9].*$/, "", line)
+    if (in_task) exit
+    if (line == target) in_task = 1
+  }
+  in_task { print }
+' "$plan" > "$out"
+
+lines=$(wc -l < "$out" | tr -d '[:space:]')
+if [ "$lines" -eq 0 ]; then
+  rm -f "$out"
+  echo "task-brief: Task $n not found in $plan" >&2
+  exit 1
+fi
+
+printf 'wrote %s: %s lines\n' "$out" "$lines"

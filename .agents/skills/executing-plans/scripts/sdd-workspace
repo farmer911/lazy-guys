@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Create (if needed) and print the git-ignored workspace directory for PLAN_FILE:
+#   <repo-root>/.superpowers/sdd/<plan-basename>/
+set -euo pipefail
+
+if [ $# -ne 1 ] || [ -z "$1" ]; then
+  echo "usage: sdd-workspace PLAN_FILE" >&2
+  exit 2
+fi
+
+here="$(cd "$(dirname "$0")" && pwd)"
+repo=$("${BASH:-bash}" "$here/sdd-repo")
+base=$(basename "$1")
+slug=${base%.md}
+slug=$(printf '%s' "$slug" | tr -cs 'A-Za-z0-9._-' '-')
+dir="$repo/.superpowers/sdd/$slug"
+mkdir -p "$dir"
+printf '%s\n' "$dir"

@@ -54,11 +54,23 @@ TECH_LEAD_TRIAGE_SCHEMA = {
 
 BE_SCHEMA = {
     "type": "object",
-    "required": ["status", "changedFiles", "testsRun"],
+    "required": ["status"],
     "properties": {
-        "status": {"type": "string", "enum": ["BE_READY"]},
+        "status": {"type": "string", "enum": ["BE_READY", "SCHEMA_MISMATCH"]},
         "changedFiles": {"type": "array", "items": {"type": "string"}},
         "testsRun": {"type": "string"},
+        "mismatches": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["endpoint", "expectedByUi", "actualInContractOrApi"],
+                "properties": {
+                    "endpoint": {"type": "string"},
+                    "expectedByUi": {"type": "string"},
+                    "actualInContractOrApi": {"type": "string"},
+                },
+            },
+        },
     },
 }
 
@@ -144,6 +156,27 @@ async def run_escalation_loop(
 
     for attempt in range(max_retries + 1):
         be_result = await run_be(be_directive)
+        if be_result.get("status") == "SCHEMA_MISMATCH":
+            mismatches = be_result.get("mismatches") or []
+            if attempt >= max_retries:
+                return {
+                    "status": "HUMAN_ESCALATION_REQUIRED",
+                    "escalationsUsed": attempt,
+                    "mismatches": mismatches,
+                    "history": history,
+                }
+            triage = await run_tech_lead_triage(mismatches, attempt)
+            history.append(
+                {
+                    "attempt": attempt + 1,
+                    "source": "be",
+                    "mismatches": mismatches,
+                    "triage": triage,
+                }
+            )
+            be_directive = triage.get("beDirective")
+            continue
+
         fe_result = await run_fe(attempt)
 
         if fe_result.get("status") == "READY":
