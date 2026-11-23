@@ -70,6 +70,10 @@ function makeTempFixture() {
     '---\nname: task-guardrail\ndescription: Use when executing multi-step tasks.\n---\n# ok\n'
   );
   fs.writeFileSync(path.join(dir, '.agents', 'mcp.stitch.example.json'), '{"mcpServers":{}}\n');
+  fs.mkdirSync(path.join(dir, '.agents', 'workflows'), { recursive: true });
+  for (const wf of ['graph_core.py', 'project_init.py', 'feature_delivery.py', 'bugfix.py']) {
+    fs.writeFileSync(path.join(dir, '.agents', 'workflows', wf), '# workflow\n');
+  }
   fs.writeFileSync(
     path.join(dir, '.agents', 'hooks.json'),
     JSON.stringify({
