@@ -447,6 +447,28 @@ test('flags evaluatedCommit that exists in git objects but is not an ancestor of
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('flags non-arrow function declarations and expressions in apps/web/src production files while ignoring string literals', () => {
+  const dir = makeTempFixture();
+  const compDir = path.join(dir, 'apps', 'web', 'src', 'components');
+  fs.mkdirSync(compDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(compDir, 'BadCard.tsx'),
+    'export function BadCard() { return <div>function word in text</div>; }\nconst fnExpr = function () { return 1; };\nexport const ok = fnExpr();\n'
+  );
+  fs.writeFileSync(
+    path.join(compDir, 'GoodCard.tsx'),
+    'export const GoodCard = () => <div>export function in string literal is ignored</div>;\n'
+  );
+
+  const errors = validateHarness(dir);
+  const badCardErrors = errors.filter((e) => e.includes('BadCard.tsx'));
+  const goodCardErrors = errors.filter((e) => e.includes('GoodCard.tsx'));
+  assert.equal(badCardErrors.length, 2);
+  assert.match(badCardErrors[0], /arrow function/i);
+  assert.equal(goodCardErrors.length, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('passes on current repository root', () => {
   assert.deepEqual(validateHarness(process.cwd()), []);
 });

@@ -7,7 +7,7 @@ interface ProjectsSectionProps {
   projects: Project[];
 }
 
-export function ProjectsSection({ projects }: ProjectsSectionProps) {
+export const ProjectsSection = ({ projects }: ProjectsSectionProps) => {
   return (
     <section id="projects" className="space-y-4">
       <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">

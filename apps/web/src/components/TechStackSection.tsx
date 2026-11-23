@@ -8,7 +8,7 @@ interface TechStackSectionProps {
   techStacks: TechStack[];
 }
 
-export function TechStackSection({ techStacks }: TechStackSectionProps) {
+export const TechStackSection = ({ techStacks }: TechStackSectionProps) => {
   const { selectedCategory, setSelectedCategory } = usePortfolioStore();
 
   const categories = ['All', ...Array.from(new Set(techStacks.map((item) => item.category)))];

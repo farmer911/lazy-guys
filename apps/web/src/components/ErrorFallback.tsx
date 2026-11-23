@@ -3,7 +3,7 @@ import type { FallbackProps } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+export const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   const message = error instanceof Error ? error.message : String(error);
 
   return (

@@ -11,7 +11,7 @@ interface ContactFormValues {
   message: string;
 }
 
-export function ContactForm() {
+export const ContactForm = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {

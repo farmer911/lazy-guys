@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseSync } from 'vite';
 
 const REQUIRED_FILES = [
   'AGENTS.md',
@@ -183,6 +184,49 @@ function validateCodeHygiene(rootDir, errors) {
   }
 }
 
+function offsetToLine(raw, offset) {
+  let line = 1;
+  for (let i = 0; i < offset && i < raw.length; i++) {
+    if (raw.charCodeAt(i) === 10) line++;
+  }
+  return line;
+}
+
+function validateFrontendArrowFunctions(rootDir, errors) {
+  const webSrcDir = path.join(rootDir, 'apps', 'web', 'src');
+  for (const srcPath of walkFiles(webSrcDir, (name) => TS_SOURCE_RE.test(name))) {
+    if (srcPath.endsWith('.d.ts')) continue;
+    const rel = path.relative(rootDir, srcPath).replace(/\\/g, '/');
+    if (TEST_FILE_RE.test(rel)) continue;
+
+    const raw = fs.readFileSync(srcPath, 'utf8');
+    const parsed = parseSync(rel, raw);
+
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if (
+        (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') &&
+        node.declare !== true
+      ) {
+        const line = offsetToLine(raw, node.start ?? 0);
+        const fnName = node.id?.name ? ` "${node.id.name}"` : '';
+        errors.push(
+          `${rel}:${line} uses non-arrow function${fnName}; apps/web/src requires arrow functions for consistency`
+        );
+      }
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) {
+          for (const item of value) visit(item);
+        } else if (value && typeof value === 'object') {
+          visit(value);
+        }
+      }
+    };
+
+    visit(parsed.program);
+  }
+}
+
 function validateEvaluationFile(rootDir, featId, errors, hasGitRepo) {
   const relPath = path.join('evaluations', `${featId}.json`);
   const evalPath = path.join(rootDir, relPath);
@@ -334,6 +378,7 @@ export function validateHarness(rootDir) {
 
   validateTsconfigs(rootDir, errors);
   validateCodeHygiene(rootDir, errors);
+  validateFrontendArrowFunctions(rootDir, errors);
 
   return errors;
 }

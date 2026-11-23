@@ -8,7 +8,7 @@ interface AboutSectionProps {
   profile: Profile;
 }
 
-export function AboutSection({ profile }: AboutSectionProps) {
+export const AboutSection = ({ profile }: AboutSectionProps) => {
   return (
     <section id="about" className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

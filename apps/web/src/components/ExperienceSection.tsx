@@ -7,7 +7,7 @@ interface ExperienceSectionProps {
   experiences: Experience[];
 }
 
-function formatDate(value: string | null): string {
+const formatDate = (value: string | null): string => {
   if (!value) return 'Present';
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00Z` : value;
   return new Date(iso).toLocaleDateString('en-US', {
@@ -15,9 +15,9 @@ function formatDate(value: string | null): string {
     year: 'numeric',
     timeZone: 'UTC',
   });
-}
+};
 
-export function ExperienceSection({ experiences }: ExperienceSectionProps) {
+export const ExperienceSection = ({ experiences }: ExperienceSectionProps) => {
   return (
     <section id="experience" className="space-y-4">
       <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">

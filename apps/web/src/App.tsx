@@ -23,7 +23,7 @@ const fallbackProfile: Profile = {
   ],
 };
 
-export function App() {
+export const App = () => {
   const { data: profile } = useQuery<Profile>({
     queryKey: ['profile'],
     queryFn: portfolioApi.getProfile,
