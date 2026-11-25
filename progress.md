@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-25 23:05
+**Last Updated:** 2026-11-26 00:02
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -48,6 +48,10 @@
   - Wired `PostToolUse` in `.agents/hooks.json` and `scripts/agent-hooks.mjs` to track code/config edits (including shell mutations via `SHELL_MUTATION_RE`) vs unmasked verification command exit status (`exec-state.json`, rejecting `check:harness`-only and `|| true`/`; true` masking), append crash-safe per-step checkpoints to `.agents/logs/session-checkpoint.md`, and block `Stop` if edited code lacks a subsequent exit-0 verification run (`15/15` hook tests)
   - Added `scripts/token-stats.mjs` (`npm run stats:tokens`) and `Stop`-hook transcript token logging (`.agents/logs/token-usage.jsonl`)
   - Added `.agents/STATE.md` live task-state file, updated `scripts/check-harness.mjs` to enforce `PostToolUse` + `.agents/STATE.md` + `scripts/token-stats.mjs`, and added Read-Before-Claim & banned-phrase rules to `AGENTS.md` (`67/67` unit/integration tests)
+- [x] Skill Suite De-Bloat & Negative Trigger Enforcement (`1,881` → `813` `SKILL.md` lines, `-56.8%`):
+  - Trimmed all 8 vendored Superpowers skills (`using-superpowers`, `using-git-worktrees`, `finishing-a-development-branch`, `writing-plans`, `executing-plans`, `brainstorming`, `systematic-debugging`, `requesting-code-review`) to Node/TypeScript/Vitest/Playwright conventions, removed Rust/Go/Python boilerplate (`Cargo.toml`, `pyproject.toml`, `go.mod`, `pytest`) and the `1%` over-trigger rule (`avg 50.8` lines/skill, `max 89` lines)
+  - Added explicit `Not for...` negative trigger boundaries to all `16/16` `SKILL.md` files and mechanically locked both `Not for` boundaries and zero foreign-stack boilerplate in `scripts/check-harness.mjs` (`28/28` harness tests; `68/68` total unit/integration tests)
+  - Removed unused auxiliary files (`brainstorming/scripts/*`, `visual-companion.md`, 6 non-Antigravity platform tool refs, `systematic-debugging/{find-polluter.sh,condition-based-waiting-example.ts}`) and added `.vscode/` to `.gitignore`
 
 ### What's In Progress
 

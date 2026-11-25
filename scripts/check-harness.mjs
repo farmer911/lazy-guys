@@ -529,6 +529,16 @@ function validateSkillsIntegrity(rootDir, errors) {
       errors.push(
         `${relSkill} must include YAML frontmatter with trigger-only description starting with "Use when..."`
       );
+    } else if (!/\bNot for\b/.test(fmMatch[1])) {
+      errors.push(
+        `${relSkill} description must declare a negative boundary ("Not for ...") to prevent over-triggering`
+      );
+    }
+    const foreignMatch = raw.match(/\b(?:Cargo\.toml|pyproject\.toml|go\.mod|pytest|cargo\s+test|go\s+test)\b/);
+    if (foreignMatch) {
+      errors.push(
+        `${relSkill} contains foreign-stack boilerplate ("${foreignMatch[0]}"); tailor skill commands to this Node/TypeScript monorepo`
+      );
     }
   }
 

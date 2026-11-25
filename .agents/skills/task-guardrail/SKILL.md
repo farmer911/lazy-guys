@@ -1,6 +1,6 @@
 ---
 name: task-guardrail
-description: Use when executing any coding, bugfix, refactoring, configuration, or multi-step task that touches 2 or more files or verification steps, especially under time pressure or terse prompts where jumping straight into edits risks silent assumptions, skipped checks, or incomplete reporting.
+description: Use when executing any coding, bugfix, refactoring, configuration, or multi-step task that touches 2 or more files or verification steps, especially under time pressure or terse prompts. Not for read-only Q&A, single-file 1-line tweaks, or active executing-plans sessions.
 ---
 
 # Task Execution Guardrail

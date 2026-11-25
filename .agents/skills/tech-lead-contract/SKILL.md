@@ -1,6 +1,6 @@
 ---
 name: tech-lead-contract
-description: Use when defining system structure, database schemas, or shared API contracts from approved designs, or when triaging CONTRACT_MISMATCH escalations and QA failures as the Tech Lead role.
+description: Use when defining system structure, database schemas, or shared API contracts from approved designs, or when triaging CONTRACT_MISMATCH escalations and QA failures as the Tech Lead role. Not for implementing apps/api routes, apps/web UI, or writing evaluations/*.json.
 ---
 
 # Tech Lead System Structure & Contract Ownership

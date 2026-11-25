@@ -1,6 +1,6 @@
 ---
 name: be-express-pg
-description: Use when implementing Express routes, PostgreSQL queries, or seed updates in apps/api and db/seed.sql as the Backend role.
+description: Use when implementing Express routes, PostgreSQL queries, or seed updates in apps/api and db/seed.sql as the Backend role. Not for frontend React UI, schema DDL ownership, or QA evaluation.
 ---
 
 # Backend Implementation (`Express` + Real `PostgreSQL` Contract Fidelity)

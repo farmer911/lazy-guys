@@ -1,6 +1,6 @@
 ---
 name: design-stitch-flow
-description: Use when creating multi-screen UI flows, design tokens, or visual prototypes in Google Stitch as the Design role, or when freezing approved Stitch screens into the repository designs directory.
+description: Use when creating multi-screen UI flows, design tokens, or visual prototypes in Google Stitch as the Design role, or when freezing approved Stitch screens into the repository designs directory. Not for React implementation, backend APIs, or QA auditing.
 ---
 
 # Full-Flow UI Design with Google Stitch

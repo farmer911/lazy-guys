@@ -1,94 +1,39 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when dispatching an independent static git-diff review after a complex multi-file task or refactor before merging. Not for final live runtime feature sign-off (use evaluating-features) or trivial 1-file edits.
 ---
 
 # Requesting Code Review
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history.
+Dispatch a fresh-context code reviewer subagent on a git commit range — never pass your whole session history.
 
-**Core principle:** Review early, review often.
+## Scope Boundary vs `evaluating-features`
 
-## When to Request Review
+- `requesting-code-review`: **Optional static git-diff review** mid-branch (architecture, edge cases, readability, maintainability).
+- `evaluating-features` + `qa-vercel-audit`: **Mandatory live runtime evaluation** (HTTP + PostgreSQL + rendered DOM) required to produce `evaluations/<feat-id>.json` (`PASS`) before marking any `feature_list.json` item `"done"`. Static review never substitutes for live evaluation.
 
-**Scope boundary vs `evaluating-features`:**
-- `requesting-code-review` performs an **optional static git-diff review** mid-branch (architecture, readability, logic bugs) before final verification.
-- `evaluating-features` + `qa-vercel-audit` performs the **mandatory live HTTP + PostgreSQL + rendered DOM evaluation** required to write `evaluations/<feat-id>.json` (`PASS`) before any feature in `feature_list.json` can become `"done"`. Static diff review NEVER substitutes for `evaluating-features`.
+## How to Dispatch
 
-**Recommended checkpoints:**
-- After completing a multi-file task or complex refactor in inline execution
-- When stuck or questioning an architectural trade-off
-- Before staging a large branch for final live evaluation
-
-## How to Request
-
-**1. Get git SHAs:**
-```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or: git merge-base origin/main HEAD
-HEAD_SHA=$(git rev-parse HEAD)
-```
-
-**2. Dispatch code reviewer subagent:**
-
-Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
-
-**Placeholders:**
-- `{DESCRIPTION}` - Brief summary of what you built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
-
-**3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
-
-## Example
-
-```
-[Just completed Task 2: Add verification function]
-
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | cut -d' ' -f1)
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch code reviewer subagent]
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/superpowers/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
-
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
-| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
+1. **Capture git range:**
+   ```bash
+   BASE_SHA=$(git merge-base origin/main HEAD) # or task BASE SHA
+   HEAD_SHA=$(git rev-parse HEAD)
+   ```
+2. **Dispatch reviewer subagent** using [code-reviewer.md](code-reviewer.md), filling:
+   - `{DESCRIPTION}` — concise summary of what changed
+   - `{PLAN_OR_REQUIREMENTS}` — spec/contract path or acceptance criteria
+   - `{BASE_SHA}` and `{HEAD_SHA}`
+3. **Act on findings:**
+   - **Critical / Important:** Fix via TDD before proceeding.
+   - **Minor:** Record in `progress.md` or fix if trivial.
+   - **Disputed finding:** Push back with concrete code/test evidence, never silently ignore.
 
 ## Red Flags
 
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
+| Excuse | Reality |
+|--------|---------|
+| "I'll review my own diff inline" | Self-review shares your blind spots and burns main context; dispatch a fresh reviewer. |
+| "Static review passed, mark feature done" | Only `evaluating-features` live verification can certify `"done"`. |
+| "Skip Important issues — they're small" | Unfixed Important issues compound across tasks; fix before advancing. |
 
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
-
-See template at: [code-reviewer.md](code-reviewer.md)
+Template: [code-reviewer.md](code-reviewer.md)

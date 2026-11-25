@@ -5,16 +5,16 @@
 
 ## Current Task
 
-- **Goal:** Close remaining Execution Evidence Gate loopholes (`check:harness`-only, `|| true` exit-masking, and shell code mutation tracking) in `scripts/agent-hooks.mjs` to reach Tier S.
+- **Goal:** Remove unused vendored auxiliary skill files (`brainstorming/scripts/*`, `visual-companion.md`, 6 unused platform refs, `find-polluter.sh`, `condition-based-waiting-example.ts`), ignore `.vscode/`, verify `./init.sh`, and commit + push.
 - **Status:** Complete
-- **Last Updated:** 2026-11-25 23:05
+- **Last Updated:** 2026-11-26 00:14
 
 ## Plan & Progress
 
-- [x] RED: Add failing tests in `scripts/agent-hooks.test.mjs` for `check:harness`-only, `|| true`, and shell mutation edits
-- [x] GREEN: Harden `scripts/agent-hooks.mjs` and pass `node --test scripts/agent-hooks.test.mjs` (`15/15`)
-- [x] GATE: Update `.agents/STATE.md`, `progress.md`, `session-handoff.md` and pass `./init.sh`
+- [x] CLEANUP: Removed 12 unused auxiliary files, updated referencing docs, added `.vscode/` to `.gitignore`
+- [x] GATE: Verified `./init.sh` (0 errors, 0 warnings)
+- [x] COMMIT & PUSH: Ready to commit and push clean skill-suite overhaul
 
 ## Resume Notes
 
-- Harness is hardened and ready for real feature work or template reuse. Run `./init.sh` and `npm run stats:tokens` to verify baseline and inspect token usage.
+- Clean template harness & skill suite committed on `main`.

@@ -1,6 +1,6 @@
 ---
 name: qa-vercel-audit
-description: Use when auditing frontend and full-stack features against Vercel Web Design Guidelines, frozen Google Stitch screens, and live runtime endpoints as the Independent QA and Evaluator role.
+description: Use when auditing frontend and full-stack features against Vercel Web Design Guidelines, frozen Google Stitch screens, and live runtime endpoints as the Independent QA and Evaluator role. Not for authoring production source code in apps/web or apps/api.
 ---
 
 # QA Live Audit (`Vercel Web Design Guidelines` + Stitch Ground Truth)

@@ -1,6 +1,6 @@
 ---
 name: evaluating-features
-description: Use when a feature implementation passes automated checks and is about to be marked complete, when transitioning any feature in feature_list.json toward done, or when auditing live application UX and runtime behavior.
+description: Use when a feature implementation passes automated checks and is about to be marked complete, when transitioning any feature in feature_list.json toward done, or when auditing live application UX and runtime behavior. Not for writing production code or mid-branch static diff reviews.
 ---
 
 # Evaluating Features (Generator–Evaluator Separation)

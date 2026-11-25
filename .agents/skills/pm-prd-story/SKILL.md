@@ -1,6 +1,6 @@
 ---
 name: pm-prd-story
-description: Use when translating raw product ideas or feature requests into user stories, screen inventories, edge-case requirements, or acceptance criteria as the PM role before UI design or technical architecture begins.
+description: Use when translating raw product ideas or feature requests into user stories, screen inventories, edge-case requirements, or acceptance criteria as the PM role before UI design or technical architecture begins. Not for technical contracts, SQL schemas, or implementation code.
 ---
 
 # PM PRD & User Story Specification

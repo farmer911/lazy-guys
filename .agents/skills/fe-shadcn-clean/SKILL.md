@@ -1,6 +1,6 @@
 ---
 name: fe-shadcn-clean
-description: Use when building React components or integrating backend APIs in apps/web from frozen Google Stitch designs and shared contracts as the Frontend role.
+description: Use when building React components or integrating backend APIs in apps/web from frozen Google Stitch designs and shared contracts as the Frontend role. Not for Express routes, database schema/seed edits, or independent QA sign-off.
 ---
 
 # Frontend Implementation (`shadcn/ui` + Strict Contract Fidelity)

@@ -99,7 +99,7 @@ function makeTempFixture() {
     fs.mkdirSync(path.join(dir, '.agents', 'skills', skillName), { recursive: true });
     fs.writeFileSync(
       path.join(dir, '.agents', 'skills', skillName, 'SKILL.md'),
-      `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence.\n---\n# ok\n`
+      `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence. Not for unrelated tasks.\n---\n# ok\n`
     );
   }
   fs.writeFileSync(
@@ -225,7 +225,7 @@ test('flags SKILL.md exceeding 250 lines', () => {
   fs.mkdirSync(skillDir, { recursive: true });
   fs.writeFileSync(
     path.join(skillDir, 'SKILL.md'),
-    `---\nname: bloated\ndescription: Use when testing line limit.\n---\n${'line\n'.repeat(250)}`
+    `---\nname: bloated\ndescription: Use when testing line limit. Not for production use.\n---\n${'line\n'.repeat(250)}`
   );
 
   const errors = validateHarness(dir);
@@ -826,6 +826,32 @@ test('flags unconfigured git core.hooksPath, tracked .env secrets, exposed 0.0.0
     assert.match(joined, /permissions|contents:\s*read/);
   } finally {
     if (prevCi !== undefined) process.env.CI = prevCi;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('flags SKILL.md missing Not for boundary or containing foreign-stack boilerplate (Cargo.toml, pytest, go.mod)', () => {
+  const dir = makeTempFixture();
+  const badSkillDir = path.join(dir, '.agents', 'skills', 'foreign-bloat');
+  fs.mkdirSync(badSkillDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(badSkillDir, 'SKILL.md'),
+    [
+      '---',
+      'name: foreign-bloat',
+      'description: Use when testing skills without negative boundary.',
+      '---',
+      '# Foreign Bloat',
+      'Run `pytest` or check `Cargo.toml` and `go.mod`.',
+    ].join('\n')
+  );
+
+  try {
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /foreign-bloat\/SKILL\.md.*Not for/i);
+    assert.match(joined, /foreign-bloat\/SKILL\.md.*foreign-stack|boilerplate/i);
+  } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -96,15 +96,7 @@ npm test 2>&1 | grep 'DEBUG git init'
 
 ## Finding Which Test Causes Pollution
 
-If something appears during tests but you don't know which test:
-
-Use the bisection script `find-polluter.sh` in this directory:
-
-```bash
-bash ./find-polluter.sh '.git' 'src/**/*.test.ts'
-```
-
-Runs tests one-by-one, stops at first polluter. See script for usage.
+If shared state or stray files appear during a test run, isolate by running individual Vitest/Node test files one-by-one (`npx vitest run <file>`) until the polluter reproduces cleanly.
 
 ## Real Example: Empty projectDir
 

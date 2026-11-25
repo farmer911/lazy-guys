@@ -1,216 +1,43 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: Use when diagnosing a bug, failing unit or E2E test, build error, or unexpected runtime behavior before proposing fixes. Not for greenfield feature design, pure style refactors, or planned TDD implementation without failures.
 ---
 
 # Systematic Debugging
 
-## Overview
-
-**Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
-
-**Violating the letter of this process is violating the spirit of debugging.**
-
-## The Iron Law
-
-```
+```text
 NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 ```
 
-If you haven't completed Phase 1, you cannot propose fixes.
+Symptom fixes create cascading regressions. Complete each phase before moving to the next.
 
-## When to Use
+## Phase 1: Root Cause Investigation
 
-Use for ANY technical issue:
-- Test failures
-- Bugs in production
-- Unexpected behavior
-- Performance problems
-- Build failures
-- Integration issues
+1. **Read full error output:** Stack traces, compiler codes, line numbers, HTTP status, and SQL errors.
+2. **Reproduce deterministically:** Run the narrowest failing command (`npm run test --workspace=apps/api`, `apps/web`, or `npm run test:e2e`) and confirm consistent reproduction.
+3. **Check recent changes:** Inspect `git diff` and `git log -5` for config, schema, or contract drift.
+4. **Trace boundaries in multi-layer bugs (UI → Express API → PostgreSQL):**
+   Log inputs/outputs across each boundary (request payload, SQL query/rows, serialized JSON, React state) once to isolate the exact failing layer before editing.
+5. **Backward trace:** Follow bad values up the call stack to their origin (see `root-cause-tracing.md`).
 
-**Use this ESPECIALLY when:**
-- Under time pressure (emergencies make guessing tempting)
-- "Just one quick fix" seems obvious
-- You've already tried multiple fixes
-- Previous fix didn't work
-- You don't fully understand the issue
+## Phase 2: Pattern Analysis
 
-**Don't skip when:**
-- Issue seems simple (simple bugs have root causes too)
-- You're in a hurry (rushing guarantees rework)
-- Manager wants it fixed NOW (systematic is faster than thrashing)
+- Compare the failing path against a working peer in the same workspace (`apps/api/src/` or `apps/web/src/`).
+- List every difference in types, serialization (e.g. PostgreSQL `DATE` / `NUMERIC`), async state, or config.
 
-## The Four Phases
+## Phase 3: Single-Hypothesis Verification
 
-You MUST complete each phase before proceeding to the next.
+- State one explicit hypothesis: *"Root cause is X because Y."*
+- Test minimally (one variable at a time). If disproven, revert and form a new hypothesis — never stack speculative patches.
+- If uncertain, say `"unverified"` and inspect further instead of guessing.
 
-### Phase 1: Root Cause Investigation
+## Phase 4: TDD Fix & 3-Fix Circuit Breaker
 
-**BEFORE attempting ANY fix:**
+1. **RED:** Write the minimal failing Vitest / RTL / Playwright regression test reproducing the bug (`test-driven-development`).
+2. **GREEN:** Apply a single surgical fix at the root cause — no bundled refactors.
+3. **Verify:** Run the targeted suite plus `npm run typecheck` and `./init.sh` (fresh after final edit).
+4. **3-Fix Architecture Gate:** If **3 fixes fail**, STOP immediately. Do not try Fix #4 — question the underlying architecture with the user.
 
-1. **Read Error Messages Carefully**
-   - Don't skip past errors or warnings
-   - They often contain the exact solution
-   - Read stack traces completely
-   - Note line numbers, file paths, error codes
+## Red Flags & Supporting Techniques
 
-2. **Reproduce Consistently**
-   - Can you trigger it reliably?
-   - What are the exact steps?
-   - Does it happen every time?
-   - If not reproducible → gather more data, don't guess
-
-3. **Check Recent Changes**
-   - What changed that could cause this?
-   - Git diff, recent commits
-   - New dependencies, config changes
-   - Environmental differences
-
-4. **Gather Evidence in Multi-Component Systems**
-
-   **WHEN system has multiple components (CI → build → signing, API → service → database):**
-
-   **BEFORE proposing fixes, add diagnostic instrumentation:**
-   ```
-   For EACH component boundary:
-     - Log what data enters component
-     - Log what data exits component
-     - Verify environment/config propagation
-     - Check state at each layer
-
-   Run once to gather evidence showing WHERE it breaks
-   THEN analyze evidence to identify failing component
-   THEN investigate that specific component
-   ```
-
-   **Example (multi-layer system):**
-   ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
-   echo "IDENTITY: $([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)"
-
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   printenv IDENTITY >/dev/null 2>&1 && echo "IDENTITY in environment" || echo "IDENTITY not in environment"
-
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
-
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
-   ```
-
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
-
-5. **Trace Data Flow**
-
-   **WHEN error is deep in call stack:**
-
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
-
-   **Quick version:**
-   - Where does bad value originate?
-   - What called this with bad value?
-   - Keep tracing up until you find the source
-   - Fix at source, not at symptom
-
-### Phase 2: Pattern Analysis
-
-**Find the pattern before fixing:**
-
-1. **Find Working Examples**
-   - Locate similar working code in same codebase
-   - What works that's similar to what's broken?
-
-2. **Compare Against References**
-   - If implementing pattern, read reference implementation COMPLETELY
-   - Don't skim - read every line
-   - Understand the pattern fully before applying
-
-3. **Identify Differences**
-   - What's different between working and broken?
-   - List every difference, however small
-   - Don't assume "that can't matter"
-
-4. **Understand Dependencies**
-   - What other components does this need?
-   - What settings, config, environment?
-   - What assumptions does it make?
-
-### Phase 3: Hypothesis and Testing
-
-**Scientific method:**
-
-1. **Form Single Hypothesis**
-   - State clearly: "I think X is the root cause because Y"
-   - Write it down
-   - Be specific, not vague
-
-2. **Test Minimally**
-   - Make the SMALLEST possible change to test hypothesis
-   - One variable at a time
-   - Don't fix multiple things at once
-
-3. **Verify Before Continuing**
-   - Did it work? Yes → Phase 4
-   - Didn't work? Form NEW hypothesis
-   - DON'T add more fixes on top
-
-4. **When You Don't Know**
-   - Say "I don't understand X"
-   - Don't pretend to know
-   - Ask for help
-   - Research more
-
-### Phase 4: Implementation
-
-**Fix the root cause, not the symptom:**
-
-1. **Create Failing Test Case**
-   - Simplest possible reproduction
-   - Automated test if possible
-   - One-off test script if no framework
-   - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
-
-2. **Implement Single Fix**
-   - Address the root cause identified
-   - ONE change at a time
-   - No "while I'm here" improvements
-   - No bundled refactoring
-
-3. **Verify Fix**
-   - Test passes now?
-   - No other tests broken?
-   - Issue actually resolved?
-   - Use the `superpowers:verification-before-completion` skill before claiming success
-
-4. **If Fix Doesn't Work**
-   - STOP
-   - Count: How many fixes have you tried?
-   - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
-   - DON'T attempt Fix #4 without architectural discussion
-
-5. **If 3+ Fixes Failed: Question Architecture**
-
-   **Pattern indicating architectural problem:**
-   - Each fix reveals new shared state/coupling/problem in different place
-   - Fixes require "massive refactoring" to implement
-   - Each fix creates new symptoms elsewhere
-
-   **STOP and question fundamentals:**
-   - Is this pattern fundamentally sound?
-   - Are we "sticking with it through sheer inertia"?
-   - Should we refactor architecture vs. continue fixing symptoms?
-
-   **Discuss with your human partner before attempting more fixes**
-
-   This is NOT a failed hypothesis - this is a wrong architecture.
-
-## Red Flags, Rationalizations & Quick Reference
-
-See [references/red-flags-and-rationalizations.md](references/red-flags-and-rationalizations.md) for red flags, common rationalizations, quick reference, and supporting techniques.
+See [references/red-flags-and-rationalizations.md](references/red-flags-and-rationalizations.md) for rationalizations, red flags, and defense-in-depth techniques.

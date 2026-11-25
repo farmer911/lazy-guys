@@ -1,65 +1,32 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation or handling a new user request before responding, asking clarifying questions, or exploring files.
+description: Use when routing a new single-agent engineering task to the matching workflow skill before planning or editing. Not for read-only Q&A, trivial 1-file tweaks, or subagents dispatched with an explicit [AGENT_ROLE] prompt.
 ---
 
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, ignore this skill.
+If you were dispatched as a subagent (or Role-DAG worker with `[AGENT_ROLE: ...]`), ignore this skill and follow your assigned role skill only.
 </SUBAGENT-STOP>
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+# Skill Routing
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+## Operating Mode Selection
 
-This is not negotiable. You cannot rationalize your way out of this.
-</EXTREMELY-IMPORTANT>
+Pick **one** mode — never stack both ceremonies on the same task:
 
-## The Rule
+1. **Multi-Agent Role-DAG (`run_workflow`):** For full-stack `feature_list.json` delivery or multi-domain bugs, run `.agents/workflows/{project_init,feature_delivery,bugfix}.py`. Skip `brainstorming` / `writing-plans` / `executing-plans`.
+2. **Single-Agent Session:** Match the narrowest skill whose `Use when...` trigger fits and whose `Not for...` boundary does not exclude the task:
+   - Ambiguous new feature/design → `brainstorming` → `writing-plans` → `executing-plans`
+   - Clear multi-file coding/config task (`>= 2` files or gates) → `task-guardrail`
+   - Bug or test failure → `systematic-debugging`
+   - Pre-`"done"` live audit → `evaluating-features` (mandatory)
+3. **Skip skill ceremony** for pure Q&A, read-only audits, or single-line 1-file tweaks — answer directly with verified facts.
 
-**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
+## Priority & Precedence
 
-**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
+- **User instructions (`AGENTS.md`, `GEMINI.md`, direct requests)** override skills.
+- **Process skills before implementation skills:** investigate/plan first, then edit.
+- Announce the active skill in one line (`Using [skill] to [purpose]`) and follow its checklist without inventing extra ceremony.
 
-Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+## Platform Reference
 
-## Skill Priority
-
-When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
-
-- "Let's build X" → superpowers:brainstorming first, then implementation skills.
-- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
-
-## Red Flags
-
-These thoughts mean STOP—you're rationalizing:
-
-| Thought | Reality |
-|---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
-
-## Platform Adaptation
-
-If your harness appears here, read its reference file for special instructions:
-
-- Claude Code: `references/claude-code-tools.md`
-- Codex: `references/codex-tools.md`
-- Pi: `references/pi-tools.md`
-- Antigravity: `references/antigravity-tools.md`
-- Hermes Agent: `references/hermes-tools.md`
-- Muse: `references/muse-tools.md`
-
-## User Instructions
-
-User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.
+- Antigravity tool mapping: `references/antigravity-tools.md`
