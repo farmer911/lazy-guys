@@ -872,6 +872,29 @@ test('flags orphan unreferenced auxiliary files inside .agents/skills/*', () => 
   }
 });
 
+test('flags evaluation with vague liveChecks lacking real probe evidence', () => {
+  // E1: check-harness only validates liveChecks is non-empty array, not semantic content
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-001.json'),
+    JSON.stringify(
+      makeValidEvaluation('feat-001', {
+        liveChecks: ['I checked everything and it looks good', 'All tests pass'],
+      })
+    )
+  );
+
+  try {
+    const errors = validateHarness(dir);
+    assert.ok(
+      errors.some((e) => e.includes('liveChecks') && /probe|HTTP|localhost|curl|playwright|test:e2e/i.test(e)),
+      `expected liveChecks semantic validation error, got: ${errors.join('\n')}`
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('passes on current repository root', () => {
   assert.deepEqual(validateHarness(process.cwd()), []);
 });

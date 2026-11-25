@@ -16,8 +16,8 @@ const EXIT_MASK_RE =
 const EVALUATOR_ANCHORED_RE =
   /^\s*(?:\[AGENT_ROLE:\s*qa\s*\]\s*)?You are an Independent Skeptical QA & Recruiter Product Evaluator\b/;
 
-const PROTECTED_CONTROL_PLANE_RE =
-  /^(?:scripts\/(?:check-harness|agent-hooks)\.mjs|\.agents\/hooks\.json|\.githooks\/.+|\.github\/workflows\/.+)$/;
+const EVALUATOR_STRUCTURAL_RE =
+  /Commit SHA under evaluation:\s*[0-9a-f]{4,40}\b/i;
 
 const ROLE_WRITE_ALLOWLIST = {
   pm: ['specs/prd.md', 'feature_list.json'],
@@ -32,10 +32,11 @@ const REPO_PATH_TOKEN_RE =
   /(?<![A-Za-z0-9_.-])(?:(?:specs|designs|apps|db|evaluations|scripts|\.agents|\.githooks|\.github)\/[^\s'";|&)>]+|feature_list\.json|progress\.md|session-handoff\.md|AGENTS\.md|GEMINI\.md|package\.json|init\.sh|docker-compose\.yml|\.env)\b/g;
 
 const SHELL_MUTATION_RE =
-  /(?:>>?(?!\s*&|\s*\/dev\/null)|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bcp\b|\bmv\b|\brm\b|\btouch\b|\btruncate\b|\bdd\b|\bunlink\b|writeFile|appendFile|copyFile|fs\.write|write_text|write_bytes|shutil\.(?:copy|move|rmtree)|os\.(?:remove|unlink|replace|rename)|\bgit\s+(?:checkout|restore)\b|open\([^)]*['"][wa])/;
+  /(?:>>?(?!\s*&|\s*\/dev\/null)|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bcp\b|\bmv\b|\brm\b|\btouch\b|\btruncate\b|\bdd\b|\bunlink\b|\bfind\b[^|;]*-delete\b|\binstall\b|\bln\b|\brsync\b|\bsponge\b|\bpatch\b|\btar\b|\bunzip\b|\bcurl\s+[^|;]*-o\b|\bwget\s+[^|;]*-O\b|writeFile|appendFile|copyFile|fs\.write|write_text|write_bytes|shutil\.(?:copy|move|rmtree)|os\.(?:remove|unlink|replace|rename)|\bgit\s+(?:checkout|restore|stash\s+pop|cherry-pick|merge|am|apply)\b|open\([^)]*['"][wa])/;
 
 function isEvaluatorSession(lastUserInput) {
-  return EVALUATOR_ANCHORED_RE.test(String(lastUserInput ?? ''));
+  const text = String(lastUserInput ?? '');
+  return EVALUATOR_ANCHORED_RE.test(text) && EVALUATOR_STRUCTURAL_RE.test(text);
 }
 
 function hasCertifiedEvaluation(rootDir, featId) {
@@ -167,6 +168,16 @@ function stripQuotedStrings(cmd) {
   return String(cmd ?? '').replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, '""');
 }
 
+function stripInlineScriptArgs(cmd) {
+  // Remove content of node/python/ruby/perl -e/-c "..." or '...' arguments
+  // so paths embedded in inline script strings are not false-positive tracked
+  // as shell file mutations by PostToolUse code-edit detection.
+  return String(cmd ?? '').replace(
+    /\b(?:node|python3?|ruby|perl)\s+(?:--eval|-[ec])\s+(?:'[^']*'|"(?:\\.|[^"\\])*")/g,
+    ''
+  );
+}
+
 function readCommandExitStatusFromTranscript(transcriptPath, stepIdx) {
   if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
   try {
@@ -289,13 +300,6 @@ export function evaluateHookEvent(payload, options = {}) {
           });
         }
       }
-
-      if (!role && !isEvaluator && PROTECTED_CONTROL_PLANE_RE.test(rel)) {
-        return finish({
-          decision: 'force_ask',
-          reason: `Control-Plane Lock: Modifying protected harness/CI file "${rel}" requires explicit human confirmation.`,
-        });
-      }
     }
 
     if (toolName === 'run_command') {
@@ -343,9 +347,29 @@ export function evaluateHookEvent(payload, options = {}) {
         });
       }
 
+      if (/\bgit\s+(?:cherry-pick|stash\s+pop|merge|am|apply)\b/.test(cmd)) {
+        return finish({
+          decision: 'force_ask',
+          reason: 'Destructive Git Command: This command can silently introduce arbitrary file changes. Confirm before proceeding.',
+        });
+      }
+
+      if (/\brm\s+-[a-zA-Z]*[rR][a-zA-Z]*[fF]?\b|\brm\s+-[a-zA-Z]*[fF][a-zA-Z]*[rR]\b|\brm\s+--recursive\b/.test(cmd)) {
+        const rmTargets = cmd.match(REPO_PATH_TOKEN_RE) ?? [];
+        for (const token of rmTargets) {
+          const { rel } = resolveRepoRelativePath(token, rootDir);
+          if (CODE_EDIT_RE.test(rel)) {
+            return finish({
+              decision: 'force_ask',
+              reason: `Destructive Command: rm -rf targeting repo directory "${rel}" requires explicit human confirmation.`,
+            });
+          }
+        }
+      }
+
       if (
         !isEvaluator &&
-        /evaluations\/[^\s'"]*\.json/.test(cmd) &&
+        /(?:evaluations\/[^\s'"]*\.json|(?:^|\s)evaluations\/?(?:\s|$))/.test(cmd) &&
         SHELL_MUTATION_RE.test(cmd)
       ) {
         return finish({
@@ -397,16 +421,6 @@ export function evaluateHookEvent(payload, options = {}) {
               });
             }
           }
-        } else if (!isEvaluator) {
-          for (const token of targets) {
-            const { rel } = resolveRepoRelativePath(token, rootDir);
-            if (PROTECTED_CONTROL_PLANE_RE.test(rel)) {
-              return finish({
-                decision: 'force_ask',
-                reason: `Control-Plane Lock: Shell mutation of protected file "${rel}" requires explicit human confirmation.`,
-              });
-            }
-          }
         }
       }
     }
@@ -447,8 +461,9 @@ export function evaluateHookEvent(payload, options = {}) {
           : `RAN (step ${payload?.stepIdx ?? '?'})`;
       appendCheckpoint(rootDir, `- [${ts}] \`${convKey.slice(0, 8)}\` run_command \`${shortCmd}\` → ${status}`);
       let mutatedCodePath = null;
-      if (!effectiveErr && SHELL_MUTATION_RE.test(cmd)) {
-        for (const token of cmd.match(REPO_PATH_TOKEN_RE) ?? []) {
+      const cmdForTracking = stripInlineScriptArgs(cmd);
+      if (!effectiveErr && SHELL_MUTATION_RE.test(cmdForTracking)) {
+        for (const token of cmdForTracking.match(REPO_PATH_TOKEN_RE) ?? []) {
           const { rel } = resolveRepoRelativePath(token, rootDir);
           if (CODE_EDIT_RE.test(rel)) {
             mutatedCodePath = rel;

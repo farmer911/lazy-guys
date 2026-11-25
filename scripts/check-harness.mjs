@@ -392,6 +392,15 @@ function validateEvaluationFile(rootDir, feat, errors, hasGitRepo) {
   }
   if (!Array.isArray(report.liveChecks) || report.liveChecks.length === 0) {
     errors.push(`${relPath}: liveChecks must contain at least one executed runtime probe`);
+  } else {
+    const LIVE_PROBE_RE =
+      /\b(?:localhost|127\.0\.0\.1|GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?:curl|fetch|axios|supertest|request)\b.*(?:localhost|127\.0\.0\.1)|\b(?:test:e2e|playwright|cypress)\b|\b(?:HTTP\/?\s*\d|status\s*(?:code\s*)?[:=]?\s*[1-5]\d{2})\b|→\s*[1-5]\d{2}\b|->\s*[1-5]\d{2}\b|\bDOM\b.*\b(?:inspect|verif|check|assert)|\b(?:docker\s+compose|psql|pg_dump)\b.*(?:->|→|exited?\s*\d)/i;
+    const hasRealProbe = report.liveChecks.some((check) => LIVE_PROBE_RE.test(String(check)));
+    if (!hasRealProbe) {
+      errors.push(
+        `${relPath}: liveChecks must contain at least one entry describing a real runtime probe (HTTP request, localhost URL, Playwright/E2E test, or DOM inspection)`
+      );
+    }
   }
   if (!Array.isArray(report.blockingIssues) || report.blockingIssues.length > 0) {
     errors.push(`${relPath}: blockingIssues must be an empty array for a done feature`);
