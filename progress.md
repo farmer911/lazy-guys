@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-23 16:02
+**Last Updated:** 2026-11-25 18:38
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -40,6 +40,10 @@
   - Normalized `brainstorming/SKILL.md` and `using-superpowers/SKILL.md` frontmatter to strict third-person trigger-only `Use when...`, updated `using-superpowers/references/antigravity-tools.md` (`update_steps` + `update_focus`), and clarified static diff review (`requesting-code-review`) vs mandatory live evaluation (`evaluating-features`)
   - Authored and `RED -> GREEN` pressure-tested `.agents/skills/be-express-pg/SKILL.md` (`53` lines) with `SCHEMA_MISMATCH` escalation wired into `graph_core.py`, `feature_delivery.py`, `bugfix.py`, `AGENTS.md`, and `apps/api/AGENTS.md` (`src/db/pool.ts`)
   - Froze baseline `specs/prd.md` and `designs/` (`design-tokens.json`, `stitch-manifest.json`, `screens/portfolio-home.html`) for `feat-005` readiness, hardened `scripts/check-harness.mjs` (strict `Use when` frontmatter, relative skill link/path check, executable skill scripts), and removed Python-repo rule leakage from `~/.gemini/config/plugins/superpowers/rules/AGENTS.md` (`54/54` unit/integration tests)
+- [x] Control-Plane, Workflow & Infrastructure Hardening (Package 1 + E2E Option 1):
+  - Fixed `PreToolUse` false-positive on read-only `git config --get/--list/--show-origin`, closed `git -c core.hooksPath=...` inline bypass, anchored `EVALUATOR_SIGNATURE`, added `force_ask` Control-Plane Lock on `scripts/{check-harness,agent-hooks}.mjs`, `.agents/hooks.json`, `.githooks/*`, and `.github/workflows/*`, blocked destructive `docker compose down -v` / `git push --force` / Python `pathlib` cross-role mutations / premature `feature_list.json` `"done"` transitions, granted `fe` write access to `apps/e2e/tests/`, and added `.agents/logs/hook-events.jsonl` telemetry (`12/12` hook tests)
+  - Hardened `scripts/check-harness.mjs` to enforce `One feature at a time`, detect orphan `evaluations/*.json` and evidence-SHA drift, validate `designs/stitch-manifest.json` screen/token files and all 8 core skills, verify active local `core.hooksPath=.githooks`, block tracked `.env`/key secrets, enforce `127.0.0.1` PostgreSQL binding in `docker-compose.yml` and `permissions: contents: read` + PR `npm audit` in `.github/workflows/ci.yml`, and scan `specs/contracts/**/*.ts` for hygiene violations (`27/27` harness tests)
+  - Upgraded `run_mechanical_gate()` in `.agents/workflows/graph_core.py` to execute both `./init.sh` and `npm run test:e2e`, added `require_cmd python3` to `init.sh`, and updated `bugfix.py` (`build_bugfix_qa_prompt`) to avoid writing orphan `evaluations/bugfix.json` (`12/12` Python workflow tests; `64/64` total unit/integration tests)
 
 ### What's In Progress
 
@@ -74,8 +78,8 @@
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
-- [x] `npm run check:harness`: pass (lifecycle & git hooks, CI workflow, DAG, git-ancestor evaluator SHAs, strict `tsconfig` & source hygiene, 16/16 `SKILL.md` frontmatter/link/script gates, frozen `specs/prd.md` + `designs/`)
+- [x] `npm run check:harness`: pass (lifecycle & git hooks, `core.hooksPath`, secret-free index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature & orphan-free DAG, git-ancestor evaluator SHAs, strict `tsconfig` & `apps`+`specs/contracts` hygiene, 16/16 `SKILL.md` gates, verified `stitch-manifest.json`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
-- [x] `npm run test:unit`: pass (24 harness + 8 agent-hooks + 9 Python workflow + 8 API + 5 Web RTL = 54/54 tests)
+- [x] `npm run test:unit`: pass (27 harness + 12 agent-hooks + 12 Python workflow + 8 API + 5 Web RTL = 64/64 tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)

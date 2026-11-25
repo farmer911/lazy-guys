@@ -24,9 +24,17 @@ const REQUIRED_FILES = [
   'progress.md',
   'session-handoff.md',
   'init.sh',
+  'docker-compose.yml',
   '.github/workflows/ci.yml',
   '.agents/skills/task-guardrail/SKILL.md',
   '.agents/skills/be-express-pg/SKILL.md',
+  '.agents/skills/pm-prd-story/SKILL.md',
+  '.agents/skills/design-stitch-flow/SKILL.md',
+  '.agents/skills/tech-lead-contract/SKILL.md',
+  '.agents/skills/fe-shadcn-clean/SKILL.md',
+  '.agents/skills/qa-vercel-audit/SKILL.md',
+  '.agents/skills/evaluating-features/SKILL.md',
+  '.agents/skills/evaluating-features/evaluator-prompt.md',
   '.agents/hooks.json',
   'scripts/agent-hooks.mjs',
   '.githooks/pre-commit',
@@ -54,7 +62,9 @@ const CI_REQUIRED_PATTERNS = [
   ['pull_request:', /\bpull_request\s*:/],
   ['schedule:', /\bschedule\s*:/],
   ['workflow_dispatch:', /\bworkflow_dispatch\s*:/],
+  ['permissions: contents: read', /\bpermissions\s*:[\s\S]*?\bcontents\s*:\s*read\b/],
   ['fetch-depth: 0', /\bfetch-depth\s*:\s*0\b/],
+  ['npm audit --audit-level=high', /\bnpm audit --audit-level=high\b/],
   ['npm run check:harness', /\bnpm run check:harness\b/],
   ['npm run typecheck', /\bnpm run typecheck\b/],
   ['npm run test:unit', /\bnpm run test:unit\b/],
@@ -117,7 +127,7 @@ function commitIsAncestorOfHead(rootDir, sha) {
   }
 }
 
-function validateHooks(rootDir, errors) {
+function validateHooks(rootDir, errors, hasGitRepo) {
   const agentHooksPath = path.join(rootDir, '.agents', 'hooks.json');
   if (fs.existsSync(agentHooksPath)) {
     const raw = fs.readFileSync(agentHooksPath, 'utf8');
@@ -140,6 +150,79 @@ function validateHooks(rootDir, errors) {
       }
     }
   }
+
+  if (hasGitRepo && process.env.CI !== 'true') {
+    let hooksPath = '';
+    try {
+      hooksPath = execFileSync('git', ['config', '--get', 'core.hooksPath'], {
+        cwd: rootDir,
+        encoding: 'utf8',
+      }).trim();
+    } catch {
+      hooksPath = '';
+    }
+    if (hooksPath !== '.githooks') {
+      errors.push(
+        `Git core.hooksPath must be ".githooks" (got "${hooksPath || 'unset'}"); run ./init.sh`
+      );
+    }
+  }
+}
+
+function validateGitTrackedSecrets(rootDir, errors, hasGitRepo) {
+  if (!hasGitRepo) return;
+  try {
+    const tracked = execFileSync('git', ['ls-files'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+    })
+      .split(/\r?\n/)
+      .filter(Boolean);
+    for (const rel of tracked) {
+      if (/^\.env(?:\.(?!example$).+)?$/.test(path.basename(rel)) || /\.(?:pem|key)$/i.test(rel)) {
+        errors.push(`Forbidden secret file "${rel}" is tracked in git`);
+      }
+    }
+  } catch {
+    // Ignore empty/uninitialized git index edge cases
+  }
+}
+
+function validateDockerCompose(rootDir, errors) {
+  const composePath = path.join(rootDir, 'docker-compose.yml');
+  if (!fs.existsSync(composePath)) return;
+  const raw = fs.readFileSync(composePath, 'utf8');
+  for (const line of raw.split(/\r?\n/)) {
+    if (/:5432['"]?\s*$/.test(line.trim()) && !/127\.0\.0\.1:/.test(line)) {
+      errors.push('docker-compose.yml must bind PostgreSQL port to 127.0.0.1 (not 0.0.0.0)');
+      break;
+    }
+  }
+}
+
+function validateStitchManifest(rootDir, errors) {
+  const manifestPath = path.join(rootDir, 'designs', 'stitch-manifest.json');
+  if (!fs.existsSync(manifestPath)) return;
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const tokensRel = String(manifest.tokensPath ?? '');
+    if (!tokensRel || !fs.existsSync(path.join(rootDir, tokensRel))) {
+      errors.push(`designs/stitch-manifest.json tokensPath "${tokensRel}" does not exist`);
+    }
+    if (!Array.isArray(manifest.screens) || manifest.screens.length === 0) {
+      errors.push('designs/stitch-manifest.json must declare a non-empty screens array');
+      return;
+    }
+    for (const screen of manifest.screens) {
+      const screenRel = String(screen?.path ?? '');
+      const fullScreen = path.join(rootDir, screenRel);
+      if (!screenRel || !fs.existsSync(fullScreen) || fs.statSync(fullScreen).size === 0) {
+        errors.push(`designs/stitch-manifest.json references missing or empty screen: ${screenRel}`);
+      }
+    }
+  } catch (err) {
+    errors.push(`designs/stitch-manifest.json is not valid JSON: ${err.message}`);
+  }
 }
 
 function validateTsconfigs(rootDir, errors) {
@@ -161,8 +244,14 @@ function validateTsconfigs(rootDir, errors) {
 }
 
 function validateCodeHygiene(rootDir, errors) {
-  const appsDir = path.join(rootDir, 'apps');
-  for (const srcPath of walkFiles(appsDir, (name) => TS_SOURCE_RE.test(name))) {
+  const scanRoots = [
+    path.join(rootDir, 'apps'),
+    path.join(rootDir, 'specs', 'contracts'),
+  ];
+  const sourceFiles = scanRoots.flatMap((dir) =>
+    walkFiles(dir, (name) => TS_SOURCE_RE.test(name))
+  );
+  for (const srcPath of sourceFiles) {
     if (srcPath.endsWith('.d.ts')) continue;
     const rel = path.relative(rootDir, srcPath).replace(/\\/g, '/');
     const isTestFile = TEST_FILE_RE.test(rel);
@@ -252,7 +341,8 @@ function validateFrontendArrowFunctions(rootDir, errors) {
   }
 }
 
-function validateEvaluationFile(rootDir, featId, errors, hasGitRepo) {
+function validateEvaluationFile(rootDir, feat, errors, hasGitRepo) {
+  const featId = feat.id;
   const relPath = path.join('evaluations', `${featId}.json`);
   const evalPath = path.join(rootDir, relPath);
   if (!fs.existsSync(evalPath)) {
@@ -274,11 +364,18 @@ function validateEvaluationFile(rootDir, featId, errors, hasGitRepo) {
   const commit = String(report.evaluatedCommit ?? '');
   if (!/^[0-9a-f]{7,40}$/i.test(commit)) {
     errors.push(`${relPath}: evaluatedCommit must be a 7-40 char git commit SHA`);
-  } else if (hasGitRepo) {
-    if (!commitExistsInGit(rootDir, commit)) {
-      errors.push(`${relPath}: evaluatedCommit "${commit}" does not exist in git history`);
-    } else if (!commitIsAncestorOfHead(rootDir, commit)) {
-      errors.push(`${relPath}: evaluatedCommit "${commit}" is not an ancestor of HEAD`);
+  } else {
+    if (String(feat.evidence ?? '').trim() && !String(feat.evidence ?? '').includes(commit)) {
+      errors.push(
+        `Feature ${featId} evidence must cite evaluatedCommit "${commit}" from ${relPath.replace(/\\/g, '/')}`
+      );
+    }
+    if (hasGitRepo) {
+      if (!commitExistsInGit(rootDir, commit)) {
+        errors.push(`${relPath}: evaluatedCommit "${commit}" does not exist in git history`);
+      } else if (!commitIsAncestorOfHead(rootDir, commit)) {
+        errors.push(`${relPath}: evaluatedCommit "${commit}" is not an ancestor of HEAD`);
+      }
     }
   }
   if (report.evaluatorRole !== 'independent-evaluator') {
@@ -316,7 +413,10 @@ export function validateHarness(rootDir) {
     }
   }
 
-  validateHooks(rootDir, errors);
+  validateHooks(rootDir, errors, hasGitRepo);
+  validateGitTrackedSecrets(rootDir, errors, hasGitRepo);
+  validateDockerCompose(rootDir, errors);
+  validateStitchManifest(rootDir, errors);
 
   const ciPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
   if (fs.existsSync(ciPath)) {
@@ -356,30 +456,52 @@ export function validateHarness(rootDir) {
           visitState.set(id, 2);
         };
 
-        for (const feat of parsed.features) {
-          if (!feat.id || !feat.name || !feat.description || !Array.isArray(feat.dependencies)) {
-            errors.push(`Invalid feature entry schema: ${JSON.stringify(feat.id ?? feat)}`);
-          } else {
-            for (const depId of feat.dependencies) {
-              const dep = byId.get(depId);
-              if (!dep) {
-                errors.push(`Feature ${feat.id} references unknown dependency "${depId}"`);
-              } else if (feat.status !== 'not-started' && dep.status !== 'done') {
-                errors.push(`Feature ${feat.id} (${feat.status}) depends on ${depId} (${dep.status}) which is not done`);
+          const activeIds = [];
+          for (const feat of parsed.features) {
+            if (!feat.id || !feat.name || !feat.description || !Array.isArray(feat.dependencies)) {
+              errors.push(`Invalid feature entry schema: ${JSON.stringify(feat.id ?? feat)}`);
+            } else {
+              for (const depId of feat.dependencies) {
+                const dep = byId.get(depId);
+                if (!dep) {
+                  errors.push(`Feature ${feat.id} references unknown dependency "${depId}"`);
+                } else if (feat.status !== 'not-started' && dep.status !== 'done') {
+                  errors.push(`Feature ${feat.id} (${feat.status}) depends on ${depId} (${dep.status}) which is not done`);
+                }
+              }
+              if (!visitState.has(feat.id)) detectCycles(feat.id, [feat.id]);
+            }
+            if (!VALID_STATUSES.has(feat.status)) {
+              errors.push(`Feature ${feat.id} has invalid status "${feat.status}"`);
+            }
+            if (feat.status === 'in-progress' || feat.status === 'ready-for-eval') {
+              activeIds.push(`${feat.id} (${feat.status})`);
+            }
+            if (feat.status === 'done') {
+              if (!feat.evidence || !String(feat.evidence).trim()) {
+                errors.push(`Feature ${feat.id} is marked done without verification evidence`);
+              }
+              validateEvaluationFile(rootDir, feat, errors, hasGitRepo);
+            }
+          }
+          if (activeIds.length > 1) {
+            errors.push(
+              `One feature at a time violated: multiple active features in feature_list.json (${activeIds.join(', ')})`
+            );
+          }
+
+          const evalDir = path.join(rootDir, 'evaluations');
+          if (fs.existsSync(evalDir)) {
+            for (const entry of fs.readdirSync(evalDir)) {
+              if (!entry.endsWith('.json')) continue;
+              const evalFeatId = entry.slice(0, -'.json'.length);
+              if (!byId.has(evalFeatId)) {
+                errors.push(
+                  `Orphan evaluation artifact evaluations/${entry} references unknown feature "${evalFeatId}"`
+                );
               }
             }
-            if (!visitState.has(feat.id)) detectCycles(feat.id, [feat.id]);
           }
-          if (!VALID_STATUSES.has(feat.status)) {
-            errors.push(`Feature ${feat.id} has invalid status "${feat.status}"`);
-          }
-          if (feat.status === 'done') {
-            if (!feat.evidence || !String(feat.evidence).trim()) {
-              errors.push(`Feature ${feat.id} is marked done without verification evidence`);
-            }
-            validateEvaluationFile(rootDir, feat.id, errors, hasGitRepo);
-          }
-        }
       }
     } catch (err) {
       errors.push(`feature_list.json is not valid JSON: ${err.message}`);

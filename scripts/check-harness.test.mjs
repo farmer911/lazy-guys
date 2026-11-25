@@ -35,6 +35,8 @@ on:
   schedule:
     - cron: '0 2 * * 1'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -42,6 +44,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - run: npm audit --audit-level=high
       - run: npm run check:harness
       - run: npm run typecheck
       - run: npm run test:unit
@@ -54,6 +57,10 @@ function makeTempFixture() {
   for (const file of ['AGENTS.md', 'GEMINI.md', 'progress.md', 'session-handoff.md', 'init.sh']) {
     fs.writeFileSync(path.join(dir, file), '# ok\n');
   }
+  fs.writeFileSync(
+    path.join(dir, 'docker-compose.yml'),
+    'services:\n  postgres:\n    ports:\n      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"\n'
+  );
   for (const appDir of ['apps/web', 'apps/api', 'apps/e2e']) {
     fs.mkdirSync(path.join(dir, appDir), { recursive: true });
     fs.writeFileSync(path.join(dir, appDir, 'AGENTS.md'), '# folder rules\n');
@@ -61,22 +68,40 @@ function makeTempFixture() {
   fs.mkdirSync(path.join(dir, 'designs', 'screens'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'designs', 'README.md'), '# designs\n');
   fs.writeFileSync(path.join(dir, 'designs', 'design-tokens.json'), '{"colors":{}}\n');
-  fs.writeFileSync(path.join(dir, 'designs', 'stitch-manifest.json'), '{"projectId":"baseline"}\n');
+  fs.writeFileSync(
+    path.join(dir, 'designs', 'stitch-manifest.json'),
+    JSON.stringify({
+      stitchProjectId: 'baseline',
+      tokensPath: 'designs/design-tokens.json',
+      screens: [{ slug: 'portfolio-home', path: 'designs/screens/portfolio-home.html' }],
+    })
+  );
   fs.writeFileSync(path.join(dir, 'designs', 'screens', 'portfolio-home.html'), '<main>ok</main>\n');
   fs.mkdirSync(path.join(dir, 'specs', 'contracts'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'specs', 'prd.md'), '# PRD\n');
   fs.writeFileSync(path.join(dir, 'specs', 'contracts', 'README.md'), '# contracts\n');
   fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'scripts', 'agent-hooks.mjs'), '// hook\n');
-  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'task-guardrail'), { recursive: true });
+  const coreSkills = [
+    'task-guardrail',
+    'be-express-pg',
+    'pm-prd-story',
+    'design-stitch-flow',
+    'tech-lead-contract',
+    'fe-shadcn-clean',
+    'qa-vercel-audit',
+    'evaluating-features',
+  ];
+  for (const skillName of coreSkills) {
+    fs.mkdirSync(path.join(dir, '.agents', 'skills', skillName), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, '.agents', 'skills', skillName, 'SKILL.md'),
+      `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence.\n---\n# ok\n`
+    );
+  }
   fs.writeFileSync(
-    path.join(dir, '.agents', 'skills', 'task-guardrail', 'SKILL.md'),
-    '---\nname: task-guardrail\ndescription: Use when executing multi-step tasks.\n---\n# ok\n'
-  );
-  fs.mkdirSync(path.join(dir, '.agents', 'skills', 'be-express-pg'), { recursive: true });
-  fs.writeFileSync(
-    path.join(dir, '.agents', 'skills', 'be-express-pg', 'SKILL.md'),
-    '---\nname: be-express-pg\ndescription: Use when implementing Express routes and PostgreSQL queries as the Backend role.\n---\n# ok\n'
+    path.join(dir, '.agents', 'skills', 'evaluating-features', 'evaluator-prompt.md'),
+    '# prompt\n'
   );
   fs.writeFileSync(path.join(dir, '.agents', 'mcp.stitch.example.json'), '{"mcpServers":{}}\n');
   fs.mkdirSync(path.join(dir, '.agents', 'workflows'), { recursive: true });
@@ -120,7 +145,7 @@ function makeTempFixture() {
           description: 'Desc',
           dependencies: [],
           status: 'done',
-          evidence: 'Passed ./init.sh and evaluator PASS',
+          evidence: 'Passed ./init.sh and evaluator PASS at 3a0f893',
         },
       ],
     })
@@ -247,6 +272,7 @@ test('flags done feature when evaluatedCommit does not exist in git history', ()
   execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
   execFileSync('git', ['commit', '--allow-empty', '-m', 'init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'core.hooksPath', '.githooks'], { cwd: dir, stdio: 'ignore' });
   const realSha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
     cwd: dir,
     encoding: 'utf8',
@@ -256,6 +282,21 @@ test('flags done feature when evaluatedCommit does not exist in git history', ()
     path.join(dir, 'evaluations', 'feat-001.json'),
     JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: 'deadbeef' }))
   );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Test',
+          description: 'Desc',
+          dependencies: [],
+          status: 'done',
+          evidence: 'Evaluated at deadbeef',
+        },
+      ],
+    })
+  );
   const badErrors = validateHarness(dir);
   assert.equal(badErrors.length, 1);
   assert.match(badErrors[0], /evaluatedCommit.*deadbeef.*git history/);
@@ -263,6 +304,21 @@ test('flags done feature when evaluatedCommit does not exist in git history', ()
   fs.writeFileSync(
     path.join(dir, 'evaluations', 'feat-001.json'),
     JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: realSha }))
+  );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Test',
+          description: 'Desc',
+          dependencies: [],
+          status: 'done',
+          evidence: `Evaluated at ${realSha}`,
+        },
+      ],
+    })
   );
   assert.deepEqual(validateHarness(dir), []);
   fs.rmSync(dir, { recursive: true, force: true });
@@ -372,7 +428,7 @@ test('flags done or active feature whose dependency is not done', () => {
           description: 'Desc',
           dependencies: ['feat-001'],
           status: 'done',
-          evidence: 'Passed ./init.sh and evaluator PASS',
+          evidence: 'Passed ./init.sh and evaluator PASS at 3a0f893',
         },
       ],
     })
@@ -463,10 +519,26 @@ test('flags evaluatedCommit that exists in git objects but is not an ancestor of
     encoding: 'utf8',
   }).trim();
   execFileSync('git', ['reset', '--hard', 'HEAD~1'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'core.hooksPath', '.githooks'], { cwd: dir, stdio: 'ignore' });
 
   fs.writeFileSync(
     path.join(dir, 'evaluations', 'feat-001.json'),
     JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: orphanSha }))
+  );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Test',
+          description: 'Desc',
+          dependencies: [],
+          status: 'done',
+          evidence: `Evaluated at ${orphanSha}`,
+        },
+      ],
+    })
   );
 
   const errors = validateHarness(dir);
@@ -624,6 +696,133 @@ test('executing-plans bundled scripts run end-to-end without external subagent-d
     assert.match(fs.readFileSync(pkgPath, 'utf8'), /\+done/);
   } finally {
     fs.rmSync(repoDir, { recursive: true, force: true });
+  }
+});
+
+test('flags multiple active features, orphan evaluation files, and evidence SHA mismatch', () => {
+  const dir = makeTempFixture();
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'bugfix.json'),
+    JSON.stringify(makeValidEvaluation('bugfix'))
+  );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Done base',
+          description: 'Desc',
+          dependencies: [],
+          status: 'done',
+          evidence: 'Mismatched commit aaaaaaa only',
+        },
+        {
+          id: 'feat-002',
+          name: 'Active one',
+          description: 'Desc',
+          dependencies: ['feat-001'],
+          status: 'in-progress',
+          evidence: '',
+        },
+        {
+          id: 'feat-003',
+          name: 'Active two',
+          description: 'Desc',
+          dependencies: ['feat-001'],
+          status: 'ready-for-eval',
+          evidence: 'staged',
+        },
+      ],
+    })
+  );
+
+  const errors = validateHarness(dir);
+  const joined = errors.join('\n');
+  assert.match(joined, /One feature at a time|active features/i);
+  assert.match(joined, /bugfix\.json.*orphan|unknown feature/i);
+  assert.match(joined, /feat-001.*evidence.*3a0f893/i);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags missing stitch-manifest screen files, missing core role skills, and any/@ts-ignore in specs/contracts', () => {
+  const dir = makeTempFixture();
+  fs.unlinkSync(path.join(dir, '.agents', 'skills', 'qa-vercel-audit', 'SKILL.md'));
+  fs.writeFileSync(
+    path.join(dir, 'designs', 'stitch-manifest.json'),
+    JSON.stringify({
+      stitchProjectId: 'baseline',
+      tokensPath: 'designs/design-tokens.json',
+      screens: [{ slug: 'missing', path: 'designs/screens/does-not-exist.html' }],
+    })
+  );
+  fs.writeFileSync(
+    path.join(dir, 'specs', 'contracts', 'feat-005.ts'),
+    '// @ts-ignore\nexport interface BadContract { data: any; }\n'
+  );
+
+  const errors = validateHarness(dir);
+  const joined = errors.join('\n');
+  assert.match(joined, /qa-vercel-audit\/SKILL\.md/);
+  assert.match(joined, /does-not-exist\.html/);
+  assert.match(joined, /specs\/contracts\/feat-005\.ts.*@ts-ignore/);
+  assert.match(joined, /specs\/contracts\/feat-005\.ts.*\bany\b/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('flags unconfigured git core.hooksPath, tracked .env secrets, exposed 0.0.0.0 Docker port, and missing CI read-only permissions', () => {
+  const dir = makeTempFixture();
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  fs.writeFileSync(path.join(dir, '.env'), 'POSTGRES_PASSWORD=secret\n');
+  execFileSync('git', ['add', '-f', '.env'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', 'leak env'], { cwd: dir, stdio: 'ignore' });
+  const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    cwd: dir,
+    encoding: 'utf8',
+  }).trim();
+
+  fs.writeFileSync(
+    path.join(dir, 'evaluations', 'feat-001.json'),
+    JSON.stringify(makeValidEvaluation('feat-001', { evaluatedCommit: sha }))
+  );
+  fs.writeFileSync(
+    path.join(dir, 'feature_list.json'),
+    JSON.stringify({
+      features: [
+        {
+          id: 'feat-001',
+          name: 'Test',
+          description: 'Desc',
+          dependencies: [],
+          status: 'done',
+          evidence: `Verified at ${sha}`,
+        },
+      ],
+    })
+  );
+  fs.writeFileSync(
+    path.join(dir, 'docker-compose.yml'),
+    'services:\n  postgres:\n    ports:\n      - "${POSTGRES_PORT:-5432}:5432"\n'
+  );
+  fs.writeFileSync(
+    path.join(dir, '.github', 'workflows', 'ci.yml'),
+    VALID_CI_WORKFLOW.replace('permissions:\n  contents: read\n', '')
+  );
+
+  const prevCi = process.env.CI;
+  delete process.env.CI;
+  try {
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /core\.hooksPath/i);
+    assert.match(joined, /\.env.*tracked|secret/i);
+    assert.match(joined, /127\.0\.0\.1/);
+    assert.match(joined, /permissions|contents:\s*read/);
+  } finally {
+    if (prevCi !== undefined) process.env.CI = prevCi;
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

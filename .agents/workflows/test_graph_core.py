@@ -3,13 +3,17 @@ import glob
 import os
 import unittest
 
+from unittest import mock
+
 from graph_core import (
     EVALUATOR_SIGNATURE,
     MAX_ESCALATION_RETRIES,
+    build_bugfix_qa_prompt,
     build_evaluator_prompt,
     build_role_prompt,
     route_bugfix_domain,
     run_escalation_loop,
+    run_mechanical_gate,
     run_qa_gate_loop,
 )
 
@@ -239,6 +243,53 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["status"], "READY")
         self.assertEqual(result["escalationsUsed"], 1)
         self.assertEqual([c[0] for c in calls], ["be", "tech-lead", "be", "fe"])
+
+    def test_run_mechanical_gate_runs_init_and_playwright_e2e_by_default(self):
+        executed = []
+
+        def fake_run(cmd, cwd, capture_output, text, check):
+            executed.append(cmd)
+            res = mock.Mock()
+            res.returncode = 0
+            res.stdout = f"ok {cmd[0]}"
+            res.stderr = ""
+            return res
+
+        with mock.patch("graph_core.subprocess.run", side_effect=fake_run):
+            gate = run_mechanical_gate("/repo")
+            self.assertTrue(gate["ok"])
+            self.assertEqual(executed, [["./init.sh"], ["npm", "run", "test:e2e"]])
+
+            executed.clear()
+            gate_init_only = run_mechanical_gate("/repo", include_e2e=False)
+            self.assertTrue(gate_init_only["ok"])
+            self.assertEqual(executed, [["./init.sh"]])
+
+    def test_build_bugfix_qa_prompt_prevents_orphan_evaluations_file_without_feature_id(self):
+        standalone = build_bugfix_qa_prompt(
+            bug_report="Fix header overflow",
+            commit_sha="abc1234",
+            workspace_root="/repo",
+            feature_id=None,
+        )
+        self.assertTrue(standalone.startswith("[AGENT_ROLE: qa]\n"))
+        self.assertNotIn("evaluations/bugfix.json", standalone)
+        self.assertIn("Do NOT write any file in `evaluations/`", standalone)
+
+        linked = build_bugfix_qa_prompt(
+            bug_report="Fix modal close",
+            commit_sha="abc1234",
+            workspace_root="/repo",
+            feature_id="feat-005",
+        )
+        self.assertIn(EVALUATOR_SIGNATURE, linked)
+        self.assertIn("feat-005", linked)
+
+    def test_feature_delivery_instructs_fe_on_e2e_spec_updates(self):
+        wf_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(wf_dir, "feature_delivery.py"), encoding="utf-8") as handle:
+            src = handle.read()
+        self.assertIn("apps/e2e/tests/", src)
 
 
 if __name__ == "__main__":

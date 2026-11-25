@@ -25,6 +25,7 @@ is_port_free() {
 echo "[1/5] Checking prerequisites..."
 require_cmd node
 require_cmd npm
+require_cmd python3
 require_cmd docker
 
 if [ -d .git ]; then

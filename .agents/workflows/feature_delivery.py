@@ -56,8 +56,8 @@ async def _run_fe(attempt):
             ".agents/skills/fe-shadcn-clean/SKILL.md",
             (
                 f"Integration pass #{attempt + 1} for `{feature_id}`.\n"
-                f"Build arrow-function `shadcn/ui` components in `apps/web/` matching `designs/` "
-                f"and wire to `{contract_spec['contractPath']}`.\n"
+                f"Build arrow-function `shadcn/ui` components in `apps/web/` matching `designs/`, "
+                f"wire to `{contract_spec['contractPath']}`, and update/add Playwright E2E coverage in `apps/e2e/tests/`.\n"
                 f"{contract_spec['feInstructions']}\n"
                 f"If any API endpoint or field diverges from `designs/`, return `status='CONTRACT_MISMATCH'`."
             ),

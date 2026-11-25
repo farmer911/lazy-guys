@@ -145,6 +145,28 @@ def build_evaluator_prompt(
     )
 
 
+def build_bugfix_qa_prompt(
+    bug_report: str,
+    commit_sha: str,
+    workspace_root: str,
+    feature_id: str | None = None,
+) -> str:
+    cleaned_id = (feature_id or "").strip()
+    if cleaned_id and cleaned_id != "bugfix":
+        return (
+            build_evaluator_prompt(cleaned_id, commit_sha, workspace_root)
+            + f"\nRegression context to verify:\n{bug_report.strip()}\n"
+        )
+    return (
+        f"[AGENT_ROLE: qa]\n"
+        f"First read `.agents/skills/qa-vercel-audit/SKILL.md`.\n\n"
+        f"Verify regression fix at commit `{commit_sha}` in `{workspace_root}` for bug:\n"
+        f"{bug_report.strip()}\n\n"
+        f"Probe the live running Express + PostgreSQL + Vite stack and run `npm run test:e2e`. "
+        f"Do NOT write any file in `evaluations/` (set `evaluationPath` to `'inline-regression-check'`).\n"
+    )
+
+
 async def run_escalation_loop(
     run_be,
     run_fe,
@@ -225,18 +247,34 @@ def route_bugfix_domain(triage_result: dict) -> list[str]:
     raise ValueError(f"Invalid bugfix domain: {domain}")
 
 
-def run_mechanical_gate(cwd: str) -> dict:
-    proc = subprocess.run(
+def run_mechanical_gate(cwd: str, include_e2e: bool = True) -> dict:
+    init_proc = subprocess.run(
         ["./init.sh"],
         cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
     )
+    combined_out = init_proc.stdout + "\n" + init_proc.stderr
+    if init_proc.returncode != 0 or not include_e2e:
+        return {
+            "ok": init_proc.returncode == 0,
+            "exitCode": init_proc.returncode,
+            "outputTail": combined_out[-4000:],
+        }
+
+    e2e_proc = subprocess.run(
+        ["npm", "run", "test:e2e"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    combined_out += "\n" + e2e_proc.stdout + "\n" + e2e_proc.stderr
     return {
-        "ok": proc.returncode == 0,
-        "exitCode": proc.returncode,
-        "outputTail": (proc.stdout + "\n" + proc.stderr)[-4000:],
+        "ok": e2e_proc.returncode == 0,
+        "exitCode": e2e_proc.returncode,
+        "outputTail": combined_out[-4000:],
     }
 
 
@@ -287,7 +325,7 @@ def finalize_done_after_eval(
             json.dump(data, handle, indent=2)
             handle.write("\n")
 
-    gate = run_mechanical_gate(cwd)
+    gate = run_mechanical_gate(cwd, include_e2e=False)
     if not gate["ok"]:
         raise RuntimeError(
             f"Post-evaluation harness gate failed:\n{gate['outputTail']}"

@@ -22,7 +22,8 @@ Never invent fallback data (`field ?? '4 engineers'`), never mark a required des
 1. **Code Style Consistency:** Use `export const Component = ({ ... }: Props) => { ... }` everywhere in `apps/web/src/` (enforced by AST gate in `npm run check:harness`).
 2. **`shadcn/ui` Composition:** Reuse `@/components/ui/*` (`Card`, `Badge`, `Button`, etc.) and `cn()`. Separate data-fetching hooks (`@tanstack/react-query`) from presentational props.
 3. **100% Visual Fidelity to `designs/`:** Match layout hierarchy, spacing, tokens, and `loading`/`empty`/`error`/`375px` states from `designs/`. Zero unapproved gradients, animations, or layout inventions.
-4. **Structured Return Contract:**
+4. **Playwright E2E Spec Updates (`apps/e2e/tests/`):** When adding or changing user-facing UI flows, update or add E2E specs in `apps/e2e/tests/*.spec.ts` so `run_mechanical_gate` verifies end-to-end behavior before QA evaluation.
+5. **Structured Return Contract:**
    - When API + contract satisfy every field on the Stitch screen:
      `{"status": "READY", "changedFiles": [...], "testsRun": "npm run test --workspace=apps/web"}`
    - When an endpoint, status code, or field required by `designs/` is missing or mismatched in `specs/contracts/` or live `apps/api`: STOP integration and return immediately to Tech Lead:
@@ -50,4 +51,4 @@ Never invent fallback data (`field ?? '4 engineers'`), never mark a required des
 
 - Writing `function MyComponent()` instead of `export const MyComponent = () =>`
 - Hardcoding fake fallback copy or conditionally hiding approved Stitch UI elements to pass tests
-- Attempting to touch `apps/api/`, `specs/contracts/`, or `apps/e2e/`
+- Attempting to touch `apps/api/`, `specs/contracts/`, `apps/e2e/playwright.config.ts`, or `evaluations/`

@@ -10,6 +10,9 @@ on:
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.event_name != 'schedule' }}
@@ -61,8 +64,8 @@ jobs:
       - name: Install workspace dependencies
         run: npm ci
 
-      - name: Audit high-severity dependency drift on scheduled sweep
-        if: github.event_name == 'schedule'
+      - name: Audit high-severity dependency drift on PRs and scheduled sweeps
+        if: github.event_name == 'schedule' || github.event_name == 'pull_request'
         run: npm audit --audit-level=high
 
       - name: Verify mechanical harness and evaluator artifacts

@@ -9,7 +9,8 @@ with open(os.path.join(ROOT, ".agents", "workflows", "graph_core.py"), encoding=
     exec(compile(_f.read(), "graph_core.py", "exec"), globals())
 
 bug_report = str((args or {}).get("bugReport", "")).strip()
-feature_id = str((args or {}).get("featureId", "bugfix")).strip()
+feature_id = str((args or {}).get("featureId", "")).strip() or None
+commit_scope = feature_id or "bugfix"
 if not bug_report:
     raise ValueError("args.bugReport is required")
 
@@ -62,7 +63,7 @@ if not gate["ok"]:
 dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
 if dirty:
     subprocess.run(["git", "add", "-A"], cwd=ROOT, check=True)
-    subprocess.run(["git", "commit", "-m", f"fix({feature_id}): apply verified bugfix"], cwd=ROOT, check=True)
+    subprocess.run(["git", "commit", "-m", f"fix({commit_scope}): apply verified bugfix"], cwd=ROOT, check=True)
 
 head_sha = subprocess.check_output(
     ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
@@ -70,7 +71,7 @@ head_sha = subprocess.check_output(
 
 phase("4. White-Room QA Regression Verification")
 qa_verdict = await agent(
-    prompt=build_evaluator_prompt(feature_id, head_sha, ROOT),
+    prompt=build_bugfix_qa_prompt(bug_report, head_sha, ROOT, feature_id=feature_id),
     schema=QA_EVAL_SCHEMA,
     role="QA Regression Evaluator",
 )
