@@ -27,6 +27,7 @@ const REQUIRED_FILES = [
   'docker-compose.yml',
   '.github/workflows/ci.yml',
   '.agents/skills/task-guardrail/SKILL.md',
+  '.agents/skills/adversarial-audit/SKILL.md',
   '.agents/skills/be-express-pg/SKILL.md',
   '.agents/skills/pm-prd-story/SKILL.md',
   '.agents/skills/design-stitch-flow/SKILL.md',
@@ -572,6 +573,45 @@ function validateSkillsIntegrity(rootDir, errors) {
     const mode = fs.statSync(anySkillFile).mode;
     if ((mode & 0o111) === 0) {
       errors.push(`${relPath} must be executable (chmod +x)`);
+    }
+  }
+
+  if (fs.existsSync(skillsRoot)) {
+    for (const entry of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const skillDir = path.join(skillsRoot, entry.name);
+      const skillFiles = walkFiles(skillDir, () => true);
+      const entryPoint = path.join(skillDir, 'SKILL.md');
+      if (!fs.existsSync(entryPoint)) continue;
+
+      const reachable = new Set([entryPoint]);
+      const queue = [entryPoint];
+      while (queue.length > 0) {
+        const current = queue.shift();
+        let text = '';
+        try {
+          text = fs.readFileSync(current, 'utf8');
+        } catch {
+          continue;
+        }
+        for (const candidate of skillFiles) {
+          if (reachable.has(candidate)) continue;
+          const base = path.basename(candidate);
+          if (text.includes(base)) {
+            reachable.add(candidate);
+            queue.push(candidate);
+          }
+        }
+      }
+
+      for (const candidate of skillFiles) {
+        if (!reachable.has(candidate)) {
+          const relOrphan = path.relative(rootDir, candidate).replace(/\\/g, '/');
+          errors.push(
+            `${relOrphan} is an orphan unreferenced auxiliary skill file (not reachable from SKILL.md)`
+          );
+        }
+      }
     }
   }
 }

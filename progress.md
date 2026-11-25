@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 00:02
+**Last Updated:** 2026-11-26 00:37
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -52,6 +52,10 @@
   - Trimmed all 8 vendored Superpowers skills (`using-superpowers`, `using-git-worktrees`, `finishing-a-development-branch`, `writing-plans`, `executing-plans`, `brainstorming`, `systematic-debugging`, `requesting-code-review`) to Node/TypeScript/Vitest/Playwright conventions, removed Rust/Go/Python boilerplate (`Cargo.toml`, `pyproject.toml`, `go.mod`, `pytest`) and the `1%` over-trigger rule (`avg 50.8` lines/skill, `max 89` lines)
   - Added explicit `Not for...` negative trigger boundaries to all `16/16` `SKILL.md` files and mechanically locked both `Not for` boundaries and zero foreign-stack boilerplate in `scripts/check-harness.mjs` (`28/28` harness tests; `68/68` total unit/integration tests)
   - Removed unused auxiliary files (`brainstorming/scripts/*`, `visual-companion.md`, 6 non-Antigravity platform tool refs, `systematic-debugging/{find-polluter.sh,condition-based-waiting-example.ts}`) and added `.vscode/` to `.gitignore`
+- [x] 3-Layer Adversarial Audit Combo & Live Red-Team Hook Fixes (`71/71` unit/integration tests):
+  - Added transitive orphan skill-file reachability gate in `scripts/check-harness.mjs` (`29/29` harness tests)
+  - Authored and subagent-tested `.agents/skills/adversarial-audit/SKILL.md` (`45` lines, `Use when... Not for...`), anchored in `AGENTS.md` and routed in `using-superpowers/SKILL.md`
+  - Fixed 5 real hook bypasses caught live by the `adversarial-audit` subagent in `scripts/agent-hooks.mjs` (`17/17` hook tests): Antigravity `transcript.jsonl` `GENERIC` exit-code verification on `Stop`, dot-prefixed `REPO_PATH_TOKEN_RE` lookbehind (`.agents`/`.githooks`/`.github`), `;`/`||` exit-masking bypasses, shell `feature_list.json` write lock, and removed `pytest` drift
 
 ### What's In Progress
 

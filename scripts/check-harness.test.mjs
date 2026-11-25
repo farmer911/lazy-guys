@@ -87,6 +87,7 @@ function makeTempFixture() {
   fs.writeFileSync(path.join(dir, '.agents', 'STATE.md'), '# Active Task State\n');
   const coreSkills = [
     'task-guardrail',
+    'adversarial-audit',
     'be-express-pg',
     'pm-prd-story',
     'design-stitch-flow',
@@ -97,9 +98,10 @@ function makeTempFixture() {
   ];
   for (const skillName of coreSkills) {
     fs.mkdirSync(path.join(dir, '.agents', 'skills', skillName), { recursive: true });
+    const body = skillName === 'evaluating-features' ? '# ok\nSee evaluator-prompt.md\n' : '# ok\n';
     fs.writeFileSync(
       path.join(dir, '.agents', 'skills', skillName, 'SKILL.md'),
-      `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence. Not for unrelated tasks.\n---\n# ok\n`
+      `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence. Not for unrelated tasks.\n---\n${body}`
     );
   }
   fs.writeFileSync(
@@ -851,6 +853,19 @@ test('flags SKILL.md missing Not for boundary or containing foreign-stack boiler
     const joined = errors.join('\n');
     assert.match(joined, /foreign-bloat\/SKILL\.md.*Not for/i);
     assert.match(joined, /foreign-bloat\/SKILL\.md.*foreign-stack|boilerplate/i);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('flags orphan unreferenced auxiliary files inside .agents/skills/*', () => {
+  const dir = makeTempFixture();
+  const orphanPath = path.join(dir, '.agents', 'skills', 'task-guardrail', 'unused-helper.md');
+  fs.writeFileSync(orphanPath, '# Dead file never referenced by SKILL.md\n');
+
+  try {
+    const errors = validateHarness(dir);
+    assert.match(errors.join('\n'), /task-guardrail\/unused-helper\.md.*orphan|unreferenced/i);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

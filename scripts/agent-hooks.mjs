@@ -8,10 +8,10 @@ const CODE_EDIT_RE =
   /^(?:apps\/|scripts\/|db\/|\.agents\/workflows\/|specs\/contracts\/|\.githooks\/|\.github\/workflows\/|\.agents\/hooks\.json$|package\.json$|init\.sh$|docker-compose\.yml$)/;
 
 const VERIFICATION_CMD_RE =
-  /(?:^|[;&|\n]\s*)(?:\.\/init\.sh\b|npm\s+run\s+(?:test(?::unit|:e2e)?|typecheck|build)\b|node\s+--test\b|npx\s+(?:vitest|tsc|playwright)\b|pytest\b)/;
+  /(?:^|[;&|\n]\s*)(?:\.\/init\.sh\b|npm\s+run\s+(?:test(?::unit|:e2e)?|typecheck|build)\b|node\s+--test\b|npx\s+(?:vitest|tsc|playwright)\b)/;
 
 const EXIT_MASK_RE =
-  /(?:\|\|\s*(?:true|:|echo\b|exit\s+0\b)|;\s*(?:true|:|exit\s+0)\s*$)/;
+  /(?:\|\||(?:\.\/init\.sh\b|npm\s+run\s+(?:test(?::unit|:e2e)?|typecheck|build)\b|node\s+--test\b|npx\s+(?:vitest|tsc|playwright)\b)[^\n;&|]*;)/;
 
 const EVALUATOR_ANCHORED_RE =
   /^\s*(?:\[AGENT_ROLE:\s*qa\s*\]\s*)?You are an Independent Skeptical QA & Recruiter Product Evaluator\b/;
@@ -29,7 +29,7 @@ const ROLE_WRITE_ALLOWLIST = {
 };
 
 const REPO_PATH_TOKEN_RE =
-  /\b(?:(?:specs|designs|apps|db|evaluations|scripts|\.agents|\.githooks|\.github)\/[^\s'";|&)>]+|feature_list\.json|progress\.md|session-handoff\.md|AGENTS\.md|GEMINI\.md|package\.json|init\.sh|docker-compose\.yml|\.env)\b/g;
+  /(?<![A-Za-z0-9_.-])(?:(?:specs|designs|apps|db|evaluations|scripts|\.agents|\.githooks|\.github)\/[^\s'";|&)>]+|feature_list\.json|progress\.md|session-handoff\.md|AGENTS\.md|GEMINI\.md|package\.json|init\.sh|docker-compose\.yml|\.env)\b/g;
 
 const SHELL_MUTATION_RE =
   /(?:>>?(?!\s*&|\s*\/dev\/null)|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bcp\b|\bmv\b|\brm\b|\btouch\b|\btruncate\b|\bdd\b|\bunlink\b|writeFile|appendFile|copyFile|fs\.write|write_text|write_bytes|shutil\.(?:copy|move|rmtree)|os\.(?:remove|unlink|replace|rename)|\bgit\s+(?:checkout|restore)\b|open\([^)]*['"][wa])/;
@@ -161,6 +161,48 @@ function writeExecState(rootDir, convKey, state) {
   } catch {
     // Best-effort state persistence
   }
+}
+
+function readCommandExitStatusFromTranscript(transcriptPath, stepIdx) {
+  if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
+  try {
+    const lines = fs.readFileSync(transcriptPath, 'utf8').trim().split(/\r?\n/);
+    let fallbackCode = null;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (!lines[i].trim()) continue;
+      let entry;
+      try {
+        entry = JSON.parse(lines[i]);
+      } catch {
+        continue;
+      }
+      if (entry.type && entry.type !== 'GENERIC') continue;
+      const content = typeof entry.content === 'string' ? entry.content : '';
+      const exitMatch = content.match(/Command exited with code (\d+)\./);
+      if (!exitMatch) continue;
+      const code = Number(exitMatch[1]);
+      if (typeof stepIdx === 'number' && entry.step_index === stepIdx) {
+        return code;
+      }
+      if (
+        fallbackCode === null &&
+        typeof stepIdx === 'number' &&
+        typeof entry.step_index === 'number' &&
+        entry.step_index >= stepIdx &&
+        entry.step_index <= stepIdx + 2
+      ) {
+        fallbackCode = code;
+      }
+    }
+    return fallbackCode;
+  } catch {
+    return null;
+  }
+}
+
+function readCommandExitErrorFromTranscript(transcriptPath, stepIdx) {
+  const code = readCommandExitStatusFromTranscript(transcriptPath, stepIdx);
+  return typeof code === 'number' && code !== 0 ? `exit status ${code}` : '';
 }
 
 function appendCheckpoint(rootDir, line) {
@@ -309,6 +351,18 @@ export function evaluateHookEvent(payload, options = {}) {
         });
       }
 
+      if (
+        !isEvaluator &&
+        /(?<![A-Za-z0-9_.-])feature_list\.json\b/.test(cmd) &&
+        SHELL_MUTATION_RE.test(cmd)
+      ) {
+        return finish({
+          decision: 'deny',
+          reason:
+            'Harness Lock: Modify feature_list.json only via write_file/edit_file so certification checks are enforced.',
+        });
+      }
+
       if (SHELL_MUTATION_RE.test(cmd)) {
         const targets = cmd.match(REPO_PATH_TOKEN_RE) ?? [];
         if (role) {
@@ -376,10 +430,20 @@ export function evaluateHookEvent(payload, options = {}) {
     } else if (toolName === 'run_command') {
       const cmd = String(args.CommandLine ?? '').replace(/\s+/g, ' ').trim();
       const shortCmd = cmd.length > 120 ? `${cmd.slice(0, 117)}...` : cmd;
-      const status = errText ? `FAIL (${errText})` : 'PASS (exit 0)';
+      const transcriptCode = readCommandExitStatusFromTranscript(
+        payload?.transcriptPath,
+        payload?.stepIdx
+      );
+      const effectiveErr =
+        errText || (typeof transcriptCode === 'number' && transcriptCode !== 0 ? `exit status ${transcriptCode}` : '');
+      const status = effectiveErr
+        ? `FAIL (${effectiveErr})`
+        : transcriptCode === 0
+          ? 'PASS (exit 0)'
+          : `RAN (step ${payload?.stepIdx ?? '?'})`;
       appendCheckpoint(rootDir, `- [${ts}] \`${convKey.slice(0, 8)}\` run_command \`${shortCmd}\` → ${status}`);
       let mutatedCodePath = null;
-      if (!errText && SHELL_MUTATION_RE.test(cmd)) {
+      if (!effectiveErr && SHELL_MUTATION_RE.test(cmd)) {
         for (const token of cmd.match(REPO_PATH_TOKEN_RE) ?? []) {
           const { rel } = resolveRepoRelativePath(token, rootDir);
           if (CODE_EDIT_RE.test(rel)) {
@@ -394,9 +458,10 @@ export function evaluateHookEvent(payload, options = {}) {
         writeExecState(rootDir, convKey, state);
       } else if (VERIFICATION_CMD_RE.test(cmd) && !EXIT_MASK_RE.test(cmd)) {
         state.lastVerifySeq = state.seq;
+        state.lastVerifyStepIdx = typeof payload?.stepIdx === 'number' ? payload.stepIdx : null;
         state.lastVerifyCommand = shortCmd;
-        state.lastVerifyPassed = !errText;
-        state.lastVerifyError = errText || null;
+        state.lastVerifyPassed = !effectiveErr;
+        state.lastVerifyError = effectiveErr || null;
         writeExecState(rootDir, convKey, state);
       }
     }
@@ -423,10 +488,22 @@ export function evaluateHookEvent(payload, options = {}) {
           reason: `Execution Evidence Gate: You modified "${state.lastCodeEditPath}" without running a verification command afterwards. Run ./init.sh or npm run test:unit && npm run typecheck before finishing your turn.`,
         });
       }
-      if (state.lastVerifyPassed === false) {
+      let verifyPassed = state.lastVerifyPassed;
+      let verifyError = state.lastVerifyError;
+      if (verifyPassed !== false && typeof state.lastVerifyStepIdx === 'number') {
+        const lateErr = readCommandExitErrorFromTranscript(
+          payload?.transcriptPath,
+          state.lastVerifyStepIdx
+        );
+        if (lateErr) {
+          verifyPassed = false;
+          verifyError = lateErr;
+        }
+      }
+      if (verifyPassed === false) {
         return finish({
           decision: 'continue',
-          reason: `Execution Evidence Gate: Last verification command "${state.lastVerifyCommand}" failed (${state.lastVerifyError}). Fix the failure and re-run verification with exit code 0 before finishing your turn.`,
+          reason: `Execution Evidence Gate: Last verification command "${state.lastVerifyCommand}" failed (${verifyError}). Fix the failure and re-run verification with exit code 0 before finishing your turn.`,
         });
       }
     }

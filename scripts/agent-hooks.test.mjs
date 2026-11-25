@@ -772,3 +772,163 @@ test('Execution Evidence Gate rejects check:harness-only, exit-code masking (|| 
     fs.rmSync(tempRepo, { recursive: true, force: true });
   }
 });
+
+test('Execution Evidence Gate detects non-zero run_command exit from transcript.jsonl when payload.error is unset', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-transcript-exit-'));
+  try {
+    const convId = 'conv-transcript-exit-004';
+    const okHarness = { validateHarnessFn: () => [] };
+    const transcriptPath = path.join(tempRepo, 'transcript.jsonl');
+
+    // 1. Agent edits code
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 10,
+        toolCall: {
+          name: 'edit_file',
+          args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    // 2. Antigravity fires PostToolUse BEFORE flushing step 11 to transcript.jsonl (payload.error unset)
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 11,
+        transcriptPath,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run test:unit' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    // 3. Antigravity flushes step 11 with exit code 1 before Stop runs
+    fs.writeFileSync(
+      transcriptPath,
+      `${JSON.stringify({
+        step_index: 11,
+        type: 'GENERIC',
+        status: 'DONE',
+        content: 'Created At: ...\nCommand exited with code 1.\n\nCommand output:\n1 failing test',
+      })}\n`
+    );
+
+    // 4. Stop MUST block because transcript recorded Command exited with code 1 for lastVerifyStepIdx
+    const stopBlocked = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        transcriptPath,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopBlocked.decision, 'continue');
+    assert.match(stopBlocked.reason, /exit status 1|failed/i);
+    const cp = fs.readFileSync(path.join(tempRepo, '.agents', 'logs', 'session-checkpoint.md'), 'utf8');
+    assert.doesNotMatch(cp, /PASS \(exit 0\)/);
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('PreToolUse & Stop block dot-prefixed shell control-plane bypasses, feature_list.json shell writes, and semicolon/fallback exit masking', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-redteam-fixes-'));
+  try {
+    const dotHooks = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'tweak hooks',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'echo {} > .agents/hooks.json' },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(dotHooks.decision, 'force_ask');
+
+    const dotGitHook = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'tweak pre-commit',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'echo "exit 0" > .githooks/pre-commit' },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(dotGitHook.decision, 'force_ask');
+
+    const feDotBypass = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: '[AGENT_ROLE: fe]\nBypass role lock',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'echo x > .agents/hooks.json && touch apps/web/src/a.ts' },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(feDotBypass.decision, 'deny');
+
+    const shellFeatureList = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'mark done via shell',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'echo "{}" > feature_list.json' },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(shellFeatureList.decision, 'deny');
+
+    const convId = 'conv-mask-005';
+    const okHarness = { validateHarnessFn: () => [] };
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    for (const maskedCmd of ['npm run test:unit; echo ok', 'npm run test:unit || ! false']) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: maskedCmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const blocked = evaluateHookEvent(
+        {
+          hookEventName: 'Stop',
+          conversationId: convId,
+          terminationReason: 'NO_TOOL_CALL',
+          continuationActive: false,
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(blocked.decision, 'continue', `expected Stop to block masked cmd: ${maskedCmd}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});

@@ -18,6 +18,7 @@ Pick **one** mode — never stack both ceremonies on the same task:
    - Ambiguous new feature/design → `brainstorming` → `writing-plans` → `executing-plans`
    - Clear multi-file coding/config task (`>= 2` files or gates) → `task-guardrail`
    - Bug or test failure → `systematic-debugging`
+   - Audit / re-check / grade harness, skills, or architecture → `adversarial-audit`
    - Pre-`"done"` live audit → `evaluating-features` (mandatory)
 3. **Skip skill ceremony** for pure Q&A, read-only audits, or single-line 1-file tweaks — answer directly with verified facts.
 
