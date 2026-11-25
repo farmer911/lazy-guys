@@ -2,6 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateHarness } from './check-harness.mjs';
+import { summarizeTranscriptTokens } from './token-stats.mjs';
+
+const CODE_EDIT_RE =
+  /^(?:apps\/|scripts\/|db\/|\.agents\/workflows\/|specs\/contracts\/|\.githooks\/|\.github\/workflows\/|\.agents\/hooks\.json$|package\.json$|init\.sh$|docker-compose\.yml$)/;
+
+const VERIFICATION_CMD_RE =
+  /(?:^|[;&|\n]\s*)(?:\.\/init\.sh\b|npm\s+run\s+(?:test(?::unit|:e2e)?|typecheck|build)\b|node\s+--test\b|npx\s+(?:vitest|tsc|playwright)\b|pytest\b)/;
+
+const EXIT_MASK_RE =
+  /(?:\|\|\s*(?:true|:|echo\b|exit\s+0\b)|;\s*(?:true|:|exit\s+0)\s*$)/;
 
 const EVALUATOR_ANCHORED_RE =
   /^\s*(?:\[AGENT_ROLE:\s*qa\s*\]\s*)?You are an Independent Skeptical QA & Recruiter Product Evaluator\b/;
@@ -118,11 +128,84 @@ function isPathAllowedForRole(role, rawPath, rootDir) {
   );
 }
 
+function getLogsDir(rootDir) {
+  const logsDir = path.join(rootDir, '.agents', 'logs');
+  fs.mkdirSync(logsDir, { recursive: true });
+  return logsDir;
+}
+
+function readExecState(rootDir, convKey) {
+  try {
+    const statePath = path.join(rootDir, '.agents', 'logs', 'exec-state.json');
+    if (!fs.existsSync(statePath)) return { seq: 0, lastCodeEditSeq: 0, lastVerifySeq: 0 };
+    const all = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    return all[convKey] ?? { seq: 0, lastCodeEditSeq: 0, lastVerifySeq: 0 };
+  } catch {
+    return { seq: 0, lastCodeEditSeq: 0, lastVerifySeq: 0 };
+  }
+}
+
+function writeExecState(rootDir, convKey, state) {
+  try {
+    const statePath = path.join(getLogsDir(rootDir), 'exec-state.json');
+    let all = {};
+    if (fs.existsSync(statePath)) {
+      try {
+        all = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      } catch {
+        all = {};
+      }
+    }
+    all[convKey] = state;
+    fs.writeFileSync(statePath, `${JSON.stringify(all, null, 2)}\n`);
+  } catch {
+    // Best-effort state persistence
+  }
+}
+
+function appendCheckpoint(rootDir, line) {
+  try {
+    const cpPath = path.join(getLogsDir(rootDir), 'session-checkpoint.md');
+    if (!fs.existsSync(cpPath)) {
+      fs.writeFileSync(cpPath, '# Auto Session Checkpoints\n\n');
+    }
+    fs.appendFileSync(cpPath, `${line}\n`);
+  } catch {
+    // Best-effort crash-safe checkpoint
+  }
+}
+
+function recordTokenUsage(rootDir, payload) {
+  const summary = summarizeTranscriptTokens(payload?.transcriptPath);
+  if (!summary) return null;
+  const convId = String(payload?.conversationId ?? 'default');
+  const record = {
+    ts: new Date().toISOString(),
+    conversationId: convId,
+    ...summary,
+  };
+  try {
+    fs.appendFileSync(
+      path.join(getLogsDir(rootDir), 'token-usage.jsonl'),
+      `${JSON.stringify(record)}\n`
+    );
+  } catch {
+    // Best-effort token usage logging
+  }
+  appendCheckpoint(
+    rootDir,
+    `- [${record.ts}] \`${convId.slice(0, 8)}\` **TOKENS** (turns=${summary.turns}, model=${summary.model}): input=${summary.inputTokens} | cache_read=${summary.cacheReadTokens} | output=${summary.outputTokens}`
+  );
+  return record;
+}
+
 export function evaluateHookEvent(payload, options = {}) {
   const defaultRoot = path.resolve(import.meta.dirname, '..');
   const rootDir = options.rootDir || payload?.cwd || defaultRoot;
+  const validateHarnessFn = options.validateHarnessFn || validateHarness;
   const event = payload?.hookEventName;
   const finish = (res) => recordHookTelemetry(rootDir, event, payload, res);
+  const convKey = String(payload?.conversationId ?? 'default');
 
   if (event === 'PreToolUse') {
     const toolName = payload?.toolCall?.name ?? '';
@@ -273,16 +356,79 @@ export function evaluateHookEvent(payload, options = {}) {
     return { decision: 'allow' };
   }
 
+  if (event === 'PostToolUse') {
+    const toolName = payload?.toolCall?.name ?? '';
+    const args = payload?.toolCall?.args ?? {};
+    const errText = payload?.error ? String(payload.error).trim() : '';
+    const ts = new Date().toISOString();
+    const state = readExecState(rootDir, convKey);
+    state.seq = (state.seq || 0) + 1;
+
+    if (toolName === 'write_file' || toolName === 'edit_file') {
+      const { rel } = resolveRepoRelativePath(args.Path, rootDir);
+      const status = errText ? `FAIL (${errText})` : 'OK';
+      appendCheckpoint(rootDir, `- [${ts}] \`${convKey.slice(0, 8)}\` ${toolName} \`${rel}\` → ${status}`);
+      if (!errText && CODE_EDIT_RE.test(rel)) {
+        state.lastCodeEditSeq = state.seq;
+        state.lastCodeEditPath = rel;
+        writeExecState(rootDir, convKey, state);
+      }
+    } else if (toolName === 'run_command') {
+      const cmd = String(args.CommandLine ?? '').replace(/\s+/g, ' ').trim();
+      const shortCmd = cmd.length > 120 ? `${cmd.slice(0, 117)}...` : cmd;
+      const status = errText ? `FAIL (${errText})` : 'PASS (exit 0)';
+      appendCheckpoint(rootDir, `- [${ts}] \`${convKey.slice(0, 8)}\` run_command \`${shortCmd}\` → ${status}`);
+      let mutatedCodePath = null;
+      if (!errText && SHELL_MUTATION_RE.test(cmd)) {
+        for (const token of cmd.match(REPO_PATH_TOKEN_RE) ?? []) {
+          const { rel } = resolveRepoRelativePath(token, rootDir);
+          if (CODE_EDIT_RE.test(rel)) {
+            mutatedCodePath = rel;
+            break;
+          }
+        }
+      }
+      if (mutatedCodePath) {
+        state.lastCodeEditSeq = state.seq;
+        state.lastCodeEditPath = mutatedCodePath;
+        writeExecState(rootDir, convKey, state);
+      } else if (VERIFICATION_CMD_RE.test(cmd) && !EXIT_MASK_RE.test(cmd)) {
+        state.lastVerifySeq = state.seq;
+        state.lastVerifyCommand = shortCmd;
+        state.lastVerifyPassed = !errText;
+        state.lastVerifyError = errText || null;
+        writeExecState(rootDir, convKey, state);
+      }
+    }
+    return {};
+  }
+
   if (event === 'Stop') {
+    recordTokenUsage(rootDir, payload);
     if (payload?.continuationActive || payload?.terminationReason !== 'NO_TOOL_CALL') {
       return { decision: '' };
     }
-    const errors = validateHarness(rootDir);
+    const errors = validateHarnessFn(rootDir);
     if (errors.length > 0) {
       return finish({
         decision: 'continue',
         reason: `Repository harness gate failed (${errors.length} violation(s)):\n- ${errors.join('\n- ')}\nFix all harness violations and re-run npm run check:harness before ending your turn.`,
       });
+    }
+    const state = readExecState(rootDir, convKey);
+    if (state.lastCodeEditSeq > 0) {
+      if ((state.lastVerifySeq || 0) < state.lastCodeEditSeq) {
+        return finish({
+          decision: 'continue',
+          reason: `Execution Evidence Gate: You modified "${state.lastCodeEditPath}" without running a verification command afterwards. Run ./init.sh or npm run test:unit && npm run typecheck before finishing your turn.`,
+        });
+      }
+      if (state.lastVerifyPassed === false) {
+        return finish({
+          decision: 'continue',
+          reason: `Execution Evidence Gate: Last verification command "${state.lastVerifyCommand}" failed (${state.lastVerifyError}). Fix the failure and re-run verification with exit code 0 before finishing your turn.`,
+        });
+      }
     }
     return { decision: '' };
   }

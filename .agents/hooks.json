@@ -12,6 +12,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ../scripts/agent-hooks.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "type": "command",

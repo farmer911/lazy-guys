@@ -82,6 +82,9 @@ function makeTempFixture() {
   fs.writeFileSync(path.join(dir, 'specs', 'contracts', 'README.md'), '# contracts\n');
   fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'scripts', 'agent-hooks.mjs'), '// hook\n');
+  fs.writeFileSync(path.join(dir, 'scripts', 'token-stats.mjs'), '// stats\n');
+  fs.mkdirSync(path.join(dir, '.agents'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.agents', 'STATE.md'), '# Active Task State\n');
   const coreSkills = [
     'task-guardrail',
     'be-express-pg',
@@ -113,6 +116,7 @@ function makeTempFixture() {
     JSON.stringify({
       'repo-harness-guard': {
         PreToolUse: [{ matcher: 'write_file|edit_file|run_command', hooks: [{ command: 'node ../scripts/agent-hooks.mjs' }] }],
+        PostToolUse: [{ matcher: 'write_file|edit_file|run_command', hooks: [{ command: 'node ../scripts/agent-hooks.mjs' }] }],
         Stop: [{ command: 'node ../scripts/agent-hooks.mjs' }],
       },
     })

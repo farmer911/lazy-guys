@@ -36,7 +36,9 @@ const REQUIRED_FILES = [
   '.agents/skills/evaluating-features/SKILL.md',
   '.agents/skills/evaluating-features/evaluator-prompt.md',
   '.agents/hooks.json',
+  '.agents/STATE.md',
   'scripts/agent-hooks.mjs',
+  'scripts/token-stats.mjs',
   '.githooks/pre-commit',
   '.githooks/pre-push',
 ];
@@ -131,8 +133,13 @@ function validateHooks(rootDir, errors, hasGitRepo) {
   const agentHooksPath = path.join(rootDir, '.agents', 'hooks.json');
   if (fs.existsSync(agentHooksPath)) {
     const raw = fs.readFileSync(agentHooksPath, 'utf8');
-    if (!/"PreToolUse"/.test(raw) || !/"Stop"/.test(raw) || !/agent-hooks\.mjs/.test(raw)) {
-      errors.push('.agents/hooks.json must wire PreToolUse and Stop to scripts/agent-hooks.mjs');
+    if (
+      !/"PreToolUse"/.test(raw) ||
+      !/"PostToolUse"/.test(raw) ||
+      !/"Stop"/.test(raw) ||
+      !/agent-hooks\.mjs/.test(raw)
+    ) {
+      errors.push('.agents/hooks.json must wire PreToolUse, PostToolUse, and Stop to scripts/agent-hooks.mjs');
     }
   }
 

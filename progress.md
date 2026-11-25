@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-25 18:38
+**Last Updated:** 2026-11-25 23:05
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -44,6 +44,10 @@
   - Fixed `PreToolUse` false-positive on read-only `git config --get/--list/--show-origin`, closed `git -c core.hooksPath=...` inline bypass, anchored `EVALUATOR_SIGNATURE`, added `force_ask` Control-Plane Lock on `scripts/{check-harness,agent-hooks}.mjs`, `.agents/hooks.json`, `.githooks/*`, and `.github/workflows/*`, blocked destructive `docker compose down -v` / `git push --force` / Python `pathlib` cross-role mutations / premature `feature_list.json` `"done"` transitions, granted `fe` write access to `apps/e2e/tests/`, and added `.agents/logs/hook-events.jsonl` telemetry (`12/12` hook tests)
   - Hardened `scripts/check-harness.mjs` to enforce `One feature at a time`, detect orphan `evaluations/*.json` and evidence-SHA drift, validate `designs/stitch-manifest.json` screen/token files and all 8 core skills, verify active local `core.hooksPath=.githooks`, block tracked `.env`/key secrets, enforce `127.0.0.1` PostgreSQL binding in `docker-compose.yml` and `permissions: contents: read` + PR `npm audit` in `.github/workflows/ci.yml`, and scan `specs/contracts/**/*.ts` for hygiene violations (`27/27` harness tests)
   - Upgraded `run_mechanical_gate()` in `.agents/workflows/graph_core.py` to execute both `./init.sh` and `npm run test:e2e`, added `require_cmd python3` to `init.sh`, and updated `bugfix.py` (`build_bugfix_qa_prompt`) to avoid writing orphan `evaluations/bugfix.json` (`12/12` Python workflow tests; `64/64` total unit/integration tests)
+- [x] Execution Evidence Gate, Crash-Safe Checkpointing, Token Usage Tracker & Anti-Hallucination Rules:
+  - Wired `PostToolUse` in `.agents/hooks.json` and `scripts/agent-hooks.mjs` to track code/config edits (including shell mutations via `SHELL_MUTATION_RE`) vs unmasked verification command exit status (`exec-state.json`, rejecting `check:harness`-only and `|| true`/`; true` masking), append crash-safe per-step checkpoints to `.agents/logs/session-checkpoint.md`, and block `Stop` if edited code lacks a subsequent exit-0 verification run (`15/15` hook tests)
+  - Added `scripts/token-stats.mjs` (`npm run stats:tokens`) and `Stop`-hook transcript token logging (`.agents/logs/token-usage.jsonl`)
+  - Added `.agents/STATE.md` live task-state file, updated `scripts/check-harness.mjs` to enforce `PostToolUse` + `.agents/STATE.md` + `scripts/token-stats.mjs`, and added Read-Before-Claim & banned-phrase rules to `AGENTS.md` (`67/67` unit/integration tests)
 
 ### What's In Progress
 

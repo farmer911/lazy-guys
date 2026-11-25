@@ -488,3 +488,287 @@ test('PreToolUse blocks destructive commands, Python pathlib cross-role writes, 
     fs.rmSync(tempRepo, { recursive: true, force: true });
   }
 });
+
+test('Stop hook blocks when code was edited without subsequent passing verification, and allows after exit-0 verify', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-exec-gate-'));
+  try {
+    const convId = 'conv-exec-001';
+    const okHarness = { validateHarnessFn: () => [] };
+
+    // 1. Agent edits production code
+    const editPost = evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: {
+          name: 'edit_file',
+          args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.deepEqual(editPost, {});
+
+    // 2. Agent tries to stop without running any verification command -> blocked
+    const stopWithoutVerify = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopWithoutVerify.decision, 'continue');
+    assert.match(stopWithoutVerify.reason, /Execution Evidence Gate/i);
+
+    // 3. Agent runs test command that FAILS (error present)
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 2,
+        error: 'exit status 1',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run test:unit' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    // 4. Agent ignores failing output and tries to stop -> still blocked
+    const stopAfterFail = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterFail.decision, 'continue');
+    assert.match(stopAfterFail.reason, /failed|exit status 1/i);
+
+    // 5. Agent fixes code and runs passing verification command (no error)
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 3,
+        toolCall: {
+          name: 'edit_file',
+          args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 4,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run test:unit && npm run typecheck' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    // 6. Stop now succeeds
+    const stopAfterPass = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterPass.decision, '');
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('PostToolUse writes crash-safe session checkpoints and Stop records transcript token usage', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-checkpoint-tokens-'));
+  try {
+    const convId = 'conv-tokens-002';
+    const transcriptPath = path.join(tempRepo, 'transcript.jsonl');
+    fs.writeFileSync(
+      transcriptPath,
+      [
+        JSON.stringify({ type: 'user', content: 'hi' }),
+        JSON.stringify({
+          type: 'assistant',
+          model: 'gemini-test',
+          input_tokens: 1000,
+          cache_read_tokens: 400,
+          output_tokens: 150,
+        }),
+        JSON.stringify({
+          type: 'assistant',
+          model: 'gemini-test',
+          input_tokens: 2500,
+          cache_read_tokens: 1600,
+          output_tokens: 350,
+        }),
+      ].join('\n')
+    );
+
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: './init.sh' },
+        },
+      },
+      { rootDir: tempRepo, validateHarnessFn: () => [] }
+    );
+
+    evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        transcriptPath,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, validateHarnessFn: () => [] }
+    );
+
+    const checkpointPath = path.join(tempRepo, '.agents', 'logs', 'session-checkpoint.md');
+    assert.ok(fs.existsSync(checkpointPath), 'expected session-checkpoint.md');
+    const checkpointText = fs.readFileSync(checkpointPath, 'utf8');
+    assert.match(checkpointText, /\.\/init\.sh/);
+    assert.match(checkpointText, /input=3500/);
+    assert.match(checkpointText, /cache_read=2000/);
+    assert.match(checkpointText, /output=500/);
+
+    const usagePath = path.join(tempRepo, '.agents', 'logs', 'token-usage.jsonl');
+    assert.ok(fs.existsSync(usagePath), 'expected token-usage.jsonl');
+    const lastUsage = JSON.parse(fs.readFileSync(usagePath, 'utf8').trim().split('\n').pop());
+    assert.equal(lastUsage.conversationId, convId);
+    assert.equal(lastUsage.inputTokens, 3500);
+    assert.equal(lastUsage.cacheReadTokens, 2000);
+    assert.equal(lastUsage.outputTokens, 500);
+    assert.equal(lastUsage.turns, 2);
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Execution Evidence Gate rejects check:harness-only, exit-code masking (|| true), and tracks shell code mutations', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-tier-s-'));
+  try {
+    const convId = 'conv-tier-s-003';
+    const okHarness = { validateHarnessFn: () => [] };
+
+    // 1. Mutate code via shell command (not write_file/edit_file)
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'sed -i "" "s/foo/bar/" apps/api/src/index.ts' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    // 2. Trying to stop immediately after shell code edit -> blocked
+    const stopAfterShellEdit = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterShellEdit.decision, 'continue');
+    assert.match(stopAfterShellEdit.reason, /Execution Evidence Gate/i);
+
+    // 3. Running check:harness alone must NOT satisfy code verification gate
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 2,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run check:harness' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopAfterHarnessOnly = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterHarnessOnly.decision, 'continue');
+
+    // 4. Running test command with exit-code masking (|| true) must NOT satisfy gate
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 3,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run test:unit || true' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopAfterMaskedExit = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterMaskedExit.decision, 'continue');
+
+    // 5. Running real unmasked verification command passes the gate
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 4,
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: 'npm run test:unit' },
+        },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopAfterRealVerify = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopAfterRealVerify.decision, '');
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
