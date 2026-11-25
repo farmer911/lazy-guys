@@ -88,6 +88,7 @@ function makeTempFixture() {
   const coreSkills = [
     'task-guardrail',
     'adversarial-audit',
+    'self-evolve',
     'be-express-pg',
     'pm-prd-story',
     'design-stitch-flow',

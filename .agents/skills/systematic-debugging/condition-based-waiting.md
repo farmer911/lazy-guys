@@ -22,7 +22,7 @@ digraph when_to_use {
 ```
 
 **Use when:**
-- Tests have arbitrary delays (`setTimeout`, `sleep`, `time.sleep()`)
+- Tests have arbitrary delays (`setTimeout`, `sleep`)
 - Tests are flaky (pass sometimes, fail under load)
 - Tests timeout when run in parallel
 - Waiting for async operations to complete

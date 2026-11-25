@@ -6,7 +6,7 @@ by its absolute path, from the working tree you're executing in (MERGE_BASE = th
 
 **With a subagent tool:** dispatch the reviewer on the most capable
 available model — the whole-branch review is a judgment task — using
-superpowers:requesting-code-review's
+`requesting-code-review`'s
 [code-reviewer.md](../../requesting-code-review/code-reviewer.md), with the
 package path, the plan and spec paths, the plan's Review Focus section
 verbatim if it has one (the input classes and failure modes the plan's
@@ -68,7 +68,7 @@ When the final review is clean and its fixes are committed, delete this
 plan's workspace directory — the git history is the record now. Sibling
 directories belong to other plans; leave them alone.
 
-Use superpowers:finishing-a-development-branch.
+Use `finishing-a-development-branch`.
 
 ## Common Rationalizations
 

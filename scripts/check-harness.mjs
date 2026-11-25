@@ -28,6 +28,7 @@ const REQUIRED_FILES = [
   '.github/workflows/ci.yml',
   '.agents/skills/task-guardrail/SKILL.md',
   '.agents/skills/adversarial-audit/SKILL.md',
+  '.agents/skills/self-evolve/SKILL.md',
   '.agents/skills/be-express-pg/SKILL.md',
   '.agents/skills/pm-prd-story/SKILL.md',
   '.agents/skills/design-stitch-flow/SKILL.md',

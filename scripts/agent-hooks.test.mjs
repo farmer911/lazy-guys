@@ -932,3 +932,48 @@ test('PreToolUse & Stop block dot-prefixed shell control-plane bypasses, feature
     fs.rmSync(tempRepo, { recursive: true, force: true });
   }
 });
+
+test('Execution Evidence Gate ignores verification command tokens inside quoted strings (node -e, echo)', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-quoted-verify-'));
+  try {
+    const convId = 'conv-quoted-006';
+    const okHarness = { validateHarnessFn: () => [] };
+
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    for (const fakeCmd of [
+      "node -e 'const r = /(?:^|[;&|])(?:npm run test:unit)/; console.log(r)'",
+      'echo "npm run test:unit && npm run typecheck"',
+    ]) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: fakeCmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const blocked = evaluateHookEvent(
+        {
+          hookEventName: 'Stop',
+          conversationId: convId,
+          terminationReason: 'NO_TOOL_CALL',
+          continuationActive: false,
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(blocked.decision, 'continue', `quoted fake command must not satisfy gate: ${fakeCmd}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});

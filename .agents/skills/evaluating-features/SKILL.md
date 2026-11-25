@@ -57,7 +57,7 @@ digraph eval_gate {
    - Pass only `{FEATURE_ID}`, `{FEATURE_SPEC}` (from `feature_list.json`), `{COMMIT_SHA}`, and `{WORKSPACE_ROOT}`.
    - If visual UI changed, the Evaluator inspects the live app via Playwright/headless browser or the `browser` subagent in addition to live API probes.
 3. **Act on the Verdict:**
-   - **`FAIL`:** Keep `"status": "in-progress"`. Fix every item in `blockingIssues` using **REQUIRED SUB-SKILL:** `superpowers:test-driven-development`, commit the new SHA, and dispatch a fresh Evaluator pass.
+   - **`FAIL`:** Keep `"status": "in-progress"`. Fix every item in `blockingIssues` using TDD (`test-driven-development`), commit the new SHA, and dispatch a fresh Evaluator pass.
    - **`PASS`:** Update `feature_list.json` `"status"` to `"done"`, append the Evaluator's scores and commit SHA to `"evidence"`, and run `./init.sh` (`npm run check:harness` mechanically verifies `evaluations/<feature-id>.json`).
 
 ## Rubric Quick Reference

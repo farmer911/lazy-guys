@@ -163,6 +163,10 @@ function writeExecState(rootDir, convKey, state) {
   }
 }
 
+function stripQuotedStrings(cmd) {
+  return String(cmd ?? '').replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, '""');
+}
+
 function readCommandExitStatusFromTranscript(transcriptPath, stepIdx) {
   if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
   try {
@@ -452,11 +456,12 @@ export function evaluateHookEvent(payload, options = {}) {
           }
         }
       }
+      const unquotedCmd = stripQuotedStrings(cmd);
       if (mutatedCodePath) {
         state.lastCodeEditSeq = state.seq;
         state.lastCodeEditPath = mutatedCodePath;
         writeExecState(rootDir, convKey, state);
-      } else if (VERIFICATION_CMD_RE.test(cmd) && !EXIT_MASK_RE.test(cmd)) {
+      } else if (VERIFICATION_CMD_RE.test(unquotedCmd) && !EXIT_MASK_RE.test(unquotedCmd)) {
         state.lastVerifySeq = state.seq;
         state.lastVerifyStepIdx = typeof payload?.stepIdx === 'number' ? payload.stepIdx : null;
         state.lastVerifyCommand = shortCmd;

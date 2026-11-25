@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 00:37
+**Last Updated:** 2026-11-26 00:51
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -56,6 +56,10 @@
   - Added transitive orphan skill-file reachability gate in `scripts/check-harness.mjs` (`29/29` harness tests)
   - Authored and subagent-tested `.agents/skills/adversarial-audit/SKILL.md` (`45` lines, `Use when... Not for...`), anchored in `AGENTS.md` and routed in `using-superpowers/SKILL.md`
   - Fixed 5 real hook bypasses caught live by the `adversarial-audit` subagent in `scripts/agent-hooks.mjs` (`17/17` hook tests): Antigravity `transcript.jsonl` `GENERIC` exit-code verification on `Stop`, dot-prefixed `REPO_PATH_TOKEN_RE` lookbehind (`.agents`/`.githooks`/`.github`), `;`/`||` exit-masking bypasses, shell `feature_list.json` write lock, and removed `pytest` drift
+- [x] Final Harness Wrap-Up (Quote-Stripping Fix, Zero Stale Refs, Anti-Sycophancy & `self-evolve` Skill — `72/72` unit/integration tests):
+  - Added `stripQuotedStrings()` in `scripts/agent-hooks.mjs` so quoted command strings (`node -e '... npm run test:unit ...'`, `echo "npm run test:unit"`) cannot satisfy Execution Evidence Gate (`18/18` hook tests)
+  - Cleaned last 4 stale references (`time.sleep()`, `subagent-driven-development`, `superpowers:` prefix) across `.agents/skills/` (`0` foreign/stale refs remaining)
+  - Added Anti-Sycophancy & ROI Pushback rule in `AGENTS.md` and shipped `.agents/skills/self-evolve/SKILL.md` (`31` lines, Rule-to-Script Promotion loop) wired into `using-superpowers` and `scripts/check-harness.mjs`
 
 ### What's In Progress
 
