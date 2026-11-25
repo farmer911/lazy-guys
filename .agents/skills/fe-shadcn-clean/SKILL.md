@@ -7,7 +7,7 @@ description: Use when building React components or integrating backend APIs in a
 
 ## Overview
 
-Translate frozen Stitch screens (`designs/screens/*.html` + `designs/design-tokens.json`) and shared contracts (`specs/contracts/<feat-id>.ts`) into clean, consistent `shadcn/ui` Arrow-Function components in `apps/web/`. You do **not** redesign aesthetics and you do **not** mask missing backend fields.
+Translate frozen Stitch screens (`designs/screens/*.html` + `designs/design-tokens.json`) and shared contracts (`specs/contracts/<feat-id>.ts`) into clean, consistent `shadcn/ui` Arrow-Function components in `apps/web/` (following `apps/web/AGENTS.md` and `apps/e2e/AGENTS.md`). You do **not** redesign aesthetics and you do **not** mask missing backend fields.
 
 ## Iron Law
 
@@ -22,10 +22,10 @@ Never invent fallback data (`field ?? '4 engineers'`), never mark a required des
 1. **Code Style Consistency:** Use `export const Component = ({ ... }: Props) => { ... }` everywhere in `apps/web/src/` (enforced by AST gate in `npm run check:harness`).
 2. **`shadcn/ui` Composition:** Reuse `@/components/ui/*` (`Card`, `Badge`, `Button`, etc.) and `cn()`. Separate data-fetching hooks (`@tanstack/react-query`) from presentational props.
 3. **100% Visual Fidelity to `designs/`:** Match layout hierarchy, spacing, tokens, and `loading`/`empty`/`error`/`375px` states from `designs/`. Zero unapproved gradients, animations, or layout inventions.
-4. **Playwright E2E Spec Updates (`apps/e2e/tests/`):** When adding or changing user-facing UI flows, update or add E2E specs in `apps/e2e/tests/*.spec.ts` so `run_mechanical_gate` verifies end-to-end behavior before QA evaluation.
+4. **RED-First RTL & Playwright E2E Coverage:** Write a failing RTL unit test in `apps/web/src/components/__tests__/*.test.tsx` first (`RED -> GREEN`), update/add E2E specs in `apps/e2e/tests/*.spec.ts` for new UI flows, and run `npm run test --workspace=apps/web && npm run typecheck --workspace=apps/web` before finishing.
 5. **Structured Return Contract:**
    - When API + contract satisfy every field on the Stitch screen:
-     `{"status": "READY", "changedFiles": [...], "testsRun": "npm run test --workspace=apps/web"}`
+     `{"status": "READY", "changedFiles": [...], "testsRun": "npm run test --workspace=apps/web && npm run typecheck --workspace=apps/web"}`
    - When an endpoint, status code, or field required by `designs/` is missing or mismatched in `specs/contracts/` or live `apps/api`: STOP integration and return immediately to Tech Lead:
      ```json
      {
@@ -50,5 +50,6 @@ Never invent fallback data (`field ?? '4 engineers'`), never mark a required des
 ## Red Flags — STOP Immediately
 
 - Writing `function MyComponent()` instead of `export const MyComponent = () =>`
+- Editing React components before watching a failing RTL test (`RED`) in `apps/web/src/components/__tests__/`
 - Hardcoding fake fallback copy or conditionally hiding approved Stitch UI elements to pass tests
 - Attempting to touch `apps/api/`, `specs/contracts/`, `apps/e2e/playwright.config.ts`, or `evaluations/`

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create (if needed) and print the git-ignored workspace directory for PLAN_FILE:
-#   <repo-root>/.superpowers/sdd/<plan-basename>/
+#   <repo-root>/.superpowers/sdd/<unique-plan-slug>/
 set -euo pipefail
 
 if [ $# -ne 1 ] || [ -z "$1" ]; then
@@ -10,9 +10,17 @@ fi
 
 here="$(cd "$(dirname "$0")" && pwd)"
 repo=$("${BASH:-bash}" "$here/sdd-repo")
-base=$(basename "$1")
-slug=${base%.md}
-slug=$(printf '%s' "$slug" | tr -cs 'A-Za-z0-9._-' '-')
+plan_path="$1"
+rel_path="$plan_path"
+case "$plan_path" in
+  "$repo"/*) rel_path="${plan_path#"$repo"/}" ;;
+esac
+rel_path="${rel_path#./}"
+slug=${rel_path%.md}
+slug=$(printf '%s' "$slug" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-//; s/-$//')
 dir="$repo/.superpowers/sdd/$slug"
 mkdir -p "$dir"
+if [ ! -f "$dir/progress.md" ]; then
+  printf '# SDD ledger — plan: %s\n' "$plan_path" > "$dir/progress.md"
+fi
 printf '%s\n' "$dir"

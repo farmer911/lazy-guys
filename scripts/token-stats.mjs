@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+function safeNonNeg(val) {
+  const n = Number(val ?? 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 export function summarizeTranscriptTokens(transcriptPath) {
   if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
   try {
@@ -17,9 +22,9 @@ export function summarizeTranscriptTokens(transcriptPath) {
       if (!line.trim()) continue;
       try {
         const entry = JSON.parse(line);
-        const inp = Number(entry.input_tokens ?? 0);
-        const cache = Number(entry.cache_read_tokens ?? 0);
-        const out = Number(entry.output_tokens ?? 0);
+        const inp = safeNonNeg(entry.input_tokens);
+        const cache = safeNonNeg(entry.cache_read_tokens);
+        const out = safeNonNeg(entry.output_tokens);
         if (inp > 0 || cache > 0 || out > 0) {
           inputTokens += inp;
           cacheReadTokens += cache;
@@ -72,12 +77,15 @@ export function formatTokenUsageReport(usageLogPath) {
     '------------------------------------------------------------------------------------',
   ];
   for (const r of rows) {
-    sumIn += Number(r.inputTokens ?? 0);
-    sumCache += Number(r.cacheReadTokens ?? 0);
-    sumOut += Number(r.outputTokens ?? 0);
+    const rIn = safeNonNeg(r.inputTokens);
+    const rCache = safeNonNeg(r.cacheReadTokens);
+    const rOut = safeNonNeg(r.outputTokens);
+    sumIn += rIn;
+    sumCache += rCache;
+    sumOut += rOut;
     const id = String(r.conversationId ?? 'default').slice(0, 12);
     lines.push(
-      `${r.ts?.slice(0, 19) ?? 'n/a'} | ${id} | turns=${r.turns ?? 0} | in=${r.inputTokens ?? 0} | cache=${r.cacheReadTokens ?? 0} | out=${r.outputTokens ?? 0} | ${r.model ?? 'unknown'}`
+      `${r.ts?.slice(0, 19) ?? 'n/a'} | ${id} | turns=${safeNonNeg(r.turns)} | in=${rIn} | cache=${rCache} | out=${rOut} | ${r.model ?? 'unknown'}`
     );
   }
   lines.push('------------------------------------------------------------------------------------');

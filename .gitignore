@@ -13,3 +13,4 @@ __pycache__/
 worktrees/
 .agents/logs/
 .vscode/
+.pytest_cache/

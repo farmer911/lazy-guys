@@ -19,7 +19,7 @@ Clarify **what** the user wants and **why** before writing code or plans.
 ## Alignment Rules
 
 - **Look before asking:** Read referenced files/specs first and summarize what the change touches in plain words.
-- **Offer an escape hatch:** If the user didn't explicitly ask to brainstorm, end your first message with a one-line opt-out (*"Or if you'd rather I just dive in with my recommended approach, say so."*).
+- **Offer an escape hatch:** If the user didn't explicitly ask to brainstorm, end your first message with a one-line opt-out (*"Or if you'd rather I just dive in with my recommended approach, say so."*). If they opt out, route directly to `task-guardrail` (stating your assumptions aloud in the Pre-Edit Brief before touching code).
 - **One question per turn:** Ask only when the answer changes what gets built; otherwise state your assumption as a concrete proposal they can correct.
 - **Challenge scope (anti-sycophancy):** Flag cheaper paths, YAGNI cuts, or conflicts with existing architecture plainly before designing.
 - **Lay out approaches before writing docs:** Drop weak options, compare the remaining 2–3 concretely against this repo's stack (React/Vite/Tailwind/shadcn + Express/PostgreSQL), recommend one, and let the user pick.
@@ -35,6 +35,16 @@ Clarify **what** the user wants and **why** before writing code or plans.
 
 If scope splits into independent subsystems, agree on order and design one at a time.
 
-## Design Template & Red Flags
+## Design Gate & Red Flags
 
-See [references/written-design-and-red-flags.md](references/written-design-and-red-flags.md) for the written design structure and red flags (use `design-stitch-flow` for UI mockups).
+<HARD-GATE>
+Nothing gets built until your human partner approves the written design (short or full), unless they explicitly opted out of brainstorming (in which case hand off to `task-guardrail` with explicit assumptions) or asked for a throwaway spike. After approval, invoke `writing-plans` next.
+</HARD-GATE>
+
+| Excuse | Reality |
+|--------|---------|
+| "They said 'sounds good' to the high-level idea" | Approval covers a written design with concrete boundaries, not a vague idea. |
+| "I'll fill in defaults silently to save a round-trip" | State every assumption out loud so the user can reject it before code is written. |
+| "The throwaway spike works, I'll just build on it" | Promoting a spike to production requires passing the written design gate first. |
+
+See [references/written-design-and-red-flags.md](references/written-design-and-red-flags.md) for the full design template and builder-check prompt (use `design-stitch-flow` for UI mockups).

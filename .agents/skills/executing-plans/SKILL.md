@@ -13,12 +13,12 @@ Prefer `.agents/workflows/feature_delivery.py` (`run_workflow`) for full-stack `
 
 ## Setup
 
-1. Ensure workspace isolation via `using-git-worktrees` (or explicit user consent to work on the active branch). See `../using-superpowers/references/` for platform tool details.
-2. Initialize the plan's gitignored workspace and ledger:
+1. Ensure workspace isolation via `using-git-worktrees` (or explicit user consent to work on the active branch). See `../using-superpowers/references/antigravity-tools.md` for platform tool details.
+2. Initialize the plan's gitignored workspace and ledger (also sync high-level goal & checklist into `.agents/STATE.md`):
    ```bash
    bash <executing-plans-dir>/scripts/sdd-workspace <PLAN_FILE>
    ```
-   - Ledger lives at `<workspace>/progress.md` starting with `# SDD ledger — plan: <PLAN_FILE>`.
+   - `sdd-workspace` creates `<workspace>/progress.md` starting with `# SDD ledger — plan: <PLAN_FILE>`.
    - On resume after compaction/crash, skip tasks already marked `Task <N>: complete` (verify with `git log`).
 3. Read the plan, its linked Spec, and load `test-driven-development`.
 4. Run a quick **Pre-flight interface scan**: for each task pair sharing producer/consumer interfaces, verify signature alignment and log any `Ruling:` in the ledger (or write `Pre-flight: no shared interfaces`).
@@ -38,8 +38,9 @@ Prefer `.agents/workflows/feature_delivery.py` (`run_workflow`) for full-stack `
    - Commit task changes as specified (`BASE` anchors the task range, never `HEAD~1`).
 3. **Complete task (mechanical gate + ledger append):**
    ```bash
-   bash <executing-plans-dir>/scripts/task-done <PLAN_FILE> <N> <BASE> -- <test command>
+   bash <executing-plans-dir>/scripts/task-done <PLAN_FILE> <N> <BASE> -- npm run test:unit
    ```
+   (For chained commands like `npm run test:unit && npm run typecheck`, pass `-- bash -c 'npm run test:unit && npm run typecheck'`.)
    `task-done` appends `Task <N>: complete (...)` **only** when `<test command>` exits `0`. Never mark complete on a failing run.
 
 ## Final Review & Finish

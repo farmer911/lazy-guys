@@ -25,7 +25,7 @@ sdd="$(cd "$(dirname "$0")" && pwd)"
 repo=$("${BASH:-bash}" "$sdd/sdd-repo" --with-commit)
 git -C "$repo" rev-parse --verify --quiet "$base" >/dev/null || { echo "bad BASE: $base" >&2; exit 2; }
 
-dir=$("$sdd/sdd-workspace" "$plan")
+dir=$("${BASH:-bash}" "$sdd/sdd-workspace" "$plan")
 log="$dir/task-${n}-tests.log"
 ledger="$dir/progress.md"
 
@@ -33,7 +33,7 @@ ledger="$dir/progress.md"
 cmd=""
 for a in "$@"; do
   case "$a" in
-    *[[:space:]\"\;\|\&]*) cmd="$cmd '$a'" ;;
+    *[[:space:]\"\'\\\;\|\&]*) cmd="$cmd $(printf '%q' "$a")" ;;
     *) cmd="$cmd $a" ;;
   esac
 done

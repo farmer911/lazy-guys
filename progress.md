@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 00:51
+**Last Updated:** 2026-11-26 03:25
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -60,6 +60,12 @@
   - Added `stripQuotedStrings()` in `scripts/agent-hooks.mjs` so quoted command strings (`node -e '... npm run test:unit ...'`, `echo "npm run test:unit"`) cannot satisfy Execution Evidence Gate (`18/18` hook tests)
   - Cleaned last 4 stale references (`time.sleep()`, `subagent-driven-development`, `superpowers:` prefix) across `.agents/skills/` (`0` foreign/stale refs remaining)
   - Added Anti-Sycophancy & ROI Pushback rule in `AGENTS.md` and shipped `.agents/skills/self-evolve/SKILL.md` (`31` lines, Rule-to-Script Promotion loop) wired into `using-superpowers` and `scripts/check-harness.mjs`
+- [x] Report Fact-Check, Anti-Hallucination & Harness Overhaul + 3 Independent Adversarial Audit Rounds (Certified **Tier S — 9.5/10**, `107/107` automated tests, `0` Critical / `0` High / `0` Medium):
+  - **Fact-Checked & Fixed Critical Regression in `a57f1f0`:** Restored broken evaluator contract across `.agents/skills/evaluating-features/evaluator-prompt.md` (`**` bold markdown broke `EVALUATOR_STRUCTURAL_RE`) and `.agents/workflows/graph_core.py` (`build_evaluator_prompt` now emits `Commit SHA under evaluation:` + `[AGENT_ROLE: qa]`), backed by a live cross-language Node↔Python contract test.
+  - **Audit Round 1 (Independent Red-Team Security — Grade `C` → remediated):** Hardened `scripts/agent-hooks.mjs` against `sh -c`/`bash -c`/`awk`/`Path.open`/`File.write` shell mutations, macOS APFS case-insensitive path bypasses (`Evaluations/`, `FEATURE_LIST.JSON`, `.ENV`), compound exit-masking / out-of-order `pipefail` / no-op flags / null-transcript fail-open, no-space `>evaluations/`, `GIT_CONFIG_*` / `git -c` / `docker compose -f ... down -v`, and top-level `rm -rf`; upgraded `scripts/check-harness.mjs` with Oxc AST hygiene (`Record<string, any>`, `@ts-expect-error`, `console?.log`, `test.fixme`/`it.skipIf`/`xit`/`fdescribe`), `hooks.json` JSON parse, comment-stripped `.githooks`/`ci.yml` checks, `docker-compose` `/tcp`/long-form checks, `stitch-manifest` traversal check, negative `liveChecks` & duplicate/cycle `feature_list.json` checks; hardened `graph_core.py` (`assert_role_diff_compliance`, `validate_agent_output`, rollback-safe `finalize_done_after_eval`, `timeout=600`, atomic per-conversation `exec-state-<convId>.json` & checkpoint resume).
+  - **Audit Round 2 (Independent Skill Suite & Pressure Testing — Grade `86/100` → remediated):** Closed `| sh`, `set +o pipefail`/`errexit`, `--list`/`--showConfig`/`vitest list`, `openSync`/`writeSync`/`child_process`/`subprocess`/`curl -O`/`wget`, and fixed false positives (`npm install`, `playwright install`, `curl -o /dev/null`, `>>/dev/null`, quoted commit messages); aligned all `18/18` `SKILL.md` files (`923` lines total, `37–89`L, avg `51.3`L) with zero routing contradictions, zero stale paths (`specs/plans/`, `specs/designs/`), zero vendored narrative drift, wired `apps/{web,e2e}/AGENTS.md` + `BUGFIX_TRIAGE_SCHEMA`, tightened `specs/contracts/*.ts` AST parsing & `liveChecks`, hardened `scripts/token-stats.mjs` (`NaN` guard), and fixed `executing-plans/scripts/{task-brief,sdd-workspace,task-start,task-done}`.
+  - **Audit Round 3 + 3b Re-Verification (Independent Principal Platform Auditor — Certified Tier S `9.5/10`):** Closed bare `-- ` verification injection, quoted `git -c`/`--no-verify` via `splitShellSegments` + `tokenizeShellArgv`, 5 exit-masking & exact `step_index` transcript-stealing bypasses, `bugfix.py` pre-commit compatibility, `curl -o<file>`/`/usr/bin/install`/`io.FileIO`, `hooks.json` matcher narrowing & `|| :`/early `exit 0` in `.githooks`/`ci.yml`, `[Message]` envelope unwrap, `cd apps && sed -i`, `it.todo` & missing-`SKILL.md` checks, `project_init.py` checkpoint resume, `commonpath` guard, UTF-8 `git diff -z`, plus Round 3.5 `NEW-C1` (subshells/brace groups/`$()`/backticks/`export`/`declare`/`env -S`/`command -p`/`time`/`exec`/`nohup`/`nice`/`timeout`/`bash -ce`/`docker-compose`) and `NEW-C2` (non-greedy `unwrapTaskDoneCommand` + outer-chain rejection). Re-verified `38/38` fresh adversarial stress & false-positive probes (`0` failures).
+  - **Pre-existing non-blocking backlog logged for `feat-005`:** `apps/web/src/components/AboutSection.tsx:31-49` nests `<Button>` inside `<a href>` (replace with `buttonVariants()` on `<a>` during `feat-005` alongside CV download CTA, `aria-pressed` filter state, and `ProjectsSection` card spacing).
 
 ### What's In Progress
 
@@ -82,20 +88,20 @@
 
 ## Files Modified This Session
 
-- `.github/workflows/ci.yml` - Unified GitHub Actions CI + weekly mechanical drift sweep workflow
-- `.agents/skills/evaluating-features/SKILL.md` & `evaluator-prompt.md` - Standalone AI Evaluator skill and prompt contract
-- `evaluations/feat-001.json` .. `evaluations/feat-004.json` - Independent AI Evaluator `PASS` artifacts
-- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Mechanical Evaluator, git commit SHA, and CI workflow gate (`11/11` unit tests)
-- `apps/api/src/app.ts`, `apps/api/src/routes/portfolio.ts`, `apps/api/src/__tests__/portfolio.test.ts`, `apps/api/package.json` - Fixed malformed JSON 400, email validation, date/numeric serialization, and `featured=false` filter (7/7 tests)
-- `apps/web/src/App.tsx`, `apps/web/src/components/ExperienceSection.tsx`, `apps/web/src/components/ContactForm.tsx`, `apps/web/src/components/__tests__/ContactForm.test.tsx`, `apps/web/src/components/__tests__/ExperienceSection.test.tsx` - Fixed mobile `375px` overflow, UTC date formatting, accessible labels, and error alerts (5/5 RTL suites)
-- `apps/e2e/tests/portfolio.spec.ts` - Added mobile `375x812` horizontal-overflow E2E assertion (2/2 E2E tests)
-- `AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md` - Updated harness rules and state
+- `scripts/agent-hooks.mjs` & `scripts/agent-hooks.test.mjs` - Shell-AST git/docker/wrapper guard, command-substitution & subshell splitting, non-greedy `task-done` unwrap, exact `step_index` transcript verification, APFS case-insensitive & `[Message]` envelope hardening (`34/34` tests)
+- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Oxc AST hygiene (`Record<string, any>`, `@ts-expect-error`, `console?.log`, `it.todo`/`test.fixme`/`it.skipIf`), `hooks.json` matcher lock, comment-stripped `.githooks`/`ci.yml` `|| :`/early `exit 0` checks, `specs/contracts` parse check, tightened `liveChecks`, missing-`SKILL.md` & static anti-hallucination skill gates (`34/34` tests)
+- `scripts/token-stats.mjs` & `init.sh` - `NaN`/malformed numeric token guard; `$&`-safe `.env` parsing & `127.0.0.1` wait loop
+- `.agents/workflows/{graph_core,project_init,feature_delivery,bugfix,test_graph_core}.py` - Fixed `build_evaluator_prompt` contract, `BUGFIX_TRIAGE_SCHEMA`, rollback-safe `finalize_done_after_eval`, `assert_role_diff_compliance` (`git diff -z`), `validate_agent_output`, `timeout=600`, `commonpath` guard, checkpoint resume across all 3 DAGs (`24/24` tests)
+- `.agents/skills/*` (`18` skills, `923` lines total, `37–89`L) - Fixed evaluator bold-markdown contract, `executing-plans/scripts/*`, `specs/{plans,designs}/` paths, `apps/{web,e2e}/AGENTS.md` wiring, `design-stitch-flow` manifest/schema contract, `brainstorming`/`self-evolve` red flags, `using-superpowers` routing, and cleaned vendored narrative drift
+- `AGENTS.md`, `designs/README.md`, `specs/contracts/README.md`, `.gitignore`, `.agents/STATE.md`, `progress.md`, `session-handoff.md` - Synced documentation, rules, and handoff state
 
 ## Evidence of Completion
 
-- [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks` + idempotent `schema.sql`/`seed.sql` applied)
-- [x] `npm run check:harness`: pass (lifecycle & git hooks, `core.hooksPath`, secret-free index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature & orphan-free DAG, git-ancestor evaluator SHAs, strict `tsconfig` & `apps`+`specs/contracts` hygiene, 16/16 `SKILL.md` gates, verified `stitch-manifest.json`)
-- [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e` with strict unused/return/fallthrough flags)
-- [x] `npm run test:unit`: pass (27 harness + 12 agent-hooks + 12 Python workflow + 8 API + 5 Web RTL = 64/64 tests)
+- [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks`, `127.0.0.1` Postgres on port 5434, idempotent `schema.sql`/`seed.sql`)
+- [x] `npm run check:harness`: pass (`18/18` skills `37–89`L avg `51.3`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
+- [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`, 0 errors/warnings)
+- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness = `68` Node + `24` Python workflow + `8` API PG integration + `5` Web RTL = `105/105` tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
-- [x] `npm run test:e2e`: pass (2/2 Chromium E2E tests)
+- [x] `npm run test:e2e`: pass (`2/2` Chromium E2E tests -> **`107/107` total automated tests**)
+- [x] `npm audit --audit-level=high`: `found 0 vulnerabilities`
+- [x] Independent 3-Round Adversarial Audit Certification: **Tier S (`9.5 / 10`)**, `0` Critical, `0` High, `0` Medium (`38/38` fresh stress probes `0` failures)

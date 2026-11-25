@@ -19,30 +19,30 @@
 - [x] De-bloated all 8 vendored Superpowers skills (`1,881` → `813` total `SKILL.md` lines, avg `50.8`L, max `89`L), removed foreign Rust/Go/Python boilerplate, `1%` over-trigger rule, and unused auxiliary scripts/platform refs, added `Not for...` negative boundaries to `16/16` skills, locked both rules in `scripts/check-harness.mjs` (`68/68` unit/integration tests), and added `.vscode/` to `.gitignore`
 - [x] Shipped 3-layer Anti-Tunnel-Vision combo (transitive orphan skill-file check in `check-harness.mjs`, TDD-tested `adversarial-audit/SKILL.md` `45`L, `AGENTS.md` anchor) and closed 5 real red-team hook bypasses (`transcript.jsonl` non-zero exit verification on `Stop`, dot-prefixed control-plane regex, `;`/`||` exit-masking, shell `feature_list.json` lock; `71/71` unit/integration tests)
 - [x] Completed final harness wrap-up: fixed quoted-string verification bypass (`stripQuotedStrings()`), removed last 4 stale skill references (`0` foreign/stale refs), added Anti-Sycophancy & ROI Pushback in `AGENTS.md`, and added `.agents/skills/self-evolve/SKILL.md` (`31`L, Rule-to-Script Promotion; `72/72` unit/integration tests)
+- [x] Completed full report fact-check, anti-hallucination & harness overhaul, and 3 independent adversarial audit rounds (`Round 1` Red-Team Security, `Round 2` Skill Suite & Pressure Testing, `Round 3 + 3b` Full-Platform Tier S Certification) — achieved certified **Tier S (`9.5 / 10`)** with `0` Critical, `0` High, `0` Medium findings across `107/107` automated tests, `18/18` skills (`923` lines total, `37–89`L, avg `51.3`L), and `38/38` fresh adversarial stress & false-positive probes
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
 | Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; `python3` verified, `127.0.0.1` PostgreSQL bound, `core.hooksPath=.githooks` + idempotent schema/seed applied |
-| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified hooks, `core.hooksPath`, secret-free git index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature DAG, `specs/contracts` hygiene, 16/16 skills, `stitch-manifest.json`, and `evaluations/feat-001..004.json` |
-| Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` (`noUnusedLocals`/`Parameters`/`ImplicitReturns`) |
-| Unit & Integration Suite | `npm run test:unit` | PASS | 27 harness + 12 agent-hooks + 12 Python workflow + 8 API + 5 Web RTL = 64/64 passed |
+| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, secret-free git index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature DAG, Oxc AST hygiene (`apps/` + `specs/contracts/`), `18/18` skills (`37–89`L), `stitch-manifest.json`, and `evaluations/feat-001..004.json` |
+| Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` (`noUnusedLocals`/`Parameters`/`ImplicitReturns`/`Fallthrough`) |
+| Unit & Integration Suite | `npm run test:unit` | PASS | `34` agent-hooks + `34` check-harness = `68` Node + `24` Python workflow + `8` API PG + `5` Web RTL = `105/105` passed |
 | Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
-| Playwright E2E | `npm run test:e2e` | PASS | 2/2 Chromium tests (smoke + `375x812` mobile overflow) |
+| Playwright E2E | `npm run test:e2e` | PASS | `2/2` Chromium tests (`107/107` total automated tests) |
+| Security Audit | `npm audit --audit-level=high` | PASS | `found 0 vulnerabilities` |
 
 ## Files Changed
 
-- `.github/workflows/ci.yml`
-- `.agents/skills/evaluating-features/SKILL.md`, `.agents/skills/evaluating-features/evaluator-prompt.md`
-- `evaluations/feat-001.json`, `evaluations/feat-002.json`, `evaluations/feat-003.json`, `evaluations/feat-004.json`
-- `scripts/check-harness.mjs`, `scripts/check-harness.test.mjs`
-- `apps/api/*`, `apps/web/*`, `apps/e2e/*`
-- `AGENTS.md`, `feature_list.json`, `progress.md`, `session-handoff.md`
+- `scripts/agent-hooks.mjs`, `scripts/agent-hooks.test.mjs`, `scripts/check-harness.mjs`, `scripts/check-harness.test.mjs`, `scripts/token-stats.mjs`, `init.sh`
+- `.agents/workflows/{graph_core,project_init,feature_delivery,bugfix,test_graph_core}.py`
+- `.agents/skills/*` (`18` skills + bundled scripts/references)
+- `AGENTS.md`, `designs/README.md`, `specs/contracts/README.md`, `.gitignore`, `.agents/STATE.md`, `progress.md`, `session-handoff.md`
 
 ## Blockers / Risks
 
-- None.
+- None. (Non-blocking `feat-005` UI note: `apps/web/src/components/AboutSection.tsx:31-49` nests `<Button>` inside `<a href>`; refactor to `buttonVariants()` on `<a>` during `feat-005`.)
 
 ## Next Session Startup
 
@@ -52,4 +52,4 @@
 
 ## Recommended Next Step
 
-- Implement `feat-005` (e.g., downloadable CV CTA + project detail modal + minor polish items noted in `evaluations/feat-003.json`), stage `"ready-for-eval"`, and dispatch `feature-evaluator`.
+- Implement `feat-005` (downloadable CV CTA, `aria-pressed` filter state, `AboutSection.tsx:31-49` `<a href><Button>` fix, and `ProjectsSection` card spacing), stage `"ready-for-eval"`, and dispatch `feature-evaluator` (or run `.agents/workflows/feature_delivery.py`).

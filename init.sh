@@ -18,7 +18,7 @@ is_port_free() {
     const srv = net.createServer();
     srv.once("error", () => process.exit(1));
     srv.once("listening", () => srv.close(() => process.exit(0)));
-    srv.listen(port, "0.0.0.0");
+    srv.listen(port, "127.0.0.1");
   ' "$1" >/dev/null 2>&1
 }
 
@@ -83,8 +83,14 @@ if [ -z "$CONTAINER_RUNNING" ] && ! is_port_free "$POSTGRES_PORT_VAL"; then
     const pass = process.argv[3];
     const db = process.argv[4];
     let env = fs.readFileSync(".env", "utf8");
-    env = env.replace(/^POSTGRES_PORT=.*$/m, `POSTGRES_PORT=${port}`);
-    env = env.replace(/^DATABASE_URL=.*$/m, `DATABASE_URL=postgresql://${user}:${pass}@localhost:${port}/${db}`);
+    const portLine = `POSTGRES_PORT=${port}`;
+    const dbUrlLine = `DATABASE_URL=postgresql://${user}:${pass}@localhost:${port}/${db}`;
+    env = /^POSTGRES_PORT=.*$/m.test(env)
+      ? env.replace(/^POSTGRES_PORT=.*$/m, () => portLine)
+      : `${env.replace(/\n*$/, "\n")}${portLine}\n`;
+    env = /^DATABASE_URL=.*$/m.test(env)
+      ? env.replace(/^DATABASE_URL=.*$/m, () => dbUrlLine)
+      : `${env.replace(/\n*$/, "\n")}${dbUrlLine}\n`;
     fs.writeFileSync(".env", env);
   ' "$POSTGRES_PORT_VAL" "$POSTGRES_USER_VAL" "$POSTGRES_PASSWORD_VAL" "$POSTGRES_DB_VAL"
   export POSTGRES_PORT="$POSTGRES_PORT_VAL"

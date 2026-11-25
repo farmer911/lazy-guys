@@ -4,18 +4,7 @@ Run `bash <executing-plans-dir>/scripts/review-package PLAN_FILE MERGE_BASE HEAD
 by its absolute path, from the working tree you're executing in (MERGE_BASE = the commit the branch started from, e.g.
 `git merge-base main HEAD`) and review from the file it prints.
 
-**With a subagent tool:** dispatch the reviewer on the most capable
-available model — the whole-branch review is a judgment task — using
-`requesting-code-review`'s
-[code-reviewer.md](../../requesting-code-review/code-reviewer.md), with the
-package path, the plan and spec paths, the plan's Review Focus section
-verbatim if it has one (the input classes and failure modes the plan's
-tests do not exercise — the reviewer checks each deliberately), and a
-pointer to the ledger's `Ruling:` lines so it can weigh the calls you
-made. Specify the model
-explicitly; an omitted model inherits the session's, which may not be the
-most capable. This is the one fresh context the whole run buys. Do not
-skip it, and do not replace it with your own read of the diff.
+**With a subagent tool:** dispatch a fresh reviewer (`invoke_subagent` with `Model: "inherit"`, unless the user explicitly requested a different model) using `requesting-code-review`'s [code-reviewer.md](../../requesting-code-review/code-reviewer.md). Fill `{REVIEW_CONTEXT}` with the `review-package.md` path, the plan's Review Focus section verbatim (if present), and the ledger's `Ruling:` lines so the reviewer can weigh every call you made. This is the one fresh context the whole run buys — do not skip it, and do not replace it with your own read of the diff.
 
 **Without a subagent tool:** read code-reviewer.md and perform that review
 yourself against the package, as a separate pass after the last task's

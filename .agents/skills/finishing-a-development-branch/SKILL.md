@@ -15,13 +15,14 @@ Run the repository verification gate before offering integration options:
 ./init.sh && npm run test:e2e
 ```
 
-If any check fails, stop and report failures — never offer merge/PR options on a red tree.
+If any check fails, stop and report failures — never offer merge/PR options on a red tree. For branches delivering a `feature_list.json` feature, confirm independent `evaluating-features` `PASS` sign-off (`evaluations/<feat-id>.json`) before integrating into `<base-branch>`.
 
 ## Step 2: Detect Workspace & Base Branch
 
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+MAIN_ROOT=$(cd "$GIT_COMMON/.." 2>/dev/null && pwd -P)
 WORKTREE_PATH=$(git rev-parse --show-toplevel)
 ```
 
@@ -39,7 +40,7 @@ Wait for the user's choice. Only offer **Discard** if the user explicitly asks t
 
 ## Step 4: Execute Choice
 
-- **Option 1 (Merge locally):** Switch to `MAIN_ROOT`, checkout & pull `<base-branch>`, `git merge <feature-branch>`, re-run `./init.sh`, clean up worktree (Step 5), then `git branch -d <feature-branch>`. If merged tests fail, stop and keep branch/worktree intact.
+- **Option 1 (Merge locally):** Switch to `MAIN_ROOT`, checkout & pull `<base-branch>`, `git merge <feature-branch>`, re-run `./init.sh && npm run test:e2e`, clean up worktree (Step 5), then `git branch -d <feature-branch>`. If merged tests fail, stop and keep branch/worktree intact.
 - **Option 2 (Push & PR):** `git push -u origin <feature-branch>` (never `--force`), open PR against `<base-branch>`, preserve worktree for review iterations.
 - **Option 3 (Keep as-is):** Report branch name and worktree path.
 

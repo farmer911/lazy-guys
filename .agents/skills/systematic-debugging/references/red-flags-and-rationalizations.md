@@ -15,9 +15,9 @@ If you catch yourself thinking:
 
 **ALL of these mean: STOP. Return to Phase 1.**
 
-**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+**If 3+ fixes failed:** Question the architecture (see Phase 4, 3-Fix Architecture Gate).
 
-## your human partner's Signals You're Doing It Wrong
+## Human Partner Signals You're Doing It Wrong
 
 **Watch for these redirections:**
 - "Is that not happening?" - You assumed without verifying
@@ -63,8 +63,8 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
+These techniques are part of `systematic-debugging` and live in the parent skill directory (`../`):
 
-- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
-- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
-- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
+- **`../root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
+- **`../defense-in-depth.md`** - Add validation at multiple layers after finding root cause
+- **`../condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling

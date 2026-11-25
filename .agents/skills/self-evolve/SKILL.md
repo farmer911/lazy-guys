@@ -15,7 +15,7 @@ Every repeated bug, user correction, or reviewer-caught bypass must leave the re
 
 1. **Where (Exact Locus):** Pinpoint exact `file:line`, hook event, or workflow boundary where the failure occurred.
 2. **Root Cause (Mechanism):** Explain *why* existing checks missed it (e.g., regex matched inside quotes, mock hid live host payload behavior, missing negative boundary).
-3. **Minimal Fix (TDD):** Write a failing regression test reproducing the exact failure (`RED`), apply the smallest fix (`GREEN`), and verify zero warnings.
+3. **Minimal Fix (TDD + Negative Control):** Write a failing regression test reproducing the exact failure (`RED`) **plus** a negative-control test proving legitimate commands/inputs are NOT falsely blocked, apply the smallest fix (`GREEN`), and verify zero warnings.
 4. **Rule-to-Script Promotion (Choose Highest-Leverage Guard):**
    - **Static / structural invariant** (orphans, frontmatter, forbidden patterns, schema/config drift) → encode in `scripts/check-harness.mjs` + `scripts/check-harness.test.mjs`.
    - **Runtime tool-call / bypass invariant** (shell workarounds, exit-code masking, role isolation) → encode in `scripts/agent-hooks.mjs` + `scripts/agent-hooks.test.mjs`.
@@ -29,3 +29,9 @@ Every repeated bug, user correction, or reviewer-caught bypass must leave the re
 | "I fixed the instance, no need to add a guard" | Fixing only the symptom guarantees the same mistake returns in a future session. |
 | "I'll just add a bold reminder to `AGENTS.md`" | Promote to `check-harness.mjs` or `agent-hooks.mjs` first whenever mechanically checkable. |
 | "Let's create a new skill for every lesson" | New skills increase routing noise; prefer script guards or surgical edits to existing skills. |
+
+## Red Flags — STOP Immediately
+
+- Fixing a recurring harness/hook bug without adding a failing regression test and automated script guard
+- Adding prose reminders in `AGENTS.md` when a mechanical exit-code-1 check in `scripts/check-harness.mjs` or `scripts/agent-hooks.mjs` can block the failure
+- Claiming a guard is active without running `./init.sh` fresh after the final edit

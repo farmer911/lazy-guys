@@ -11,4 +11,4 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file").
 ## Task tracking
 
 1. **In-session step checklists (`3–12` steps):** Call `update_steps` in parallel with your first tool call of each step (marking active steps `in_progress` and finished steps `done`), paired with `update_focus` for fine-grained activity.
-2. **Long plans & compaction-proof ledgers:** When executing a multi-task plan (`executing-plans`) or producing an extensive report, persist markdown checklists/ledgers on disk (`write_file` / `edit_file` with `ArtifactMetadata` for user-facing artifacts in `<appDataDir>/brain/<conversation-id>/`) so progress survives context compaction.
+2. **Long plans & compaction-proof ledgers:** Persist active multi-step checklists in `.agents/STATE.md` (for crash-safe resume across turns), use `.superpowers/sdd/<slug>/progress.md` during `executing-plans`, and write user-facing reports in `<appDataDir>/brain/<conversation-id>/` with `ArtifactMetadata`.

@@ -7,7 +7,7 @@ description: Use when auditing frontend and full-stack features against Vercel W
 
 ## Overview
 
-Pair with `evaluating-features` to verify completed work from a skeptical, zero-trust white-room context. Passing `tsc` and developer-written smoke tests is the starting line, never the finish line: probe the live app against `designs/screens/*.html`, `specs/prd.md`, and **Vercel Web Design Guidelines**.
+Pair with `evaluating-features` and `apps/e2e/AGENTS.md` to verify completed work from a skeptical, zero-trust white-room context. Passing `tsc` and developer-written smoke tests is the starting line, never the finish line: probe the live app against `designs/screens/*.html`, `specs/prd.md`, and **Vercel Web Design Guidelines**.
 
 ## Iron Law
 
@@ -15,7 +15,7 @@ Pair with `evaluating-features` to verify completed work from a skeptical, zero-
 NO PASS VERDICT WITHOUT LIVE ACCESSIBILITY, RESPONSIVE, INTERACTION, AND STITCH FIDELITY CHECKS
 ```
 
-Never rubber-stamp a git diff under time pressure. Every defect below drops the corresponding rubric score below `7` and populates `blockingIssues` in `evaluations/<feat-id>.json`.
+Never rubber-stamp a git diff under time pressure or fabricate `liveChecks` if a server/browser fails to start. For feature evaluations, every defect below drops the corresponding rubric score below `7` and populates `blockingIssues` in `evaluations/<feat-id>.json` (for standalone `bugfix.py` regressions without a `featureId`, report findings inline without writing `evaluations/`).
 
 ## Mandatory Live Audit Checklist (Vercel Web Design Guidelines + Stitch)
 

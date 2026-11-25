@@ -33,7 +33,9 @@ Produce `specs/prd.md` with these exact five sections in order:
 |--------|---------|
 | "Founder asked me to include Express routes, SQL columns, and Zustand stores to save time" | Dictating schema before Design draws the UI causes API/UI mismatch. Name business data needs; Tech Lead owns contracts and SQL after UI sign-off. |
 | "Empty/error states are obvious, devs will handle them" | Unspecified edge states cause blank screens in production. Every story requires explicit `empty`, `loading`, and `error` behavior. |
-| "I'll mark `feature_list.json` status beyond `not-started` / `in-progress`" | PM only authors scope and acceptance criteria; execution and evaluation gates own completion states. |
+| "I'll mark `feature_list.json` status as `in-progress` or `done`" | PM only authors `"not-started"` scope and acceptance criteria; execution and evaluation gates own active/completion states. |
+
+Return `PM_SCHEMA` keys (`prdPath`, `screens`, `featureSummaries`) when invoked by `.agents/workflows/project_init.py`.
 
 ## Red Flags — STOP Immediately
 

@@ -14,20 +14,24 @@ Subagent (general-purpose):
 
     ## What Was Implemented
 
-    [DESCRIPTION]
+    {DESCRIPTION}
 
     ## Requirements / Plan
 
-    [PLAN_OR_REQUIREMENTS]
+    {PLAN_OR_REQUIREMENTS}
+
+    ## Additional Review Context (Optional)
+
+    {REVIEW_CONTEXT}
 
     ## Git Range to Review
 
-    **Base:** [BASE_SHA]
-    **Head:** [HEAD_SHA]
+    **Base:** {BASE_SHA}
+    **Head:** {HEAD_SHA}
 
     ```bash
-    git diff --stat [BASE_SHA]..[HEAD_SHA]
-    git diff [BASE_SHA]..[HEAD_SHA]
+    git diff --stat {BASE_SHA}..{HEAD_SHA}
+    git diff {BASE_SHA}..{HEAD_SHA}
     ```
 
     ## The spec is a vision document
@@ -49,7 +53,7 @@ Subagent (general-purpose):
 
     ## Read-Only Review
 
-    Your review is read-only on this checkout. Do not mutate the working tree, the index, HEAD, or branch state in any way. Use tools like `git show`, `git diff`, and `git log` to inspect history. If you need a working copy of a different revision, check it out into a separate temporary directory (e.g. `git worktree add /tmp/review-[SHA] [SHA]`) — never move HEAD on this checkout.
+    Your review is read-only on this checkout. Do not mutate the working tree, the index, `.git/`, `HEAD`, or branch state in any way. Inspect history solely via read-only commands (`git show`, `git diff`, `git log`).
 
     ## You Do Not Dispatch Subagents
 
@@ -128,6 +132,9 @@ Subagent (general-purpose):
     ### Recommendations
     [Improvements for code quality, architecture, or process]
 
+    ### Declined to judge
+    [One line per behavior considered and set aside as outside scope, with reason; write "None" if empty]
+
     ### Assessment
 
     **Ready to merge?** [Yes | No | With fixes]
@@ -152,47 +159,14 @@ Subagent (general-purpose):
 ```
 
 **Placeholders:**
-- `[DESCRIPTION]` — brief summary of what was built
-- `[PLAN_OR_REQUIREMENTS]` — what it should do (plan file path, task text, or requirements)
-- `[BASE_SHA]` — starting commit
-- `[HEAD_SHA]` — ending commit
+- `{DESCRIPTION}` — brief summary of what was built
+- `{PLAN_OR_REQUIREMENTS}` — what it should do (plan file path, task text, or requirements)
+- `{REVIEW_CONTEXT}` — optional `review-package.md` path, Review Focus items, and ledger `Ruling:` lines (or `"None"`)
+- `{BASE_SHA}` — starting commit
+- `{HEAD_SHA}` — ending commit
 
-**Reviewer returns:** Strengths, Issues (Critical / Important / Minor), Recommendations, Assessment
+**Reviewer returns:** Strengths, Issues (Critical / Important / Minor), Recommendations, Declined to judge, Assessment
 
-## Example Output
+## Output Shape Reminder
 
-```
-### Strengths
-- Clean database schema with proper migrations (db.ts:15-42)
-- Comprehensive test coverage (18 tests, all edge cases)
-- Good error handling with fallbacks (summarizer.ts:85-92)
-
-### Issues
-
-#### Important
-1. **Missing help text in CLI wrapper**
-   - File: index-conversations:1-31
-   - Issue: No --help flag, users won't discover --concurrency
-   - Fix: Add --help case with usage examples
-
-2. **Date validation missing**
-   - File: search.ts:25-27
-   - Issue: Invalid dates silently return no results
-   - Fix: Validate ISO format, throw error with example
-
-#### Minor
-1. **Progress indicators**
-   - File: indexer.ts:130
-   - Issue: No "X of Y" counter for long operations
-   - Impact: Users don't know how long to wait
-
-### Recommendations
-- Add progress reporting for user experience
-- Consider config file for excluded projects (portability)
-
-### Assessment
-
-**Ready to merge: With fixes**
-
-**Reasoning:** Core implementation is solid with good architecture and tests. Important issues (help text, date validation) are easily fixed and don't affect core functionality.
-```
+Keep every finding anchored to a verified `file:line` read directly from `{BASE_SHA}..{HEAD_SHA}`, explain real user/system impact, and provide a concrete TDD fix direction (never copy placeholder line numbers).

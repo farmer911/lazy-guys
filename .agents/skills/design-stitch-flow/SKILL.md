@@ -23,11 +23,12 @@ Hosted Stitch links can change or hit rate limits. Never pass a bare Stitch URL 
    - Apply **UI/UX Pro Max** rules: shared spacing rhythm, consistent navigation chrome across pages, accessible contrast (`>= 4.5:1` body text), and zero layout jump across states.
    - Apply **Impeccable** craft (anti-"AI slop"): clear typographic hierarchy, purposeful surface elevation instead of generic neon purple-cyan gradients, and explicit `default`, `hover/focus-visible`, `loading`, `empty`, `error`, and `375px` mobile variants.
    - *(Optional — Dembrandt mode)*: Only when the user supplies a reference URL to extract brand DNA from, pull its palette/typography scale into the token set first.
-2. **STOP at Human Gate (`AWAITING_HUMAN_APPROVAL`):**
+2. **STOP at Human Gate (`AWAITING_HUMAN_APPROVAL` or `REVISION_REQUIRED`):**
    - Present the Google Stitch project/screens for visual inspection and wait for explicit human approval before freezing.
-3. **Freeze Approved Truth to `designs/` (Post-Approval Only):**
+   - If the human requests revisions OR `specs/prd.md` omits required user flows/states, return `{"status": "REVISION_REQUIRED", "stitchProjectId": "<real-id>", "frozenFiles": [], "notes": "..."}` — never guess missing product flows or freeze rejected screens.
+3. **Freeze Approved Truth to `designs/` (Post-Approval Only, returning `status: "FROZEN_TO_GIT"` + `frozenFiles`):**
    - `designs/design-tokens.json` — colors, font families/sizes, radii, spacing, elevation tokens.
-   - `designs/stitch-manifest.json` — Stitch project ID, screen IDs, and approval timestamp.
+   - `designs/stitch-manifest.json` — required keys: `stitchProjectId`, `status` (`"FROZEN_TO_GIT"`), `approvedAt`, `tokensPath` (`"designs/design-tokens.json"`), and non-empty `screens: [{ slug, title, path, sections, variantsCovered }]` (every `path` must resolve to a non-empty file inside `designs/`).
    - `designs/screens/<screen-slug>.html` — self-contained HTML/Tailwind reference markup per screen.
 
 ## Rationalization Prevention
@@ -41,5 +42,6 @@ Hosted Stitch links can change or hit rate limits. Never pass a bare Stitch URL 
 ## Red Flags — STOP Immediately
 
 - Handing off to Tech Lead before explicit human visual approval
-- Skipping `designs/design-tokens.json` or `designs/screens/<screen-slug>.html`
+- Skipping `designs/design-tokens.json`, `designs/stitch-manifest.json` (`tokensPath` + `screens[].path`), or `designs/screens/<screen-slug>.html`
+- Fabricating a fake `stitchProjectId` or hand-writing unapproved HTML drafts if Google Stitch MCP fails — report the MCP blocker instead
 - Editing production code under `apps/` or `db/`

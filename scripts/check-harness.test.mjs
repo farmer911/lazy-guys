@@ -872,14 +872,16 @@ test('flags orphan unreferenced auxiliary files inside .agents/skills/*', () => 
   }
 });
 
-test('flags evaluation with vague liveChecks lacking real probe evidence', () => {
-  // E1: check-harness only validates liveChecks is non-empty array, not semantic content
+test('flags evaluation with vague liveChecks including lowercase English words (get/put/head/options) that falsely matched /i', () => {
   const dir = makeTempFixture();
   fs.writeFileSync(
     path.join(dir, 'evaluations', 'feat-001.json'),
     JSON.stringify(
       makeValidEvaluation('feat-001', {
-        liveChecks: ['I checked everything and it looks good', 'All tests pass'],
+        liveChecks: [
+          'I will get everything checked and put notes in the head of the options list',
+          'Post-deploy review looks good',
+        ],
       })
     )
   );
@@ -888,8 +890,312 @@ test('flags evaluation with vague liveChecks lacking real probe evidence', () =>
     const errors = validateHarness(dir);
     assert.ok(
       errors.some((e) => e.includes('liveChecks') && /probe|HTTP|localhost|curl|playwright|test:e2e/i.test(e)),
-      `expected liveChecks semantic validation error, got: ${errors.join('\n')}`
+      `expected liveChecks semantic validation error on vague lowercase prose, got: ${errors.join('\n')}`
     );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('flags stale docs/superpowers paths, narrative 2025-10-03 artifacts, mismatched frontmatter name, broken concrete repo paths, and unrouted skills', () => {
+  const dir = makeTempFixture();
+  // Add a minimal using-superpowers router listing only task-guardrail, adversarial-audit, self-evolve, evaluating-features
+  const routerDir = path.join(dir, '.agents', 'skills', 'using-superpowers');
+  fs.mkdirSync(routerDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(routerDir, 'SKILL.md'),
+    [
+      '---',
+      'name: using-superpowers',
+      'description: Use when routing single-agent skills. Not for Role-DAG workers.',
+      '---',
+      '# Router',
+      '- `task-guardrail`',
+      '- `adversarial-audit`',
+      '- `self-evolve`',
+      '- `evaluating-features`',
+    ].join('\n')
+  );
+
+  const badSkillDir = path.join(dir, '.agents', 'skills', 'unrouted-drift');
+  fs.mkdirSync(path.join(badSkillDir, 'references'), { recursive: true });
+  fs.writeFileSync(
+    path.join(badSkillDir, 'SKILL.md'),
+    [
+      '---',
+      'name: wrong-skill-name',
+      'description: Use when testing drift checks. Not for production.',
+      '---',
+      '# Drift',
+      'See `references/aux.md` and run `.agents/workflows/nonexistent.py`.',
+    ].join('\n')
+  );
+  fs.writeFileSync(
+    path.join(badSkillDir, 'references', 'aux.md'),
+    'Save plan to `docs/superpowers/plans/x.md`.\nFrom debugging session (2025-10-03): ran pytest.\n'
+  );
+
+  try {
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /wrong-skill-name.*unrouted-drift|name.*match/i);
+    assert.match(joined, /docs\/superpowers/i);
+    assert.match(joined, /2025-10-03|narrative/i);
+    assert.match(joined, /pytest|foreign-stack/i);
+    assert.match(joined, /\.agents\/workflows\/nonexistent\.py/i);
+    assert.match(joined, /unrouted-drift.*using-superpowers/i);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Round 1 Red-Team H6/H7/C2/M1/M2/L1: AST hygiene, invalid hooks.json, commented CI/githooks, docker /tcp & long-form, stitch traversal, negative liveChecks, duplicate IDs, uppercase .ENV, orphan substring', () => {
+  const dir = makeTempFixture();
+  try {
+    // H6: AST-based TS hygiene + test-skip variants
+    const srcDir = path.join(dir, 'apps', 'api', 'src');
+    const testDir = path.join(srcDir, '__tests__');
+    fs.mkdirSync(testDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(srcDir, 'Sneaky.ts'),
+      [
+        '// @ts-expect-error',
+        'export type BadMap = Record<string, any>;',
+        'export type BadUnion = string | any;',
+        'export const badArr: any[] = [];',
+        'export const fn = () => { console?.log("sneak"); console["log"]("sneak2"); };',
+      ].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(testDir, 'Sneaky.test.ts'),
+      [
+        'test.fixme("skipped", () => {});',
+        'it.skipIf(true)("skipped2", () => {});',
+        'xit("skipped3", () => {});',
+        'fdescribe("focused", () => {});',
+        'test.concurrent.only("focused2", () => {});',
+      ].join('\n')
+    );
+
+    // H7: invalid hooks.json, commented githooks, commented ci.yml + || true, docker /tcp + trailing comment, stitch traversal & directory
+    fs.writeFileSync(path.join(dir, '.agents', 'hooks.json'), '{ invalid json "PreToolUse" "PostToolUse" "Stop" agent-hooks.mjs');
+    fs.writeFileSync(path.join(dir, '.githooks', 'pre-commit'), '#!/usr/bin/env bash\n# npm run check:harness\nnpm run typecheck || true\n', { mode: 0o755 });
+    fs.writeFileSync(
+      path.join(dir, '.github', 'workflows', 'ci.yml'),
+      VALID_CI_WORKFLOW.replace('- run: npm run test:e2e', '# - run: npm run test:e2e').replace('- run: npm run test:unit', '- run: npm run test:unit || true')
+    );
+    fs.writeFileSync(
+      path.join(dir, 'docker-compose.yml'),
+      'services:\n  postgres:\n    ports:\n      - "5432:5432/tcp" # comment\n'
+    );
+    fs.mkdirSync(path.join(dir, 'designs', 'screens', 'subdir'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'designs', 'stitch-manifest.json'),
+      JSON.stringify({
+        stitchProjectId: 'baseline',
+        tokensPath: 'designs/../AGENTS.md',
+        screens: [{ slug: 'dir-not-file', path: 'designs/screens/subdir' }],
+      })
+    );
+
+    // M1: negative/deferred liveChecks
+    fs.writeFileSync(
+      path.join(dir, 'evaluations', 'feat-001.json'),
+      JSON.stringify(
+        makeValidEvaluation('feat-001', {
+          liveChecks: ['Skipped localhost check', 'Will run playwright later', 'Checked 1 -> 200 items'],
+        })
+      )
+    );
+
+    // M2: duplicate feature IDs
+    fs.writeFileSync(
+      path.join(dir, 'feature_list.json'),
+      JSON.stringify({
+        features: [
+          { id: 'feat-001', name: 'A', description: 'A', dependencies: [], status: 'done', evidence: '3a0f893' },
+          { id: 'feat-001', name: 'Dup', description: 'Dup', dependencies: [], status: 'not-started', evidence: '' },
+        ],
+      })
+    );
+
+    // L1: orphan substring evasion (plan.md should NOT be marked reachable by my-plan.md)
+    const skillDir = path.join(dir, '.agents', 'skills', 'task-guardrail');
+    fs.writeFileSync(
+      path.join(skillDir, 'SKILL.md'),
+      '---\nname: task-guardrail\ndescription: Use when testing. Not for other things.\n---\nSee my-plan.md\n'
+    );
+    fs.writeFileSync(path.join(skillDir, 'my-plan.md'), '# real\n');
+    fs.writeFileSync(path.join(skillDir, 'plan.md'), '# orphan\n');
+
+    // C2: git tracked uppercase .ENV
+    execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'core.hooksPath', '.githooks'], { cwd: dir, stdio: 'ignore' });
+    fs.writeFileSync(path.join(dir, '.ENV'), 'SECRET=1\n');
+    execFileSync('git', ['add', '-f', '.ENV'], { cwd: dir, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'leak'], { cwd: dir, stdio: 'ignore' });
+
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /Sneaky\.ts.*@ts-expect-error/);
+    assert.match(joined, /Sneaky\.ts.*any/);
+    assert.match(joined, /Sneaky\.ts.*console\.log/);
+    assert.match(joined, /Sneaky\.test\.ts.*fixme|skipIf|xit|fdescribe|only/i);
+    assert.match(joined, /\.agents\/hooks\.json.*JSON/i);
+    assert.match(joined, /pre-commit.*check:harness/i);
+    assert.match(joined, /pre-commit.*\|\|\s*true|masking/i);
+    assert.match(joined, /ci\.yml.*test:e2e/i);
+    assert.match(joined, /ci\.yml.*\|\|\s*true|masking/i);
+    assert.match(joined, /docker-compose\.yml.*127\.0\.0\.1/);
+    assert.match(joined, /stitch-manifest\.json.*designs\//i);
+    assert.match(joined, /stitch-manifest\.json.*subdir/i);
+    assert.match(joined, /feat-001\.json.*liveChecks/i);
+    assert.match(joined, /Duplicate feature id.*feat-001/i);
+    assert.match(joined, /task-guardrail\/plan\.md.*orphan/i);
+    assert.match(joined, /Forbidden secret file "\.ENV"/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Round 2 Audit H5/M4/M7: flags specs/contracts syntax errors, tightens liveChecks, hardens token-stats against NaN, and fixes executing-plans task-brief bleed & sdd-workspace collision', async () => {
+  const { summarizeTranscriptTokens, formatTokenUsageReport } = await import('./token-stats.mjs');
+
+  // H5 + M4
+  const dir = makeTempFixture();
+  try {
+    fs.writeFileSync(
+      path.join(dir, 'specs', 'contracts', 'broken.ts'),
+      'export interface Broken { x: any\n'
+    );
+    fs.writeFileSync(
+      path.join(dir, 'evaluations', 'feat-001.json'),
+      JSON.stringify(makeValidEvaluation('feat-001', { liveChecks: ['localhost looks good'] }))
+    );
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /specs\/contracts\/broken\.ts.*syntax error/i);
+    assert.match(joined, /evaluations\/feat-001\.json.*liveChecks/i);
+
+    // M4 positive controls: "0 skipped tests" and domain word "todo" must NOT be false-rejected
+    fs.unlinkSync(path.join(dir, 'specs', 'contracts', 'broken.ts'));
+    for (const validLive of [
+      ['Playwright verified 0 skipped tests on http://localhost:5173'],
+      ['POST /api/todos -> 201 (todo created)'],
+    ]) {
+      fs.writeFileSync(
+        path.join(dir, 'evaluations', 'feat-001.json'),
+        JSON.stringify(makeValidEvaluation('feat-001', { liveChecks: validLive }))
+      );
+      assert.deepEqual(validateHarness(dir), [], `M4 false positive on valid liveCheck: ${validLive[0]}`);
+    }
+
+    // M7: token-stats NaN poisoning guard
+    const transcript = path.join(dir, 't.jsonl');
+    fs.writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ input_tokens: 100, cache_read_tokens: 50, output_tokens: 20, model: 'm1' }),
+        JSON.stringify({ input_tokens: 'bad', cache_read_tokens: 100, output_tokens: 10, model: 'm1' }),
+      ].join('\n')
+    );
+    const summary = summarizeTranscriptTokens(transcript);
+    assert.equal(summary.inputTokens, 100);
+    assert.equal(summary.cacheReadTokens, 150);
+    assert.equal(summary.outputTokens, 30);
+    assert.equal(summary.totalTokens, 130);
+    const usageLog = path.join(dir, 'u.jsonl');
+    fs.writeFileSync(
+      usageLog,
+      `${JSON.stringify({ conversationId: 'c1', turns: 1, inputTokens: 'bad', cacheReadTokens: 10, outputTokens: 5 })}\n`
+    );
+    assert.doesNotMatch(formatTokenUsageReport(usageLog), /NaN/);
+
+    // M7: task-brief stops at trailing ## section & sdd-workspace creates progress.md and avoids basename collision
+    const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exec-plans-r2-'));
+    try {
+      execFileSync('git', ['init', '-b', 'main'], { cwd: repoDir, stdio: 'ignore' });
+      execFileSync('git', ['config', 'user.email', 't@e.com'], { cwd: repoDir, stdio: 'ignore' });
+      execFileSync('git', ['config', 'user.name', 'T'], { cwd: repoDir, stdio: 'ignore' });
+      fs.mkdirSync(path.join(repoDir, 'dirA'), { recursive: true });
+      fs.mkdirSync(path.join(repoDir, 'dirB'), { recursive: true });
+      const planA = path.join(repoDir, 'dirA', 'plan.md');
+      const planB = path.join(repoDir, 'dirB', 'plan.md');
+      fs.writeFileSync(
+        planA,
+        '# Demo\n\n### Task 1: Only Task\n- [ ] Step 1\n\n## Post-Plan Verification\nDo not bleed this.\n'
+      );
+      fs.writeFileSync(planB, '# Demo B\n\n### Task 1: B\n- [ ] Step 1\n');
+      const scriptsDir = path.resolve(process.cwd(), '.agents', 'skills', 'executing-plans', 'scripts');
+      const wsA = execFileSync(path.join(scriptsDir, 'sdd-workspace'), [planA], {
+        cwd: repoDir,
+        encoding: 'utf8',
+      }).trim();
+      const wsB = execFileSync(path.join(scriptsDir, 'sdd-workspace'), [planB], {
+        cwd: repoDir,
+        encoding: 'utf8',
+      }).trim();
+      assert.notEqual(wsA, wsB, 'sdd-workspace must not collide on identical plan basenames in different dirs');
+      assert.ok(fs.existsSync(path.join(wsA, 'progress.md')), 'sdd-workspace must initialize progress.md');
+      execFileSync(path.join(scriptsDir, 'task-brief'), [planA, '1'], { cwd: repoDir, encoding: 'utf8' });
+      const brief = fs.readFileSync(path.join(wsA, 'task-1-brief.md'), 'utf8');
+      assert.doesNotMatch(brief, /Post-Plan Verification/, 'task-brief must stop at trailing ## section');
+    } finally {
+      fs.rmSync(repoDir, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Round 3 Audit H5/M4: flags narrowed hooks.json matcher, || : / early exit 0 in githooks & ci.yml, result-less/failed liveChecks, it.todo, and skill dirs missing SKILL.md', () => {
+  const dir = makeTempFixture();
+  try {
+    fs.writeFileSync(
+      path.join(dir, '.agents', 'hooks.json'),
+      JSON.stringify({
+        'repo-harness-guard': {
+          PreToolUse: [{ matcher: 'read_file', hooks: [{ command: 'node ../scripts/agent-hooks.mjs' }] }],
+          PostToolUse: [{ matcher: 'read_file', hooks: [{ command: 'node ../scripts/agent-hooks.mjs' }] }],
+          Stop: [{ command: 'node ../scripts/agent-hooks.mjs' }],
+        },
+      })
+    );
+    fs.writeFileSync(
+      path.join(dir, '.githooks', 'pre-commit'),
+      '#!/usr/bin/env bash\nexit 0\nnpm run check:harness || :\nnpm run typecheck\n',
+      { mode: 0o755 }
+    );
+    fs.writeFileSync(
+      path.join(dir, '.github', 'workflows', 'ci.yml'),
+      VALID_CI_WORKFLOW.replace('- run: npm run test:e2e', '- run: npm run test:e2e || :')
+    );
+    fs.writeFileSync(
+      path.join(dir, 'evaluations', 'feat-001.json'),
+      JSON.stringify(
+        makeValidEvaluation('feat-001', {
+          liveChecks: ['GET /api/health', 'playwright test failed with 5 errors'],
+        })
+      )
+    );
+    const testDir = path.join(dir, 'apps', 'api', 'src', '__tests__');
+    fs.mkdirSync(testDir, { recursive: true });
+    fs.writeFileSync(path.join(testDir, 'Todo.test.ts'), 'it.todo("unimplemented");\n');
+    const junkDir = path.join(dir, '.agents', 'skills', 'junk');
+    fs.mkdirSync(junkDir, { recursive: true });
+    fs.writeFileSync(path.join(junkDir, 'notes.md'), '# stray skill dir without SKILL.md\n');
+
+    const errors = validateHarness(dir);
+    const joined = errors.join('\n');
+    assert.match(joined, /hooks\.json.*matcher/i);
+    assert.match(joined, /pre-commit.*exit 0/i);
+    assert.match(joined, /pre-commit.*mask/i);
+    assert.match(joined, /ci\.yml.*mask/i);
+    assert.match(joined, /feat-001\.json.*liveChecks/i);
+    assert.match(joined, /Todo\.test\.ts.*it\.todo/i);
+    assert.match(joined, /\.agents\/skills\/junk.*SKILL\.md/i);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

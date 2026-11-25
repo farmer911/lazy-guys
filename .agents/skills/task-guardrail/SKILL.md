@@ -26,7 +26,7 @@ NO MULTI-STEP FILE EDITS WITHOUT A PRE-EDIT BRIEF AND VERIFIED OUTPUT CONTRACT
 
 ### Phase 1: Pre-Edit Brief (Before First `edit_file` / `write_file`)
 
-Output a compact brief (`<= 10` lines) containing all three mandatory fields (`Goal & Scope`, `Assumptions / Non-Goals`, and `Steps` with `>= 2` entries, each paired with `| Verify:`) **before** your first file edit. Unless two mutually incompatible spec interpretations block safe progress, **do not stall waiting for approval** — emit the brief and execute **only Step 1** in that turn:
+Output a compact brief (`<= 10` lines) containing all three mandatory fields (`Goal & Scope`, `Assumptions / Non-Goals`, and `Steps` with `>= 2` entries, each paired with `| Verify:`) **before** your first file edit, and sync the Goal + Checklist into `.agents/STATE.md` (ticking steps as they finish for crash-safe recovery). Unless two mutually incompatible spec interpretations block safe progress, **do not stall waiting for approval** — emit the brief and execute **only Step 1** in that turn:
 
 ```markdown
 **Goal & Scope:** Add status filter across `src/routes/orders.ts` and `src/components/OrderList.tsx`.

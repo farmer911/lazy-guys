@@ -24,6 +24,7 @@ awk -v target="$n" '
     if (in_task) exit
     if (line == target) in_task = 1
   }
+  /^##? / && in_task && !/^##+ Task / { exit }
   in_task { print }
 ' "$plan" > "$out"
 

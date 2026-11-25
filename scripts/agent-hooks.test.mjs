@@ -1203,3 +1203,1191 @@ test('Execution Evidence Gate ignores verification command tokens inside quoted 
     fs.rmSync(tempRepo, { recursive: true, force: true });
   }
 });
+
+test('Cross-language evaluator contract: real evaluator-prompt.md and Python build_evaluator_prompt pass PreToolUse while invalid-SHA forgery on git repo fails', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const templateRaw = fs.readFileSync(
+    path.resolve(process.cwd(), '.agents', 'skills', 'evaluating-features', 'evaluator-prompt.md'),
+    'utf8'
+  );
+  const blockMatch = templateRaw.match(/```markdown\r?\n([\s\S]*?)\r?\n```/);
+  assert.ok(blockMatch, 'evaluator-prompt.md must contain a markdown prompt block');
+
+  const headSha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim();
+
+  const filledTemplate = blockMatch[1]
+    .replaceAll('{FEATURE_ID}', 'feat-005')
+    .replaceAll('{FEATURE_SPEC}', 'Portfolio polish')
+    .replaceAll('{COMMIT_SHA}', headSha)
+    .replaceAll('{WORKSPACE_ROOT}', process.cwd());
+
+  const fromTemplate = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: filledTemplate,
+      toolCall: {
+        name: 'write_file',
+        args: { Path: path.join(process.cwd(), 'evaluations/feat-005.json') },
+      },
+    },
+    { rootDir: process.cwd(), disableTelemetry: true }
+  );
+  assert.equal(
+    fromTemplate.decision,
+    'allow',
+    `real evaluator-prompt.md must be accepted by PreToolUse, got: ${JSON.stringify(fromTemplate)}`
+  );
+
+  // H2: evaluator-prompt.md must ALSO carry [AGENT_ROLE: qa] and deny production edits & feature_list.json
+  const evalEditsApi = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: filledTemplate,
+      toolCall: {
+        name: 'edit_file',
+        args: { Path: path.join(process.cwd(), 'apps/api/src/index.ts') },
+      },
+    },
+    { rootDir: process.cwd(), disableTelemetry: true }
+  );
+  assert.equal(evalEditsApi.decision, 'deny', 'evaluator-prompt.md must not edit apps/api');
+
+  const evalWritesFeatureList = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: filledTemplate,
+      toolCall: {
+        name: 'write_file',
+        args: {
+          Path: path.join(process.cwd(), 'feature_list.json'),
+          Content: JSON.stringify({
+            features: [{ id: 'feat-999', name: 'X', description: 'X', dependencies: [], status: 'done', evidence: '' }],
+          }),
+        },
+      },
+    },
+    { rootDir: process.cwd(), disableTelemetry: true }
+  );
+  assert.equal(evalWritesFeatureList.decision, 'deny', 'evaluator must not bypass feature_list.json locks');
+
+  const pyPrompt = execFileSync(
+    'python3',
+    [
+      '-c',
+      `import sys; sys.path.insert(0, '.agents/workflows'); from graph_core import build_evaluator_prompt; print(build_evaluator_prompt('feat-005', '${headSha}', '${process.cwd()}'))`,
+    ],
+    { cwd: process.cwd(), encoding: 'utf8' }
+  );
+
+  const fromPython = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: pyPrompt,
+      toolCall: {
+        name: 'write_file',
+        args: { Path: path.join(process.cwd(), 'evaluations/feat-005.json') },
+      },
+    },
+    { rootDir: process.cwd(), disableTelemetry: true }
+  );
+  assert.equal(
+    fromPython.decision,
+    'allow',
+    `graph_core.build_evaluator_prompt() must be accepted by PreToolUse, got: ${JSON.stringify(fromPython)}`
+  );
+
+  const forgedNonExistentSha = filledTemplate.replaceAll(headSha, 'deadbeef9999');
+  const fromForgedSha = evaluateHookEvent(
+    {
+      hookEventName: 'PreToolUse',
+      lastUserInput: forgedNonExistentSha,
+      toolCall: {
+        name: 'write_file',
+        args: { Path: path.join(process.cwd(), 'evaluations/feat-005.json') },
+      },
+    },
+    { rootDir: process.cwd(), disableTelemetry: true }
+  );
+  assert.equal(
+    fromForgedSha.decision,
+    'deny',
+    'evaluator prompt citing a non-existent git SHA on a real git repo must be denied'
+  );
+});
+
+test('Execution Evidence Gate rejects pipe-masked, newline-masked, backgrounded, and set+e verification commands while allowing pipefail and clean runs', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-mask-hard-'));
+  try {
+    const convId = 'conv-mask-hard-010';
+    const okHarness = { validateHarnessFn: () => [] };
+
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    const maskedCommands = [
+      './init.sh 2>&1 | tail -5',
+      'npm run test:unit | grep pass',
+      'npm run test:unit\ntrue',
+      'npm run test:unit &',
+      'set +e && npm run test:unit',
+      'if npm run test:unit; then echo ok; fi',
+      '! npm run test:unit',
+    ];
+
+    for (const maskedCmd of maskedCommands) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: maskedCmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const blocked = evaluateHookEvent(
+        {
+          hookEventName: 'Stop',
+          conversationId: convId,
+          terminationReason: 'NO_TOOL_CALL',
+          continuationActive: false,
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(
+        blocked.decision,
+        'continue',
+        `expected Stop to reject masked verification command: ${JSON.stringify(maskedCmd)}`
+      );
+    }
+
+    // With explicit set -o pipefail before pipe, exit code is preserved
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 3,
+        toolCall: { name: 'run_command', args: { CommandLine: 'set -o pipefail && ./init.sh 2>&1 | tail -5' } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const allowedPipefail = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convId,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(allowedPipefail.decision, '', 'set -o pipefail preserves exit status and must pass');
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('PostToolUse eliminates read-only false positives (grep, head, comments, arrow fns) while STILL tracking real node -e / python3 -c file mutations', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-post-fp-'));
+  try {
+    const okHarness = { validateHarnessFn: () => [] };
+    const readOnlyCommands = [
+      'grep -n "rm -rf -> foo" scripts/agent-hooks.mjs',
+      'head -n 5 .agents/skills/executing-plans/scripts/sdd-workspace',
+      '# check a -> b\ncat scripts/agent-hooks.mjs',
+      'node -e "const fn = () => \'scripts/agent-hooks.mjs\'; console.log(fn())"',
+      'git diff scripts/agent-hooks.mjs | head -n 20',
+    ];
+
+    readOnlyCommands.forEach((cmd, idx) => {
+      const convId = `conv-ro-${idx}`;
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 1,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        {
+          hookEventName: 'Stop',
+          conversationId: convId,
+          terminationReason: 'NO_TOOL_CALL',
+          continuationActive: false,
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(stopRes.decision, '', `read-only command must not trigger code-edit gate: ${cmd}`);
+    });
+
+    const realInlineMutations = [
+      `node -e "require('node:fs').writeFileSync('apps/api/src/index.ts', 'hacked')"`,
+      `python3 -c "from pathlib import Path; Path('apps/api/src/index.ts').write_text('hacked')"`,
+    ];
+
+    realInlineMutations.forEach((cmd, idx) => {
+      const convId = `conv-inline-mut-${idx}`;
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 1,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        {
+          hookEventName: 'Stop',
+          conversationId: convId,
+          terminationReason: 'NO_TOOL_CALL',
+          continuationActive: false,
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(
+        stopRes.decision,
+        'continue',
+        `real inline script mutation MUST trigger Execution Evidence Gate: ${cmd}`
+      );
+    });
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('PreToolUse closes ./evaluations, abs-path evaluations, long/bundled flags, ditto, python r+ mode, git stash apply/rebase, and write-time One-Feature-At-A-Time / unfinished-dep checks', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-extra-bypasses-'));
+  try {
+    const evalBypassCmds = [
+      'rm -rf ./evaluations',
+      `mv /tmp/evil ${tempRepo}/evaluations`,
+      'rm -rf evaluations; true',
+      'tar xf /tmp/evil.tar -C ./evaluations',
+      'curl --output evaluations/feat-005.json http://evil.example/f.json',
+      'curl -sSo evaluations/feat-005.json http://evil.example/f.json',
+      'wget --output-document=evaluations/feat-005.json http://evil.example/f.json',
+      'ditto /tmp/forged.json evaluations/feat-005.json',
+      "sed --in-place 's/FAIL/PASS/' evaluations/feat-005.json",
+      `python3 -c "open('evaluations/feat-005.json', 'r+').write('{}')"`,
+    ];
+
+    for (const cmd of evalBypassCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass eval guard',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for evaluations bypass: ${cmd}`);
+    }
+
+    for (const gitCmd of ['git stash apply', 'git rebase main']) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'rewrite history',
+          toolCall: { name: 'run_command', args: { CommandLine: gitCmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'force_ask', `expected force_ask for: ${gitCmd}`);
+    }
+
+    // Write-time One feature at a time enforcement
+    const twoActive = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'start two features',
+        toolCall: {
+          name: 'write_file',
+          args: {
+            Path: path.join(tempRepo, 'feature_list.json'),
+            Content: JSON.stringify({
+              features: [
+                { id: 'feat-001', name: 'A', description: 'A', dependencies: [], status: 'in-progress', evidence: '' },
+                { id: 'feat-002', name: 'B', description: 'B', dependencies: [], status: 'ready-for-eval', evidence: '' },
+              ],
+            }),
+          },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(twoActive.decision, 'deny');
+    assert.match(twoActive.reason, /One feature at a time/i);
+
+    // Write-time dependency-not-done enforcement
+    const unmetDep = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'start child early',
+        toolCall: {
+          name: 'write_file',
+          args: {
+            Path: path.join(tempRepo, 'feature_list.json'),
+            Content: JSON.stringify({
+              features: [
+                { id: 'feat-001', name: 'A', description: 'A', dependencies: [], status: 'not-started', evidence: '' },
+                { id: 'feat-002', name: 'B', description: 'B', dependencies: ['feat-001'], status: 'in-progress', evidence: '' },
+              ],
+            }),
+          },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(unmetDep.decision, 'deny');
+    assert.match(unmetDep.reason, /depends on.*feat-001/i);
+
+    // Append=true on feature_list.json must be denied (cannot validate partial JSON)
+    const appendFeature = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'append feature_list',
+        toolCall: {
+          name: 'write_file',
+          args: {
+            Path: path.join(tempRepo, 'feature_list.json'),
+            Append: true,
+            Content: '{"status":"done"}',
+          },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(appendFeature.decision, 'deny');
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 1 Red-Team C1/C2/C4: blocks nested shell wrappers (sh -c/bash -c/eval/awk), unlisted script writers, macOS case-insensitive APFS paths, and no-space/dash redirections', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r1-c1c2c4-'));
+  try {
+    const evalDenyCmds = [
+      "sh -c 'echo {} > evaluations/feat-005.json'",
+      "bash -c 'cp /tmp/forged.json evaluations/feat-005.json'",
+      "zsh -c 'rm -f evaluations/feat-001.json'",
+      "eval 'echo {} > evaluations/feat-005.json'",
+      'awk \'BEGIN{print "{}" > "evaluations/feat-005.json"}\'',
+      `node -e "require('fs').createWriteStream('evaluations/feat-005.json').end('{}')"`,
+      `node -e "require('fs').cpSync('/tmp/f.json', 'evaluations/feat-005.json')"`,
+      `node -e "require('fs').promises.rename('/tmp/f.json', 'evaluations/feat-005.json')"`,
+      `node -e "require('fs').symlinkSync('/tmp/f.json', 'evaluations/feat-005.json')"`,
+      `python3 -c "from pathlib import Path; Path('evaluations/feat-005.json').open('w').write('{}')"`,
+      `python3 -c "open('evaluations/feat-005.json', 'wt').write('{}')"`,
+      `python3 -c "open('evaluations/feat-005.json', 'bw').write(b'{}')"`,
+      `ruby -e "File.write('evaluations/feat-005.json', '{}')"`,
+      `perl -e 'open(my $f, ">", "evaluations/feat-005.json"); print $f "{}"'`,
+      "echo '{}' > Evaluations/feat-005.json",
+      "echo '{}' >evaluations/feat-005.json",
+      "echo '{}' >>evaluations/feat-005.json",
+      "echo '{}' 1>evaluations/feat-005.json",
+      "echo x->evaluations/feat-005.json",
+    ];
+    for (const cmd of evalDenyCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass eval',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for: ${cmd}`);
+    }
+
+    // macOS APFS case-insensitive write_file locks
+    for (const p of ['Evaluations/feat-005.json', 'EVALUATIONS/feat-005.JSON']) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'write eval uppercase',
+          toolCall: { name: 'write_file', args: { Path: path.join(tempRepo, p) } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for uppercase path: ${p}`);
+    }
+
+    const uppercaseFeature = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'write FEATURE_LIST.JSON',
+        toolCall: {
+          name: 'write_file',
+          args: {
+            Path: path.join(tempRepo, 'FEATURE_LIST.JSON'),
+            Content: JSON.stringify({
+              features: [{ id: 'feat-999', name: 'X', description: 'X', dependencies: [], status: 'done', evidence: '' }],
+            }),
+          },
+        },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(uppercaseFeature.decision, 'deny');
+
+    const uppercaseFeatureShell = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'shell FEATURE_LIST.JSON',
+        toolCall: { name: 'run_command', args: { CommandLine: "sh -c 'echo {} > FEATURE_LIST.JSON'" } },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(uppercaseFeatureShell.decision, 'deny');
+
+    // Role lock bypasses (bash -c, awk, uppercase APPS/API, piggybacked root .gitignore)
+    const roleBypasses = [
+      "bash -c 'echo x > apps/api/src/index.ts'",
+      'awk \'BEGIN{print "x" > "apps/api/src/index.ts"}\'',
+      'echo x > APPS/API/src/index.ts && touch apps/web/src/ok.ts',
+      'echo x > .gitignore && touch apps/web/src/ok.ts',
+    ];
+    for (const cmd of roleBypasses) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: '[AGENT_ROLE: fe]\nEdit files',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected fe role deny for: ${cmd}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 1 Red-Team C5/H1/M2: closes git hook env/case/-C/chained bypasses, top-level rm -rf / split flags, docker compose -f down -v, and feature_list edge cases', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r1-c5h1m2-'));
+  try {
+    const denyCmds = [
+      'git -c core.hookspath=/dev/null commit -m x',
+      'git config core.hookspath /dev/null',
+      'git config --list && git config core.hooksPath /dev/null',
+      'git config core.hooksPath .githooks && git config core.hooksPath /dev/null',
+      'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null git commit -m x',
+      'GIT_CONFIG_PARAMETERS="\'core.hooksPath=/dev/null\'" git commit -m x',
+      'git --config-env=core.hooksPath=H commit -m x',
+      'git -C . commit -n -m x',
+      'git -C . push -f origin main',
+      'git push origin +main',
+      'docker compose -f docker-compose.yml down -v',
+    ];
+    for (const cmd of denyCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass git/docker',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for: ${cmd}`);
+    }
+
+    const forceAskCmds = [
+      'rm -rf apps',
+      'rm -rf apps/',
+      'rm -rf scripts',
+      'rm -rf db/',
+      'rm -rf .agents',
+      'rm -rf .',
+      'rm -rf APPS/WEB/src',
+      'rm -f -r apps/web/src',
+      'rm --force --recursive apps/web/src',
+      "bash -c 'rm -rf apps/web/src'",
+      'git -C . reset --hard HEAD~1',
+      'git -C . merge evil',
+      'git checkout -- .',
+      'git restore .',
+    ];
+    for (const cmd of forceAskCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'destructive cmd',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'force_ask', `expected force_ask for: ${cmd}`);
+    }
+
+    // M2: feature_list.json empty content, empty array, invalid status, cycle
+    const badFeaturePayloads = [
+      '',
+      JSON.stringify({ features: [] }),
+      JSON.stringify({
+        features: [{ id: 'feat-001', name: 'A', description: 'A', dependencies: [], status: 'shipped', evidence: '' }],
+      }),
+      JSON.stringify({
+        features: [
+          { id: 'feat-001', name: 'A', description: 'A', dependencies: ['feat-002'], status: 'not-started', evidence: '' },
+          { id: 'feat-002', name: 'B', description: 'B', dependencies: ['feat-001'], status: 'not-started', evidence: '' },
+        ],
+      }),
+    ];
+    for (const content of badFeaturePayloads) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'corrupt feature_list',
+          toolCall: {
+            name: 'write_file',
+            args: { Path: path.join(tempRepo, 'feature_list.json'), Content: content },
+          },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for feature_list payload: ${content}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 1 Red-Team C3/C1/C2: Execution Evidence Gate closes compound masking, out-of-order pipefail/set-e, no-op flags, bash -c mutations, uppercase edit paths, and transcript-null backgrounded verify', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r1-c3-'));
+  try {
+    const okHarness = { validateHarnessFn: () => [] };
+    const transcriptPath = path.join(tempRepo, 'transcript.jsonl');
+
+    // Uppercase APPS/API edit must track code edit
+    const convCase = 'conv-r1-case';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convCase,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'APPS/API/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopCase = evaluateHookEvent(
+      { hookEventName: 'Stop', conversationId: convCase, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopCase.decision, 'continue', 'uppercase APPS/API edit must trigger Execution Evidence Gate');
+
+    // Verify && bash -c mutate apps/api must track mutation (NOT pass verify!)
+    const convBash = 'conv-r1-bash';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convBash,
+        stepIdx: 1,
+        toolCall: { name: 'run_command', args: { CommandLine: "npm run test:unit && bash -c 'echo x > apps/api/src/index.ts'" } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopBash = evaluateHookEvent(
+      { hookEventName: 'Stop', conversationId: convBash, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopBash.decision, 'continue', 'verify && bash -c mutation must trigger Execution Evidence Gate');
+
+    // Compound masking, out-of-order pipefail/set-e, multiline if, no-op flags
+    const convMask = 'conv-r1-mask';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convMask,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+
+    const bypassVerifyCmds = [
+      'npm run test:unit && true; true',
+      'false && ./init.sh && true; true',
+      './init.sh 2>&1 | tail -5 && set -o pipefail',
+      'npm run test:unit\nset -e',
+      'set -e\nif false\nthen\nnpm run test:unit\nfi',
+      'if true && npm run test:unit && true; then true; fi',
+      'npx tsc --version',
+      'npx vitest --version',
+      'npx playwright --version',
+      'node --test --help',
+      'npm run test:unit -- --help',
+    ];
+    for (const cmd of bypassVerifyCmds) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convMask,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: convMask, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(stopRes.decision, 'continue', `expected Stop to reject bypass verify cmd: ${JSON.stringify(cmd)}`);
+    }
+
+    // IsDaemon verify command must not satisfy gate
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convMask,
+        stepIdx: 3,
+        toolCall: { name: 'run_command', args: { CommandLine: 'npm run test:unit', IsDaemon: true } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopDaemon = evaluateHookEvent(
+      { hookEventName: 'Stop', conversationId: convMask, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(stopDaemon.decision, 'continue', 'daemonized verify must not satisfy Execution Evidence Gate');
+
+    // Backgrounded/killed verify where transcript exists on disk WITHOUT "Command exited with code 0." must fail CLOSED
+    fs.writeFileSync(
+      transcriptPath,
+      `${JSON.stringify({
+        step_index: 4,
+        type: 'GENERIC',
+        status: 'DONE',
+        content: 'Command is still running in the background.',
+      })}\n`
+    );
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convMask,
+        stepIdx: 4,
+        transcriptPath,
+        toolCall: { name: 'run_command', args: { CommandLine: 'npm run test:unit' } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopBackgrounded = evaluateHookEvent(
+      {
+        hookEventName: 'Stop',
+        conversationId: convMask,
+        transcriptPath,
+        terminationReason: 'NO_TOOL_CALL',
+        continuationActive: false,
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    assert.equal(
+      stopBackgrounded.decision,
+      'continue',
+      'backgrounded/killed verify without exit code 0 in transcript must fail CLOSED on Stop'
+    );
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 2 Audit C1/H1/M1/M5: blocks pipe-to-shell/subprocess/curl -O/set +o pipefail/--list, eliminates install/curl-devnull/quoted-commit/>>/dev/null false positives, narrows tech-lead off specs/prd.md, and accepts ENV-prefixed verify', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r2-'));
+  try {
+    // C1: Residual bypasses MUST be denied
+    const c1EvalDenies = [
+      'echo "echo {} > evaluations/feat-005.json" | sh',
+      'printf "%s\\n" "echo {} > evaluations/feat-005.json" | bash',
+      `node -e "const {openSync,writeSync}=require('fs');writeSync(openSync('evaluations/feat-005.json','w'),'{}')"`,
+      `node -e "require('child_process').execFileSync('cp',['a','evaluations/feat-005.json'])"`,
+      `python3 -c "import subprocess; subprocess.run(['cp','a','evaluations/feat-005.json'])"`,
+      'curl -O http://127.0.0.1:9999/evaluations/feat-005.json',
+    ];
+    for (const cmd of c1EvalDenies) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass eval r2',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `C1 expected deny for: ${cmd}`);
+    }
+
+    const c1FeaturePipe = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'bypass feature_list r2',
+        toolCall: { name: 'run_command', args: { CommandLine: 'printf "%s\\n" "echo {} > feature_list.json" | bash' } },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(c1FeaturePipe.decision, 'deny');
+
+    for (const roleCmd of [
+      'echo "echo x > apps/api/src/index.ts" | sh',
+      'wget http://127.0.0.1:9999/apps/api/hack.ts',
+    ]) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: '[AGENT_ROLE: fe]\nWork on UI',
+          toolCall: { name: 'run_command', args: { CommandLine: roleCmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'deny', `C1 expected fe deny for: ${roleCmd}`);
+    }
+
+    // M1: tech-lead cannot overwrite PM-owned specs/prd.md, but can write specs/contracts/feat-005.ts
+    const tlPrdDeny = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: '[AGENT_ROLE: tech-lead]\nWrite contract',
+        toolCall: { name: 'write_file', args: { Path: path.join(tempRepo, 'specs/prd.md') } },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(tlPrdDeny.decision, 'deny', 'tech-lead must not overwrite PM-owned specs/prd.md');
+
+    const tlContractAllow = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: '[AGENT_ROLE: tech-lead]\nWrite contract',
+        toolCall: { name: 'write_file', args: { Path: path.join(tempRepo, 'specs/contracts/feat-005.ts') } },
+      },
+      { rootDir: tempRepo }
+    );
+    assert.equal(tlContractAllow.decision, 'allow');
+
+    // H1: Negative controls — legitimate commands MUST be allowed (zero false positives)
+    const allowedRoleCmds = [
+      { role: 'qa', cmd: 'curl -sS -o /dev/null -w "%{http_code}" http://localhost:4000/api/health' },
+      { role: 'qa', cmd: 'npx playwright install chromium' },
+      { role: 'qa', cmd: 'echo test >>/dev/null' },
+      { role: 'be', cmd: 'npm install' },
+      { role: 'fe', cmd: 'npm install --workspace=apps/web' },
+    ];
+    for (const { role, cmd } of allowedRoleCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: `[AGENT_ROLE: ${role}]\nRun legitimate command`,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'allow', `H1 false positive for role=${role} cmd=${cmd}: ${res.reason}`);
+    }
+
+    const allowedGenCmds = [
+      'npm install && cat feature_list.json',
+      'cat feature_list.json 2>>/dev/null',
+      'git commit -m "fix(hooks): block --no-verify, core.hooksPath, docker compose down -v, git push --force, git reset --hard, git rebase"',
+      'grep -n " --no-verify" scripts/agent-hooks.mjs',
+    ];
+    for (const cmd of allowedGenCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'normal dev work',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo }
+      );
+      assert.equal(res.decision, 'allow', `H1 false positive for generator cmd=${cmd}: ${res.reason}`);
+    }
+
+    // C1 verify bypasses: set +o pipefail / errexit, --list, --showConfig, vitest list
+    const okHarness = { validateHarnessFn: () => [] };
+    const convC1 = 'conv-r2-c1';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convC1,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    for (const badVerify of [
+      'set -o pipefail && set +o pipefail && ./init.sh | true',
+      'set -e\nset +o errexit\n./init.sh\necho ok',
+      'npx playwright test --list',
+      'npx tsc --showConfig',
+      'npx vitest list',
+    ]) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convC1,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: badVerify } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: convC1, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(stopRes.decision, 'continue', `C1 expected Stop continue for: ${JSON.stringify(badVerify)}`);
+    }
+
+    // M5: Env-prefixed, bash ./init.sh, and task-done -- <verify> MUST satisfy Execution Evidence Gate
+    const validVerifyCmds = [
+      'TZ=America/New_York npm run test --workspace=apps/web',
+      'CI=true npm run test:unit',
+      'bash ./init.sh',
+      'bash .agents/skills/executing-plans/scripts/task-done specs/plans/demo.md 1 abc1234 -- npm run test:unit',
+    ];
+    validVerifyCmds.forEach((cmd, idx) => {
+      const convId = `conv-r2-m5-${idx}`;
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 1,
+          toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/web/src/App.tsx') } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: convId, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      assert.equal(stopRes.decision, '', `M5 expected Stop allow for valid verify cmd: ${cmd}`);
+    });
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 3 Audit C1/C2/H1/H2/H4/M1/M2/M3: closes echo -- verify, quoted/split git flags, 5 exit-mask/transcript-steal bypasses, cross-chain git FP, curl -o<file>/io.FileIO/env install, task-done bash -c, rm -rf dist, cd apps mutation, and SYSTEM envelope', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r3-'));
+  try {
+    const okHarness = { validateHarnessFn: () => [] };
+
+    // C2 + H4: Quoted/split git hook bypasses & shell mutation bypasses MUST be denied
+    const denyPreCmds = [
+      'git -c "core.hooksPath=/dev/null" commit -m "hi"',
+      "git -c 'core.hooksPath=/dev/null' commit -m 'hi'",
+      'git config "core.hooksPath" /dev/null',
+      'git push origin "+main:main"',
+      'git commit --"no-verify" -m "hi"',
+      'git commit --no-ver\\ify -m "hi"',
+      'env "GIT_CONFIG_PARAMETERS=\'core.hooksPath=/dev/null\'" git commit -m hi',
+      'curl -s http://localhost:4000/api/health -oevaluations/feat-005.json',
+      '/usr/bin/install /tmp/f evaluations/feat-005.json',
+      'env install /tmp/f evaluations/feat-005.json',
+      `python3 -c "import io; io.FileIO('evaluations/feat-005.json', 'w').write(b'{}')"`,
+      `python3 -c "import io; io.FileIO('feature_list.json', 'w').write(b'{}')"`,
+    ];
+    for (const cmd of denyPreCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass r3',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'deny', `R3 C2/H4 expected deny for: ${cmd}`);
+    }
+
+    const beFileIO = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: '[AGENT_ROLE: be]\nEdit backend',
+        toolCall: {
+          name: 'run_command',
+          args: { CommandLine: `python3 -c "import io; io.FileIO('apps/web/src/App.tsx', 'w').write(b'x')"` },
+        },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(beFileIO.decision, 'deny', 'H4 be io.FileIO cross-role write must be denied');
+
+    // H2: Cross-chain legitimate commands MUST be allowed (zero false positives)
+    const allowCrossChain = [
+      'git commit -m "feat: ok" && git log -n 5',
+      'git commit -m "feat: ok" && head -n 5 progress.md',
+      'git commit -m "feat: ok" && grep -n foo AGENTS.md',
+      'git push origin main && rm -f /tmp/a',
+      'docker compose up -d && echo "shut down later" && node -v',
+      'curl -s -o/dev/null http://localhost:4000/api/health',
+    ];
+    for (const cmd of allowCrossChain) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'normal git workflow',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'allow', `R3 H2 false positive for: ${cmd} (${res.reason})`);
+    }
+
+    // M1: [Message] envelope wrapping evaluator / role prompts
+    const wrappedEval =
+      '[Message] timestamp=2026-11-26T00:00:00Z sender=parent priority=HIGH content=[AGENT_ROLE: qa]\n' +
+      'You are an Independent Skeptical QA & Recruiter Product Evaluator for the `lazy-guy` portfolio monorepo.\n' +
+      'Commit SHA under evaluation: abc1234\n';
+    const evalWrappedAllow = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: wrappedEval,
+        toolCall: { name: 'write_file', args: { Path: path.join(tempRepo, 'evaluations/feat-005.json') } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(evalWrappedAllow.decision, 'allow', 'M1 wrapped evaluator prompt must be allowed');
+
+    // C1 + H1: Execution Evidence Gate bypasses MUST be rejected on Stop
+    const convBypass = 'conv-r3-bypass';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convBypass,
+        stepIdx: 1,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const badVerifyCmds = [
+      'echo -- npm run test:unit',
+      ': -- ./init.sh',
+      'true -- npm run typecheck',
+      'npm run test:unit && set -e\ntrue',
+      '(set -e)\nnpm run test:unit\ntrue',
+      '(set -o pipefail) && npm run test:unit | true',
+      '[ 0 = 1 ] && set -o pipefail\nnpm run test:unit | true',
+      'set -e\nnpm run test:unit \\\n| true',
+      'npx tsc -v',
+      'npx vitest -v',
+      'npx tsc --all',
+    ];
+    for (const cmd of badVerifyCmds) {
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convBypass,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: convBypass, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness, disableTelemetry: true }
+      );
+      assert.equal(stopRes.decision, 'continue', `R3 C1/H1 expected Stop continue for: ${JSON.stringify(cmd)}`);
+    }
+
+    // H1 #5: Backgrounded verify at step 10 MUST NOT steal step 11's exit code 0 from transcript
+    const transcriptPath = path.join(tempRepo, 'transcript.jsonl');
+    fs.writeFileSync(
+      transcriptPath,
+      [
+        JSON.stringify({ step_index: 10, type: 'GENERIC', status: 'DONE', content: 'Command is still running in the background.' }),
+        JSON.stringify({ step_index: 11, type: 'GENERIC', status: 'DONE', content: 'Command exited with code 0.\n\nok' }),
+      ].join('\n') + '\n'
+    );
+    const convSteal = 'conv-r3-steal';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convSteal,
+        stepIdx: 9,
+        toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convSteal,
+        stepIdx: 10,
+        transcriptPath,
+        toolCall: { name: 'run_command', args: { CommandLine: 'npm run test:unit' } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopSteal = evaluateHookEvent(
+      { hookEventName: 'Stop', conversationId: convSteal, transcriptPath, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+      { rootDir: tempRepo, ...okHarness, disableTelemetry: true }
+    );
+    assert.equal(stopSteal.decision, 'continue', 'H1 #5 step 10 must NOT steal step 11 exit code 0');
+
+    // M2: task-done -- bash -c '...' and rm -rf apps/api/dist && npm run build MUST satisfy Stop
+    const validM2Cmds = [
+      "bash .agents/skills/executing-plans/scripts/task-done specs/plans/demo.md 1 abc1234 -- bash -c 'npm run test:unit && npm run typecheck'",
+      'rm -rf apps/api/dist && npm run build',
+    ];
+    validM2Cmds.forEach((cmd, idx) => {
+      const cid = `conv-r3-m2-${idx}`;
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: cid,
+          stepIdx: 1,
+          toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: cid,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: cid, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness, disableTelemetry: true }
+      );
+      assert.equal(stopRes.decision, '', `R3 M2 expected Stop allow for: ${cmd} (got ${stopRes.reason})`);
+    });
+
+    // M3: cd apps && sed -i ... api/src/app.ts MUST trigger code edit tracking
+    const convCd = 'conv-r3-cd';
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convCd,
+        stepIdx: 1,
+        toolCall: { name: 'run_command', args: { CommandLine: "cd apps && sed -i '' 's/foo/bar/' api/src/app.ts" } },
+      },
+      { rootDir: tempRepo, ...okHarness }
+    );
+    const stopCd = evaluateHookEvent(
+      { hookEventName: 'Stop', conversationId: convCd, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+      { rootDir: tempRepo, ...okHarness, disableTelemetry: true }
+    );
+    assert.equal(stopCd.decision, 'continue', 'R3 M3 cd apps && sed -i must trigger Execution Evidence Gate');
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});
+
+test('Round 3 Re-Verify NEW-C1/NEW-C2: blocks subshells, brace groups, export GIT_CONFIG_*, wrapper flags (env -i/time/exec/command -p), bash -ce, and greedy task-done || echo bypass', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-r3-newc-'));
+  try {
+    const denyCmds = [
+      '(git commit --no-verify -m "bypass")',
+      '(git push --force origin main)',
+      '(git -c core.hooksPath=/dev/null commit -m "bypass")',
+      '(docker compose down -v)',
+      '{ git commit --no-verify -m "bypass"; }',
+      'export GIT_CONFIG_PARAMETERS="\'core.hooksPath=/dev/null\'" && git commit -m hi',
+      'export GIT_CONFIG_COUNT=1 && git commit -m hi',
+      'env -i git commit --no-verify -m hi',
+      'env -- git push --force origin main',
+      'env -u HOME git -c core.hooksPath=/dev/null commit -m hi',
+      'env -S "git commit --no-verify -m hi"',
+      'command -p git commit --no-verify -m hi',
+      'time git commit --no-verify -m hi',
+      'exec git push --force origin main',
+      'bash -ce "git commit --no-verify -m hi"',
+      'export FOO=1 GIT_CONFIG_COUNT=1 && git commit -m hi',
+      'declare -x GIT_CONFIG_PARAMETERS="\'core.hooksPath=/dev/null\'"',
+      'sudo -E git commit --no-verify -m hi',
+      'nohup git push --force origin main',
+      'nice -n 5 git commit --no-verify -m hi',
+      'timeout 30 git commit --no-verify -m hi',
+      'echo "$(git commit --no-verify -m hi)"',
+      'git commit -m ${MSG} --no-verify',
+      'git commit -m $(echo hi) --no-verify',
+      'if true; then git commit --no-verify -m hi; fi',
+      'docker-compose down -v',
+    ];
+    for (const cmd of denyCmds) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          lastUserInput: 'bypass new-c1',
+          toolCall: { name: 'run_command', args: { CommandLine: cmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'deny', `NEW-C1 expected deny for: ${cmd}`);
+    }
+
+    const benignParens = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'normal commit',
+        toolCall: { name: 'run_command', args: { CommandLine: 'git commit -m "feat(auth): handle (a) & {b}"' } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(benignParens.decision, 'allow', 'Quoted parens/braces in commit message must remain allowed');
+
+    const subshellReset = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        lastUserInput: 'bypass reset',
+        toolCall: { name: 'run_command', args: { CommandLine: '(git reset --hard HEAD)' } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(subshellReset.decision, 'force_ask', 'NEW-C1 expected force_ask for (git reset --hard HEAD)');
+
+    // NEW-C2: greedy quote bypass on task-done (both single and double quotes)
+    const okHarness = { validateHarnessFn: () => [] };
+    for (const [idx, bypassCmd] of [
+      "bash .agents/skills/executing-plans/scripts/task-done /nonexistent 1 abc1234 -- bash -c 'npm run test:unit' || echo 'ok'",
+      'bash .agents/skills/executing-plans/scripts/task-done /nonexistent 1 abc1234 -- bash -c "npm run test:unit" || echo "ok"',
+      "bash .agents/skills/executing-plans/scripts/task-done /nonexistent 1 abc1234 -- bash -c 'npm run test:unit' | cat",
+    ].entries()) {
+      const convId = `conv-r3-newc2-${idx}`;
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 1,
+          toolCall: { name: 'edit_file', args: { Path: path.join(tempRepo, 'apps/api/src/index.ts') } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      evaluateHookEvent(
+        {
+          hookEventName: 'PostToolUse',
+          conversationId: convId,
+          stepIdx: 2,
+          toolCall: { name: 'run_command', args: { CommandLine: bypassCmd } },
+        },
+        { rootDir: tempRepo, ...okHarness }
+      );
+      const stopRes = evaluateHookEvent(
+        { hookEventName: 'Stop', conversationId: convId, terminationReason: 'NO_TOOL_CALL', continuationActive: false },
+        { rootDir: tempRepo, ...okHarness, disableTelemetry: true }
+      );
+      assert.equal(stopRes.decision, 'continue', `NEW-C2 bypass must NOT satisfy Stop: ${bypassCmd}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});

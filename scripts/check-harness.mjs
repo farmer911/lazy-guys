@@ -131,20 +131,64 @@ function commitIsAncestorOfHead(rootDir, sha) {
   }
 }
 
+function stripHashComments(raw) {
+  return String(raw ?? '')
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) return '';
+      return line.replace(/\s+#.*$/, '');
+    })
+    .join('\n');
+}
+
 function validateHooks(rootDir, errors, hasGitRepo) {
   const agentHooksPath = path.join(rootDir, '.agents', 'hooks.json');
   if (fs.existsSync(agentHooksPath)) {
     const raw = fs.readFileSync(agentHooksPath, 'utf8');
-    if (
-      !/"PreToolUse"/.test(raw) ||
-      !/"PostToolUse"/.test(raw) ||
-      !/"Stop"/.test(raw) ||
-      !/agent-hooks\.mjs/.test(raw)
-    ) {
-      errors.push('.agents/hooks.json must wire PreToolUse, PostToolUse, and Stop to scripts/agent-hooks.mjs');
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      errors.push(`.agents/hooks.json is not valid JSON: ${err.message}`);
+    }
+    if (parsed && typeof parsed === 'object') {
+      const guard = parsed['repo-harness-guard'] ?? Object.values(parsed)[0] ?? {};
+      const requiredTools = ['write_file', 'edit_file', 'run_command'];
+      const hasAgentHookCmd = (entries, requireToolMatchers = false) =>
+        Array.isArray(entries) &&
+        entries.some((entry) => {
+          const wiresScript =
+            (typeof entry?.command === 'string' && /agent-hooks\.mjs/.test(entry.command)) ||
+            (Array.isArray(entry?.hooks) &&
+              entry.hooks.some((h) => typeof h?.command === 'string' && /agent-hooks\.mjs/.test(h.command)));
+          if (!wiresScript) return false;
+          if (!requireToolMatchers) return true;
+          if (typeof entry?.matcher !== 'string' || !entry.matcher.trim()) return false;
+          try {
+            const matcherRe = new RegExp(entry.matcher);
+            return requiredTools.every((tool) => matcherRe.test(tool));
+          } catch {
+            return false;
+          }
+        });
+      if (!hasAgentHookCmd(guard.PreToolUse, true)) {
+        errors.push(
+          '.agents/hooks.json PreToolUse must wire scripts/agent-hooks.mjs with matcher covering write_file, edit_file, and run_command'
+        );
+      }
+      if (!hasAgentHookCmd(guard.PostToolUse, true)) {
+        errors.push(
+          '.agents/hooks.json PostToolUse must wire scripts/agent-hooks.mjs with matcher covering write_file, edit_file, and run_command'
+        );
+      }
+      if (!hasAgentHookCmd(guard.Stop, false)) {
+        errors.push('.agents/hooks.json must wire Stop to scripts/agent-hooks.mjs');
+      }
     }
   }
 
+  const GATE_MASK_RE = /\|\|\s*(?:true\b|:(?:\s|$|;|&)|exit\s+0\b)|;\s*(?:true\b|:(?:\s|$|;|&)|exit\s+0\b)|\bset\s+\+e\b/;
   for (const [rel, requiredCmds] of Object.entries(GIT_HOOK_REQUIRED_COMMANDS)) {
     const full = path.join(rootDir, rel);
     if (!fs.existsSync(full)) continue;
@@ -152,10 +196,22 @@ function validateHooks(rootDir, errors, hasGitRepo) {
     if ((mode & 0o111) === 0) {
       errors.push(`${rel} must be executable (chmod +x)`);
     }
-    const raw = fs.readFileSync(full, 'utf8');
+    const activeLines = stripHashComments(fs.readFileSync(full, 'utf8')).split(/\r?\n/);
+    const earlyExitIdx = activeLines.findIndex((line) => /^\s*exit\s+0\b/.test(line));
+    if (activeLines.some((line) => /\bset\s+\+e\b/.test(line))) {
+      errors.push(`${rel} disables fail-fast error handling (set +e forbidden)`);
+    }
     for (const cmd of requiredCmds) {
-      if (!raw.includes(cmd)) {
+      const matchIdx = activeLines.findIndex((line) => line.includes(cmd));
+      if (matchIdx === -1) {
         errors.push(`${rel} is missing required gate command: ${cmd}`);
+      } else {
+        if (earlyExitIdx !== -1 && earlyExitIdx < matchIdx) {
+          errors.push(`${rel} exits early (exit 0) before running required gate command "${cmd}"`);
+        }
+        if (GATE_MASK_RE.test(activeLines[matchIdx])) {
+          errors.push(`${rel} masks exit code on gate command "${cmd}" (|| true / || : / ; true forbidden)`);
+        }
       }
     }
   }
@@ -188,7 +244,7 @@ function validateGitTrackedSecrets(rootDir, errors, hasGitRepo) {
       .split(/\r?\n/)
       .filter(Boolean);
     for (const rel of tracked) {
-      if (/^\.env(?:\.(?!example$).+)?$/.test(path.basename(rel)) || /\.(?:pem|key)$/i.test(rel)) {
+      if (/^\.env(?:\.(?!example$).+)?$/i.test(path.basename(rel)) || /\.(?:pem|key)$/i.test(rel)) {
         errors.push(`Forbidden secret file "${rel}" is tracked in git`);
       }
     }
@@ -200,11 +256,20 @@ function validateGitTrackedSecrets(rootDir, errors, hasGitRepo) {
 function validateDockerCompose(rootDir, errors) {
   const composePath = path.join(rootDir, 'docker-compose.yml');
   if (!fs.existsSync(composePath)) return;
-  const raw = fs.readFileSync(composePath, 'utf8');
-  for (const line of raw.split(/\r?\n/)) {
-    if (/:5432['"]?\s*$/.test(line.trim()) && !/127\.0\.0\.1:/.test(line)) {
+  const activeRaw = stripHashComments(fs.readFileSync(composePath, 'utf8'));
+  const lines = activeRaw.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (/:5432(?:\/(?:tcp|udp))?['"]?\s*$/i.test(trimmed) && !/127\.0\.0\.1:/.test(trimmed)) {
       errors.push('docker-compose.yml must bind PostgreSQL port to 127.0.0.1 (not 0.0.0.0)');
-      break;
+      return;
+    }
+    if (/^(?:-\s*)?target:\s*5432\b/.test(trimmed)) {
+      const windowBlock = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 5)).join('\n');
+      if (!/\bhost_ip:\s*['"]?127\.0\.0\.1['"]?/.test(windowBlock)) {
+        errors.push('docker-compose.yml must bind PostgreSQL port to 127.0.0.1 (not 0.0.0.0)');
+        return;
+      }
     }
   }
 }
@@ -212,11 +277,19 @@ function validateDockerCompose(rootDir, errors) {
 function validateStitchManifest(rootDir, errors) {
   const manifestPath = path.join(rootDir, 'designs', 'stitch-manifest.json');
   if (!fs.existsSync(manifestPath)) return;
+  const designsRoot = path.resolve(rootDir, 'designs');
+  const isInsideDesigns = (candidatePath) => {
+    const rel = path.relative(designsRoot, path.resolve(rootDir, candidatePath));
+    return Boolean(rel) && !rel.startsWith('..') && !path.isAbsolute(rel);
+  };
   try {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const tokensRel = String(manifest.tokensPath ?? '');
-    if (!tokensRel || !fs.existsSync(path.join(rootDir, tokensRel))) {
-      errors.push(`designs/stitch-manifest.json tokensPath "${tokensRel}" does not exist`);
+    const fullTokens = path.resolve(rootDir, tokensRel);
+    if (!tokensRel || !isInsideDesigns(tokensRel)) {
+      errors.push(`designs/stitch-manifest.json tokensPath "${tokensRel}" must stay inside designs/`);
+    } else if (!fs.existsSync(fullTokens) || !fs.statSync(fullTokens).isFile()) {
+      errors.push(`designs/stitch-manifest.json tokensPath "${tokensRel}" does not exist or is not a file`);
     }
     if (!Array.isArray(manifest.screens) || manifest.screens.length === 0) {
       errors.push('designs/stitch-manifest.json must declare a non-empty screens array');
@@ -224,9 +297,15 @@ function validateStitchManifest(rootDir, errors) {
     }
     for (const screen of manifest.screens) {
       const screenRel = String(screen?.path ?? '');
-      const fullScreen = path.join(rootDir, screenRel);
-      if (!screenRel || !fs.existsSync(fullScreen) || fs.statSync(fullScreen).size === 0) {
-        errors.push(`designs/stitch-manifest.json references missing or empty screen: ${screenRel}`);
+      const fullScreen = path.resolve(rootDir, screenRel);
+      if (!screenRel || !isInsideDesigns(screenRel)) {
+        errors.push(`designs/stitch-manifest.json screen path "${screenRel}" must stay inside designs/`);
+      } else if (
+        !fs.existsSync(fullScreen) ||
+        !fs.statSync(fullScreen).isFile() ||
+        fs.statSync(fullScreen).size === 0
+      ) {
+        errors.push(`designs/stitch-manifest.json references missing, non-file, or empty screen: ${screenRel}`);
       }
     }
   } catch (err) {
@@ -260,39 +339,99 @@ function validateCodeHygiene(rootDir, errors) {
   const sourceFiles = scanRoots.flatMap((dir) =>
     walkFiles(dir, (name) => TS_SOURCE_RE.test(name))
   );
+  const FORBIDDEN_TEST_MODIFIERS = new Set(['only', 'skip', 'fixme', 'skipIf', 'runIf', 'todo']);
+  const FORBIDDEN_TEST_CALLEES = new Set(['xit', 'xdescribe', 'xtest', 'fit', 'fdescribe']);
+  const TEST_ROOT_NAMES = new Set(['describe', 'it', 'test', 'suite']);
+
+  const findTestRootName = (expr) => {
+    let cur = expr;
+    while (cur && typeof cur === 'object') {
+      if (cur.type === 'ChainExpression') cur = cur.expression;
+      if (cur.type === 'Identifier') return TEST_ROOT_NAMES.has(cur.name) ? cur.name : null;
+      if (cur.type === 'MemberExpression') {
+        cur = cur.object;
+        continue;
+      }
+      if (cur.type === 'CallExpression') {
+        cur = cur.callee;
+        continue;
+      }
+      return null;
+    }
+    return null;
+  };
+
   for (const srcPath of sourceFiles) {
     if (srcPath.endsWith('.d.ts')) continue;
     const rel = path.relative(rootDir, srcPath).replace(/\\/g, '/');
     const isTestFile = TEST_FILE_RE.test(rel);
     const isApiEntry = rel === 'apps/api/src/index.ts';
-    const lines = fs.readFileSync(srcPath, 'utf8').split(/\r?\n/);
+    const raw = fs.readFileSync(srcPath, 'utf8');
+    const lines = raw.split(/\r?\n/);
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      const loc = `${rel}:${i + 1}`;
-
-      if (/@(ts-ignore|ts-nocheck)\b/.test(line)) {
-        errors.push(`${loc} uses forbidden @ts-ignore/@ts-nocheck suppression`);
-      }
-
-      if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
-
-      if (/(:\s*any\b|\bas\s+any\b|<any>)/.test(line)) {
-        errors.push(`${loc} uses forbidden explicit any type`);
-      }
-      if (/\bdebugger\b/.test(line)) {
-        errors.push(`${loc} leaves forbidden debugger statement`);
-      }
-      if (isTestFile) {
-        const focusMatch = line.match(/\b(describe|it|test)\.(only|skip)\s*\(/);
-        if (focusMatch) {
-          errors.push(`${loc} leaves focused or skipped test (${focusMatch[1]}.${focusMatch[2]})`);
-        }
-      } else if (!isApiEntry && /\bconsole\.log\s*\(/.test(line)) {
-        errors.push(`${loc} leaves stray console.log in production source`);
+      const supMatch = lines[i].match(/@(ts-ignore|ts-nocheck|ts-expect-error)\b/);
+      if (supMatch) {
+        errors.push(`${rel}:${i + 1} uses forbidden @${supMatch[1]} suppression`);
       }
     }
+
+    const parsed = parseSync(rel, raw);
+    if (Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+      errors.push(`${rel}: syntax error prevented AST verification (${parsed.errors[0].message})`);
+      continue;
+    }
+
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      const line = offsetToLine(raw, node.start ?? 0);
+      const loc = `${rel}:${line}`;
+
+      if (node.type === 'TSAnyKeyword') {
+        errors.push(`${loc} uses forbidden explicit any type`);
+      } else if (node.type === 'DebuggerStatement') {
+        errors.push(`${loc} leaves forbidden debugger statement`);
+      } else if (!isTestFile && !isApiEntry && node.type === 'MemberExpression') {
+        const isConsoleObj = node.object?.type === 'Identifier' && node.object.name === 'console';
+        const propName =
+          !node.computed && node.property?.type === 'Identifier'
+            ? node.property.name
+            : node.computed && node.property?.type === 'Literal'
+              ? node.property.value
+              : null;
+        if (isConsoleObj && propName === 'log') {
+          errors.push(`${loc} leaves stray console.log in production source`);
+        }
+      } else if (isTestFile && node.type === 'CallExpression') {
+        const callee = node.callee?.type === 'ChainExpression' ? node.callee.expression : node.callee;
+        if (callee?.type === 'Identifier' && FORBIDDEN_TEST_CALLEES.has(callee.name)) {
+          errors.push(`${loc} leaves focused or skipped test (${callee.name})`);
+        } else if (callee?.type === 'MemberExpression') {
+          const rootName = findTestRootName(callee.object);
+          if (rootName) {
+            const propName =
+              !callee.computed && callee.property?.type === 'Identifier'
+                ? callee.property.name
+                : callee.computed && callee.property?.type === 'Literal'
+                  ? callee.property.value
+                  : null;
+            if (typeof propName === 'string' && FORBIDDEN_TEST_MODIFIERS.has(propName)) {
+              errors.push(`${loc} leaves focused or skipped test (${rootName}.${propName})`);
+            }
+          }
+        }
+      }
+
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) {
+          for (const item of value) visit(item);
+        } else if (value && typeof value === 'object') {
+          visit(value);
+        }
+      }
+    };
+
+    visit(parsed.program);
   }
 }
 
@@ -393,9 +532,17 @@ function validateEvaluationFile(rootDir, feat, errors, hasGitRepo) {
   if (!Array.isArray(report.liveChecks) || report.liveChecks.length === 0) {
     errors.push(`${relPath}: liveChecks must contain at least one executed runtime probe`);
   } else {
+    const NEGATIVE_PROBE_RE =
+      /(?<!\b0\s)\bskip(?:ped)?\b|(?<!\b0\s)\b(?:failed|unverified)\b|\b(?:not\s+run|will\s+run|later|assumed|mentally|didn't\s+run|did\s+not\s+run)\b|\bTODO:/i;
+    const LIVE_HTTP_METHOD_RE =
+      /\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(?:https?:\/\/|\/)[^\n]*(?:->|→|\b(?:[1-5]\d{2}|ok|pass(?:ed)?)\b)/;
     const LIVE_PROBE_RE =
-      /\b(?:localhost|127\.0\.0\.1|GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|(?:curl|fetch|axios|supertest|request)\b.*(?:localhost|127\.0\.0\.1)|\b(?:test:e2e|playwright|cypress)\b|\b(?:HTTP\/?\s*\d|status\s*(?:code\s*)?[:=]?\s*[1-5]\d{2})\b|→\s*[1-5]\d{2}\b|->\s*[1-5]\d{2}\b|\bDOM\b.*\b(?:inspect|verif|check|assert)|\b(?:docker\s+compose|psql|pg_dump)\b.*(?:->|→|exited?\s*\d)/i;
-    const hasRealProbe = report.liveChecks.some((check) => LIVE_PROBE_RE.test(String(check)));
+      /\b(?:localhost|127\.0\.0\.1):\d+[^\n]*(?:->|→|\b(?:[1-5]\d{2}|pass(?:ed)?|ok|rendered|hydrated|exited?\s*\d)\b)|(?:curl|fetch|axios|supertest|request)\b[^\n]*(?:localhost|127\.0\.0\.1)|\b(?:test:e2e|playwright|cypress)\b|\b(?:HTTP\/?\s*[12](?:\.\d)?|status\s*(?:code\s*)?[:=]\s*[1-5]\d{2})\b|(?:\/api\/|https?:\/\/|localhost|127\.0\.0\.1|HTTP|status)[^\n]*(?:→|->)\s*[1-5]\d{2}\b|\bDOM\b[^\n]*\b(?:inspect|verif|check|assert)|\b(?:docker\s+compose|docker\s+ps|psql|pg_dump)\b[^\n]*(?:->|→|exited?\s*\d)/i;
+    const hasRealProbe = report.liveChecks.some((check) => {
+      const text = String(check);
+      if (NEGATIVE_PROBE_RE.test(text)) return false;
+      return LIVE_HTTP_METHOD_RE.test(text) || LIVE_PROBE_RE.test(text);
+    });
     if (!hasRealProbe) {
       errors.push(
         `${relPath}: liveChecks must contain at least one entry describing a real runtime probe (HTTP request, localhost URL, Playwright/E2E test, or DOM inspection)`
@@ -438,11 +585,22 @@ export function validateHarness(rootDir) {
 
   const ciPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
   if (fs.existsSync(ciPath)) {
-    const ciRaw = fs.readFileSync(ciPath, 'utf8');
+    const ciActive = stripHashComments(fs.readFileSync(ciPath, 'utf8'));
     for (const [label, pattern] of CI_REQUIRED_PATTERNS) {
-      if (!pattern.test(ciRaw)) {
+      if (!pattern.test(ciActive)) {
         errors.push(`.github/workflows/ci.yml is missing required CI gate or trigger: ${label}`);
       }
+    }
+    for (const line of ciActive.split(/\r?\n/)) {
+      if (
+        /\bnpm\s+(?:run\s+(?:check:harness|typecheck|test:unit|build|test:e2e)|audit)\b/.test(line) &&
+        /\|\|\s*(?:true\b|:(?:\s|$|;|&)|exit\s+0\b)|;\s*(?:true\b|:(?:\s|$|;|&)|exit\s+0\b)/.test(line)
+      ) {
+        errors.push(`.github/workflows/ci.yml masks exit code on verification gate (${line.trim()})`);
+      }
+    }
+    if (/\bcontinue-on-error\s*:\s*true\b/i.test(ciActive)) {
+      errors.push('.github/workflows/ci.yml must not set continue-on-error: true on verification gates');
     }
   }
 
@@ -455,7 +613,13 @@ export function validateHarness(rootDir) {
       } else {
         const byId = new Map();
         for (const feat of parsed.features) {
-          if (feat.id) byId.set(feat.id, feat);
+          if (feat.id) {
+            if (byId.has(feat.id)) {
+              errors.push(`Duplicate feature id "${feat.id}" in feature_list.json`);
+            } else {
+              byId.set(feat.id, feat);
+            }
+          }
         }
 
         const visitState = new Map();
@@ -528,9 +692,32 @@ export function validateHarness(rootDir) {
 
 function validateSkillsIntegrity(rootDir, errors) {
   const skillsRoot = path.join(rootDir, '.agents', 'skills');
+  const ROLE_DAG_SKILLS = new Set([
+    'pm-prd-story',
+    'design-stitch-flow',
+    'tech-lead-contract',
+    'be-express-pg',
+    'fe-shadcn-clean',
+    'qa-vercel-audit',
+  ]);
+  const FOREIGN_STACK_RE =
+    /\b(?:Cargo\.toml|pyproject\.toml|go\.mod|pytest|cargo\s+test|go\s+test)\b/;
+  const STALE_SKILL_PATTERNS = [
+    ['stale docs/superpowers/ path', /\bdocs\/superpowers\//],
+    ['vendored narrative session date (2025-10-03)', /\b2025-10-03\b/],
+    ['vendored narrative test count (1847 tests)', /\b1847\s+tests\b/],
+    ['foreign monorepo path (packages/core)', /\bpackages\/core\b/],
+    ['broken section reference (Phase 4.5)', /\bPhase\s+4\.5\b/],
+    ['stale external plugin reference (subagent-driven-development)', /\bsubagent-driven-development\b/],
+    ['stale superpowers: namespace prefix', /\bsuperpowers:[a-z0-9-]+/],
+  ];
+  const CONCRETE_REPO_PATH_RE =
+    /`((?:\.agents\/(?:workflows|skills|hooks\.json|STATE\.md)|scripts\/|apps\/(?:web|api|e2e)\/AGENTS\.md|specs\/prd\.md|designs\/(?:stitch-manifest|design-tokens)\.json)[A-Za-z0-9._/-]*)`/g;
+
   for (const skillFile of walkFiles(skillsRoot, (name) => name === 'SKILL.md')) {
     const raw = fs.readFileSync(skillFile, 'utf8');
     const relSkill = path.relative(rootDir, skillFile).replace(/\\/g, '/');
+    const dirName = path.basename(path.dirname(skillFile));
     const lines = raw.length === 0 ? 0 : raw.replace(/\r?\n$/, '').split(/\r?\n/).length;
     if (lines > 250) {
       errors.push(`${relSkill} has ${lines} lines (must be <= 250 lines)`);
@@ -545,11 +732,13 @@ function validateSkillsIntegrity(rootDir, errors) {
         `${relSkill} description must declare a negative boundary ("Not for ...") to prevent over-triggering`
       );
     }
-    const foreignMatch = raw.match(/\b(?:Cargo\.toml|pyproject\.toml|go\.mod|pytest|cargo\s+test|go\s+test)\b/);
-    if (foreignMatch) {
-      errors.push(
-        `${relSkill} contains foreign-stack boilerplate ("${foreignMatch[0]}"); tailor skill commands to this Node/TypeScript monorepo`
-      );
+    if (fmMatch) {
+      const nameMatch = fmMatch[1].match(/^name:\s*["']?([a-z0-9-]+)["']?\s*$/m);
+      if (!nameMatch || nameMatch[1] !== dirName) {
+        errors.push(
+          `${relSkill} frontmatter name ("${nameMatch?.[1] ?? 'missing'}") must match directory name "${dirName}"`
+        );
+      }
     }
   }
 
@@ -557,6 +746,33 @@ function validateSkillsIntegrity(rootDir, errors) {
     const raw = fs.readFileSync(mdFile, 'utf8');
     const relMd = path.relative(rootDir, mdFile).replace(/\\/g, '/');
     const mdDir = path.dirname(mdFile);
+
+    const foreignMatch = raw.match(FOREIGN_STACK_RE);
+    if (foreignMatch) {
+      errors.push(
+        `${relMd} contains foreign-stack boilerplate ("${foreignMatch[0]}"); tailor skill commands to this Node/TypeScript monorepo`
+      );
+    }
+    for (const [label, pattern] of STALE_SKILL_PATTERNS) {
+      if (pattern.test(raw)) {
+        errors.push(`${relMd} contains ${label}`);
+      }
+    }
+    for (const repoPathMatch of raw.matchAll(CONCRETE_REPO_PATH_RE)) {
+      const candidate = repoPathMatch[1];
+      if (
+        candidate.endsWith('/') ||
+        candidate.includes('<') ||
+        candidate.includes('{') ||
+        candidate.includes('*') ||
+        candidate.includes('...')
+      ) {
+        continue;
+      }
+      if (!fs.existsSync(path.join(rootDir, candidate))) {
+        errors.push(`${relMd} references missing repository path: ${candidate}`);
+      }
+    }
 
     for (const linkMatch of raw.matchAll(/\[[^\]]+\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
       const target = linkMatch[1].trim();
@@ -586,13 +802,33 @@ function validateSkillsIntegrity(rootDir, errors) {
     }
   }
 
+  const routerPath = path.join(skillsRoot, 'using-superpowers', 'SKILL.md');
+  const routerRaw = fs.existsSync(routerPath) ? fs.readFileSync(routerPath, 'utf8') : null;
+
   if (fs.existsSync(skillsRoot)) {
     for (const entry of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
       const skillDir = path.join(skillsRoot, entry.name);
       const skillFiles = walkFiles(skillDir, () => true);
       const entryPoint = path.join(skillDir, 'SKILL.md');
-      if (!fs.existsSync(entryPoint)) continue;
+      if (!fs.existsSync(entryPoint)) {
+        const relEntry = `.agents/skills/${entry.name}/SKILL.md`;
+        if (!REQUIRED_FILES.includes(relEntry)) {
+          errors.push(`.agents/skills/${entry.name} is missing required SKILL.md entry file`);
+        }
+        continue;
+      }
+
+      if (
+        routerRaw !== null &&
+        entry.name !== 'using-superpowers' &&
+        !ROLE_DAG_SKILLS.has(entry.name) &&
+        !new RegExp(`\\b${entry.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(routerRaw)
+      ) {
+        errors.push(
+          `Single-agent skill "${entry.name}" is missing from .agents/skills/using-superpowers/SKILL.md routing table`
+        );
+      }
 
       const reachable = new Set([entryPoint]);
       const queue = [entryPoint];
@@ -607,7 +843,9 @@ function validateSkillsIntegrity(rootDir, errors) {
         for (const candidate of skillFiles) {
           if (reachable.has(candidate)) continue;
           const base = path.basename(candidate);
-          if (text.includes(base)) {
+          const escapedBase = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const boundaryRe = new RegExp(`(?<![A-Za-z0-9._-])${escapedBase}(?![A-Za-z0-9._-])`);
+          if (boundaryRe.test(text)) {
             reachable.add(candidate);
             queue.push(candidate);
           }

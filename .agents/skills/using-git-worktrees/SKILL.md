@@ -37,9 +37,10 @@ SUPERPROJECT=$(git rev-parse --show-superproject-working-tree 2>/dev/null)
 ## Step 2: Workspace Setup & Clean Baseline
 
 ```bash
-npm install
-npm run check:harness && npm run typecheck && npm run test:unit
+./init.sh
 ```
+
+(`./init.sh` bootstraps `.env` with an available PostgreSQL port, sets `core.hooksPath=.githooks`, installs dependencies, applies schema/seed, and runs `check:harness`, `typecheck`, `test:unit`, and `build`.)
 
 - If baseline checks fail, report failures and ask whether to fix them before starting new scope.
 - When clean, report: `Worktree ready at <path> (<N> tests passing, 0 failures)`.

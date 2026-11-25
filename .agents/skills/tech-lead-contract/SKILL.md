@@ -23,14 +23,18 @@ Define pure TypeScript interfaces and endpoint constants (lean `ponytail` minima
 - Exact HTTP method, route path, query params, request body, success payload, and `400`/`404` error shape.
 - 1-to-1 field mapping from `designs/screens/*.html` to `db/schema.sql` columns (with UTC-safe `YYYY-MM-DD` strings for dates and `number` for numeric metrics).
 
-## Escalation Triage Protocol (`FE -> Tech Lead`)
+## Escalation Triage Protocol (`BE / FE -> Tech Lead`)
 
-Classify every `CONTRACT_MISMATCH` into exactly one branch:
+Classify every `SCHEMA_MISMATCH` (from `be`) or `CONTRACT_MISMATCH` (from `fe`) into exactly one branch:
 
-1. **`BE_DEVIATION`** (`specs/contracts/<feat-id>.ts` already specifies the field/type, but `apps/api` omitted or mistyped it):
+1. **`BE_DEVIATION`** (`specs/contracts/<feat-id>.ts` and `db/schema.sql` already specify the field/type, but `apps/api` omitted or mistyped it):
    - Keep `specs/contracts/<feat-id>.ts` unchanged; issue a targeted fix directive to `be` naming the exact route and mismatched field.
-2. **`CONTRACT_GAP`** (approved Stitch screen in `designs/` requires a field missing from `specs/contracts/<feat-id>.ts` or `db/schema.sql`):
-   - Update `db/schema.sql` and `specs/contracts/<feat-id>.ts` first, then dispatch `be` to implement and test before returning to `fe`.
+2. **`CONTRACT_GAP`** (approved Stitch screen in `designs/` or shared contract requires a table, column, non-null constraint, or endpoint missing from `db/schema.sql` or `specs/contracts/<feat-id>.ts`):
+   - Update `db/schema.sql` (using idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` migrations) and `specs/contracts/<feat-id>.ts` first, then dispatch `be` to implement and test before returning to `fe`.
+
+## QA Remediation & Bugfix Domain Triage (`BUGFIX_TRIAGE_SCHEMA`)
+
+When triaging a QA `FAIL` or bug report, inspect `db/schema.sql`, `specs/contracts/`, and failing files first, then classify exact target `domain` (`"be"`, `"fe"`, or `"fullstack"`), cite concrete `rootCause` (`file:line`), and issue a minimal TDD `fixDirective`.
 
 ## Rationalization Prevention
 
@@ -42,5 +46,6 @@ Classify every `CONTRACT_MISMATCH` into exactly one branch:
 ## Red Flags — STOP Immediately
 
 - Recommending optional-field UI hiding or hardcoded React fallbacks to paper over missing API data
-- Writing UI component logic inside `apps/web/src/components/` yourself
+- Classifying an escalation or bugfix without reading `db/schema.sql` and `specs/contracts/` first
+- Editing `apps/web/`, `apps/api/`, `specs/prd.md`, or `evaluations/` yourself
 - Adding speculative endpoints or columns not required by `specs/prd.md` and `designs/`

@@ -1,23 +1,19 @@
 # Builder Check Prompt
 
-Dispatch a fresh general-purpose subagent with this prompt once the
-written design exists. Fill in the domain and the document path.
+Dispatch a fresh subagent with this prompt once the written design exists. Fill in `{DOMAIN}` and `{DOCUMENT_PATH}`.
 
-```
-You are a talented [DOMAIN, e.g. "software engineer", "event planner",
-"bakery consultant"]. You've been handed a design document and asked to
-put together a plan to build what it describes. You will not be able to
-talk to the person who wrote it.
+```markdown
+You are a senior {DOMAIN} engineer handed a written design document and asked to
+produce a TDD implementation plan from it without talking to the author.
 
-Read [DOCUMENT_PATH].
+Read `{DOCUMENT_PATH}`.
 
-Report only the questions you'd still need answered before you could plan
-this well: places where you'd have to guess and a wrong guess would
-matter. For each, give the question and why the answer changes the plan.
-Rank them by importance.
+Report only the questions you still need answered before planning: places where
+guessing wrong would materially alter the architecture, contract, or UX. For each,
+give the question and why the answer changes the plan, ranked by importance.
 
-Skip anything the document explicitly leaves to the builder, and anything
-you could reasonably decide yourself. Skip nitpicks about wording.
+Skip anything the document explicitly leaves to the builder, anything you can
+reasonably decide from existing repository conventions, and wording nitpicks.
 
-If nothing important is left, say "nothing important left".
+If nothing important is left, reply "nothing important left".
 ```

@@ -247,8 +247,8 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
     def test_run_mechanical_gate_runs_init_and_playwright_e2e_by_default(self):
         executed = []
 
-        def fake_run(cmd, cwd, capture_output, text, check):
-            executed.append(cmd)
+        def fake_run(cmd, cwd, capture_output, text, check, timeout=None):
+            executed.append((cmd, timeout))
             res = mock.Mock()
             res.returncode = 0
             res.stdout = f"ok {cmd[0]}"
@@ -258,12 +258,14 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
         with mock.patch("graph_core.subprocess.run", side_effect=fake_run):
             gate = run_mechanical_gate("/repo")
             self.assertTrue(gate["ok"])
-            self.assertEqual(executed, [["./init.sh"], ["npm", "run", "test:e2e"]])
+            self.assertEqual(
+                executed, [(["./init.sh"], 600), (["npm", "run", "test:e2e"], 600)]
+            )
 
             executed.clear()
             gate_init_only = run_mechanical_gate("/repo", include_e2e=False)
             self.assertTrue(gate_init_only["ok"])
-            self.assertEqual(executed, [["./init.sh"]])
+            self.assertEqual(executed, [(["./init.sh"], 600)])
 
     def test_build_bugfix_qa_prompt_prevents_orphan_evaluations_file_without_feature_id(self):
         standalone = build_bugfix_qa_prompt(
@@ -290,6 +292,273 @@ class GraphCoreTests(unittest.IsolatedAsyncioTestCase):
         with open(os.path.join(wf_dir, "feature_delivery.py"), encoding="utf-8") as handle:
             src = handle.read()
         self.assertIn("apps/e2e/tests/", src)
+
+    def test_build_evaluator_prompt_includes_canonical_structural_markers(self):
+        prompt = build_evaluator_prompt(
+            feature_id="feat-005",
+            commit_sha="82db475",
+            workspace_root="/repo",
+        )
+        self.assertIn("Commit SHA under evaluation: 82db475", prompt)
+        self.assertIn("Feature ID: feat-005", prompt)
+        self.assertIn("Workspace Root: /repo", prompt)
+
+    def test_validate_agent_output_enforces_schema_and_semantic_invariants(self):
+        from graph_core import (
+            BE_SCHEMA,
+            QA_EVAL_SCHEMA,
+            validate_agent_output,
+        )
+
+        # Valid BE_READY passes
+        validate_agent_output({"status": "BE_READY", "changedFiles": []}, BE_SCHEMA, "be")
+
+        # Invalid enum fails
+        with self.assertRaises(ValueError):
+            validate_agent_output({"status": "INVALID"}, BE_SCHEMA, "be")
+
+        # Semantic invariant: SCHEMA_MISMATCH must include non-empty mismatches
+        with self.assertRaises(ValueError):
+            validate_agent_output({"status": "SCHEMA_MISMATCH", "mismatches": []}, BE_SCHEMA, "be")
+
+        # Semantic invariant: QA PASS must have empty blockingIssues
+        with self.assertRaises(ValueError):
+            validate_agent_output(
+                {
+                    "verdict": "PASS",
+                    "evaluationPath": "evaluations/feat-005.json",
+                    "blockingIssues": ["unfixed bug"],
+                },
+                QA_EVAL_SCHEMA,
+                "qa",
+            )
+
+    def test_workflow_checkpoint_save_load_and_clear(self):
+        import tempfile
+        from graph_core import (
+            clear_workflow_checkpoint,
+            load_workflow_checkpoint,
+            save_workflow_checkpoint,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(load_workflow_checkpoint(tmp, "feature_delivery", "feat-005"))
+            save_workflow_checkpoint(
+                tmp,
+                "feature_delivery",
+                "feat-005",
+                phase_name="contract_locked",
+                data={"contractPath": "specs/contracts/feat-005.ts"},
+            )
+            loaded = load_workflow_checkpoint(tmp, "feature_delivery", "feat-005")
+            self.assertEqual(loaded["phase"], "contract_locked")
+            self.assertEqual(loaded["data"]["contractPath"], "specs/contracts/feat-005.ts")
+            clear_workflow_checkpoint(tmp, "feature_delivery", "feat-005")
+            self.assertIsNone(load_workflow_checkpoint(tmp, "feature_delivery", "feat-005"))
+
+    def test_run_mechanical_gate_handles_timeout_cleanly(self):
+        import subprocess
+
+        def fake_timeout(*_args, **_kwargs):
+            raise subprocess.TimeoutExpired(cmd=["./init.sh"], timeout=5, output="partial", stderr="hung")
+
+        with mock.patch("graph_core.subprocess.run", side_effect=fake_timeout) as mocked:
+            gate = run_mechanical_gate("/repo", timeout_seconds=5)
+            self.assertFalse(gate["ok"])
+            self.assertEqual(gate["exitCode"], 124)
+            self.assertTrue(gate.get("timedOut"))
+            self.assertEqual(mocked.call_args.kwargs.get("timeout"), 5)
+
+    def test_stage_and_finalize_raise_value_error_on_missing_feature(self):
+        import json
+        import tempfile
+        from graph_core import finalize_done_after_eval, stage_ready_for_eval_and_commit
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "feature_list.json"), "w", encoding="utf-8") as handle:
+                json.dump({"features": [{"id": "feat-001", "status": "done"}]}, handle)
+            with self.assertRaises(ValueError):
+                stage_ready_for_eval_and_commit(tmp, "feat-999", "note")
+            with self.assertRaises(ValueError):
+                finalize_done_after_eval(tmp, "feat-999", "abc1234", "evaluations/feat-999.json")
+
+    def test_assert_role_diff_compliance_flags_out_of_scope_files(self):
+        from graph_core import assert_role_diff_compliance
+
+        with mock.patch(
+            "graph_core.subprocess.check_output",
+            return_value=" M apps/web/src/App.tsx\n M apps/api/src/routes/portfolio.ts\n",
+        ):
+            # apps/web was pre-existing in baseline, apps/api is allowed for 'be' -> ok
+            assert_role_diff_compliance("/repo", "be", baseline_dirty={"apps/web/src/App.tsx"})
+            # Without baseline exemption, 'be' touching apps/web/src/App.tsx fails
+            with self.assertRaises(PermissionError):
+                assert_role_diff_compliance("/repo", "be", baseline_dirty=set())
+
+    def test_feature_delivery_triage_does_not_hardcode_from_fe(self):
+        wf_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(wf_dir, "feature_delivery.py"), encoding="utf-8") as handle:
+            src = handle.read()
+        self.assertNotIn("from FE on", src)
+
+    def test_validate_agent_output_rejects_none_for_required_keys_and_empty_fail_issues(self):
+        from graph_core import (
+            BE_SCHEMA,
+            QA_EVAL_SCHEMA,
+            TECH_LEAD_CONTRACT_SCHEMA,
+            validate_agent_output,
+        )
+
+        with self.assertRaises(ValueError):
+            validate_agent_output({"status": None}, BE_SCHEMA, "be")
+        with self.assertRaises(ValueError):
+            validate_agent_output(
+                {"contractPath": None, "beInstructions": "x", "feInstructions": "y"},
+                TECH_LEAD_CONTRACT_SCHEMA,
+                "tl",
+            )
+        with self.assertRaises(ValueError):
+            validate_agent_output(
+                {"verdict": "FAIL", "evaluationPath": "evaluations/feat-005.json", "blockingIssues": []},
+                QA_EVAL_SCHEMA,
+                "qa",
+            )
+
+    def test_assert_role_diff_compliance_handles_renames_spaces_untracked_dirs_and_committed_edits(self):
+        import subprocess
+        import tempfile
+        from graph_core import assert_role_diff_compliance, get_dirty_files, get_head_sha
+
+        with tempfile.TemporaryDirectory() as tmp:
+            subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "t@e.com"], cwd=tmp, check=True)
+            subprocess.run(["git", "config", "user.name", "T"], cwd=tmp, check=True)
+            os.makedirs(os.path.join(tmp, "apps/api/src"), exist_ok=True)
+            os.makedirs(os.path.join(tmp, "apps/web/src"), exist_ok=True)
+            with open(os.path.join(tmp, "apps/api/src/index.ts"), "w", encoding="utf-8") as h:
+                h.write("export const a = 1;\n")
+            subprocess.run(["git", "add", "-A"], cwd=tmp, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=tmp, check=True, stdout=subprocess.DEVNULL)
+
+            base_head = get_head_sha(tmp)
+            base_dirty = get_dirty_files(tmp)
+
+            # 1. File with space inside allowed dir apps/web/src/ must PASS (no quote false positive)
+            spaced = os.path.join(tmp, "apps/web/src/my card.tsx")
+            with open(spaced, "w", encoding="utf-8") as h:
+                h.write("export const x = 1;\n")
+            assert_role_diff_compliance(tmp, "fe", baseline_dirty=base_dirty, baseline_head=base_head)
+            os.unlink(spaced)
+
+            # 2. git mv from apps/api -> apps/web must FAIL for fe (out-of-scope source deleted!)
+            subprocess.run(["git", "mv", "apps/api/src/index.ts", "apps/web/src/moved.ts"], cwd=tmp, check=True)
+            with self.assertRaises(PermissionError):
+                assert_role_diff_compliance(tmp, "fe", baseline_dirty=base_dirty, baseline_head=base_head)
+            subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=tmp, check=True, stdout=subprocess.DEVNULL)
+
+            # 3. Committed out-of-scope edit must FAIL when baseline_head is passed
+            with open(os.path.join(tmp, "apps/api/src/index.ts"), "w", encoding="utf-8") as h:
+                h.write("export const a = 2;\n")
+            subprocess.run(["git", "add", "-A"], cwd=tmp, check=True)
+            subprocess.run(["git", "commit", "-m", "sneaky"], cwd=tmp, check=True, stdout=subprocess.DEVNULL)
+            with self.assertRaises(PermissionError):
+                assert_role_diff_compliance(tmp, "fe", baseline_dirty=base_dirty, baseline_head=base_head)
+
+    def test_finalize_done_rolls_back_feature_list_on_gate_failure_and_validates_eval_path(self):
+        import json
+        import tempfile
+        from graph_core import finalize_done_after_eval
+
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "evaluations"), exist_ok=True)
+            fl_path = os.path.join(tmp, "feature_list.json")
+            original = {
+                "features": [
+                    {
+                        "id": "feat-005",
+                        "name": "Polish",
+                        "description": "Desc",
+                        "dependencies": [],
+                        "status": "ready-for-eval",
+                        "evidence": "staged",
+                    }
+                ]
+            }
+            with open(fl_path, "w", encoding="utf-8") as h:
+                json.dump(original, h, indent=2)
+            with open(os.path.join(tmp, "evaluations", "feat-005.json"), "w", encoding="utf-8") as h:
+                json.dump({"featureId": "feat-005", "evaluatedCommit": "abc1234567890", "verdict": "PASS"}, h)
+
+            # Wrong evaluation_path must raise ValueError before touching feature_list.json
+            with self.assertRaises(ValueError):
+                finalize_done_after_eval(tmp, "feat-005", "abc1234", "evaluations/other.json")
+
+            # Gate failure must roll back feature_list.json to ready-for-eval
+            with mock.patch("graph_core.run_mechanical_gate", return_value={"ok": False, "exitCode": 1, "outputTail": "fail"}):
+                with self.assertRaises(RuntimeError):
+                    finalize_done_after_eval(tmp, "feat-005", "abc1234", "evaluations/feat-005.json")
+            with open(fl_path, encoding="utf-8") as h:
+                after = json.load(h)
+            self.assertEqual(after["features"][0]["status"], "ready-for-eval")
+
+    def test_round2_folder_agents_wired_and_tech_lead_cannot_overwrite_prd(self):
+        from graph_core import assert_role_diff_compliance
+
+        wf_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(wf_dir, "feature_delivery.py"), encoding="utf-8") as h:
+            fd_src = h.read()
+        with open(os.path.join(wf_dir, "bugfix.py"), encoding="utf-8") as h:
+            bf_src = h.read()
+        self.assertIn("apps/web/AGENTS.md", fd_src)
+        self.assertIn("apps/e2e/AGENTS.md", fd_src)
+        self.assertIn("apps/web/AGENTS.md", bf_src)
+
+        eval_prompt = build_evaluator_prompt("feat-005", "abc1234", "/repo")
+        self.assertIn("apps/e2e/AGENTS.md", eval_prompt)
+        standalone_qa = build_bugfix_qa_prompt("bug", "abc1234", "/repo")
+        self.assertIn("apps/e2e/AGENTS.md", standalone_qa)
+
+        with mock.patch("graph_core.subprocess.check_output", return_value=" M specs/prd.md\x00"):
+            with self.assertRaises(PermissionError):
+                assert_role_diff_compliance("/repo", "tech-lead", baseline_dirty=set())
+        with mock.patch("graph_core.subprocess.check_output", return_value=" M specs/contracts/feat-005.ts\x00"):
+            assert_role_diff_compliance("/repo", "tech-lead", baseline_dirty=set())
+
+    def test_round3_utf8_committed_paths_bugfix_finalization_and_checkpoint_hardening(self):
+        import subprocess
+        import tempfile
+        from graph_core import assert_role_diff_compliance, get_dirty_files, get_head_sha
+
+        # M6: UTF-8 committed filename inside apps/web/src/ must NOT false-positive
+        with tempfile.TemporaryDirectory() as tmp:
+            subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "t@e.com"], cwd=tmp, check=True)
+            subprocess.run(["git", "config", "user.name", "T"], cwd=tmp, check=True)
+            os.makedirs(os.path.join(tmp, "apps/web/src"), exist_ok=True)
+            with open(os.path.join(tmp, "apps/web/src/base.ts"), "w", encoding="utf-8") as h:
+                h.write("export const a = 1;\n")
+            subprocess.run(["git", "add", "-A"], cwd=tmp, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=tmp, check=True, stdout=subprocess.DEVNULL)
+
+            base_head = get_head_sha(tmp)
+            base_dirty = get_dirty_files(tmp)
+            with open(os.path.join(tmp, "apps/web/src/café.ts"), "w", encoding="utf-8") as h:
+                h.write("export const b = 2;\n")
+            subprocess.run(["git", "add", "-A"], cwd=tmp, check=True)
+            subprocess.run(["git", "commit", "-m", "utf8"], cwd=tmp, check=True, stdout=subprocess.DEVNULL)
+            assert_role_diff_compliance(tmp, "fe", baseline_dirty=base_dirty, baseline_head=base_head)
+
+        # H3 + M5: bugfix.py uses finalize_done_after_eval for linked featureId, project_init resumes checkpoint, feature_delivery guards realpath traversal
+        wf_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(wf_dir, "bugfix.py"), encoding="utf-8") as h:
+            bf_src = h.read()
+        with open(os.path.join(wf_dir, "project_init.py"), encoding="utf-8") as h:
+            pi_src = h.read()
+        with open(os.path.join(wf_dir, "feature_delivery.py"), encoding="utf-8") as h:
+            fd_src = h.read()
+        self.assertIn("finalize_done_after_eval", bf_src)
+        self.assertIn("load_workflow_checkpoint", pi_src)
+        self.assertIn("commonpath", fd_src)
 
 
 if __name__ == "__main__":

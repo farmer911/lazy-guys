@@ -19,11 +19,11 @@ Execute all four steps with live evidence before issuing any verdict or grade:
    - Scan **every file** under the target subtree (`find <dir> -type f -exec wc -l {} +`), not just entry files like `SKILL.md` or `index.ts`.
    - Flag orphan/unreferenced auxiliary files, untracked clutter, and oversized supporting assets.
 2. **Content & Foreign-Drift Inspection (Read Inside, Not Just Metrics):**
-   - Read representative files and grep for stale references, foreign-stack boilerplate, contradictory rules, or unanchored regexes.
+   - Read every in-scope file directly (never skim a tiny sample and extrapolate) and grep for stale references, foreign-stack boilerplate, contradictory rules, or unanchored regexes.
    - Never call a directory "clean" solely from line counts or passing `check:harness`.
 3. **Live Runtime & Bypass Probing (Red-Team):**
    - Ask: *"If a lazy agent wanted to cheat or fail open, how would it bypass this gate?"*
-   - Inspect **live runtime logs/artifacts** (e.g., `.agents/logs/exec-state.json`, `session-checkpoint.md`, `transcript.jsonl`) — never assume mock unit tests match real host payloads.
+   - Inspect **live runtime logs/artifacts** (e.g., `.agents/logs/exec-state-*.json`, `hook-events.jsonl`, `session-checkpoint.md`, `transcript.jsonl`) — never assume mock unit tests match real host payloads.
    - Test exit-code masking (`|| true`, `; true`), shell mutation workarounds, and fail-open edge cases.
 4. **Honest Evidence-Backed Verdict:**
    - Separate **Verified Clean**, **Blocking Gaps (with `file:line` or live log proof)**, and **YAGNI / Deferred Items** (do not invent busywork for problems the repo does not have).
