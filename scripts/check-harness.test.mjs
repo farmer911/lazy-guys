@@ -1216,6 +1216,40 @@ test('Round 3 Audit H5/M4: flags narrowed hooks.json matcher, || : / early exit 
   }
 });
 
+test('Self-Evolve Package Script Gate: requires root preview:web production build+preview script when package.json is present', () => {
+  const dir = makeTempFixture();
+  try {
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'lazy-guy',
+        private: true,
+        scripts: {
+          'dev:web': 'npm run dev --workspace=apps/web',
+        },
+      })
+    );
+    const missingErrors = validateHarness(dir);
+    assert.match(missingErrors.join('\n'), /package\.json.*preview:web/i);
+
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'lazy-guy',
+        private: true,
+        scripts: {
+          'dev:web': 'npm run dev --workspace=apps/web',
+          'preview:web':
+            'npm run build --workspace=apps/web && npm run preview --workspace=apps/web -- --port 5173 --strictPort',
+        },
+      })
+    );
+    assert.deepEqual(validateHarness(dir), []);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('passes on current repository root', () => {
   assert.deepEqual(validateHarness(process.cwd()), []);
 });

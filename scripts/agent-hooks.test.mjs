@@ -2391,3 +2391,140 @@ test('Round 3 Re-Verify NEW-C1/NEW-C2: blocks subshells, brace groups, export GI
     fs.rmSync(tempRepo, { recursive: true, force: true });
   }
 });
+
+test('Self-Evolve Perf & Preview Parity Lock: enforces Lighthouse --output-path, blocks Lighthouse on vite dev, and blocks post-Lighthouse dev:web while allowing preview:web, dev:api, and normal dev:web', () => {
+  const tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-perf-parity-'));
+  try {
+    const convId = 'conv-perf-parity-001';
+
+    // 1. Negative control: normal session before any Lighthouse audit allows dev:web
+    const preAuditDev = evaluateHookEvent(
+      {
+        hookEventName: 'PreToolUse',
+        conversationId: convId,
+        lastUserInput: 'start dev server',
+        toolCall: { name: 'run_command', args: { CommandLine: 'npm run dev:web' } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(preAuditDev.decision, 'allow', 'dev:web must be allowed when no perf audit ran');
+
+    // 2. Negative control: lighthouse --version is allowed without --output-path and does NOT arm parity lock
+    const lhVersionCmd = 'npx --yes lighthouse --version';
+    assert.equal(
+      evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          toolCall: { name: 'run_command', args: { CommandLine: lhVersionCmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      ).decision,
+      'allow'
+    );
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 1,
+        toolCall: { name: 'run_command', args: { CommandLine: lhVersionCmd } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+    assert.equal(
+      evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          toolCall: { name: 'run_command', args: { CommandLine: 'npm run dev:web' } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      ).decision,
+      'allow',
+      'lighthouse --version must not arm post-audit dev:web lock'
+    );
+
+    // 3. Positive blocks: Lighthouse without verifiable --output-path or against vite dev in same command
+    for (const badLhCmd of [
+      'npx lighthouse http://localhost:4173 --quiet',
+      'npx lighthouse http://localhost:4173 --output=json --output-path=/dev/null',
+      'bash -c "npx lighthouse http://localhost:4173"',
+      'npm run dev:web & npx lighthouse http://localhost:5173 --output=json --output-path=/tmp/lh.json',
+    ]) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          toolCall: { name: 'run_command', args: { CommandLine: badLhCmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'deny', `expected deny for invalid Lighthouse command: ${badLhCmd}`);
+    }
+
+    // 4. Valid Lighthouse run with --output-path is allowed and arms session parity lock in PostToolUse
+    const validLhCmd =
+      'npx lighthouse http://localhost:4173 --no-enable-error-reporting --output=json --output-path=/tmp/lh-mobile.json --quiet';
+    assert.equal(
+      evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          toolCall: { name: 'run_command', args: { CommandLine: validLhCmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      ).decision,
+      'allow'
+    );
+    evaluateHookEvent(
+      {
+        hookEventName: 'PostToolUse',
+        conversationId: convId,
+        stepIdx: 2,
+        toolCall: { name: 'run_command', args: { CommandLine: validLhCmd } },
+      },
+      { rootDir: tempRepo, disableTelemetry: true }
+    );
+
+    // 5. Exact session regression: starting unbundled web dev server after Lighthouse is DENIED
+    for (const mismatchedDevCmd of [
+      'npm run dev:web',
+      'npm run dev --workspace=apps/web',
+      'npx --workspace=apps/web vite',
+      'bash -c "npm run dev:web"',
+    ]) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          lastUserInput: 'start all sever local tao xem',
+          toolCall: { name: 'run_command', args: { CommandLine: mismatchedDevCmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'deny', `expected post-Lighthouse deny for: ${mismatchedDevCmd}`);
+    }
+
+    // 6. Negative controls after Lighthouse: dev:api, preview:web, vite preview, test:e2e, and explicit override stay ALLOWED
+    for (const allowedAfterLhCmd of [
+      'docker compose up -d && npm run dev:api',
+      'npm run preview:web',
+      'npx --workspace=apps/web vite preview --port 5173 --strictPort',
+      'npm run test:e2e',
+      'ALLOW_DEV_AFTER_PERF=1 npm run dev:web',
+    ]) {
+      const res = evaluateHookEvent(
+        {
+          hookEventName: 'PreToolUse',
+          conversationId: convId,
+          lastUserInput: 'start all sever local tao xem',
+          toolCall: { name: 'run_command', args: { CommandLine: allowedAfterLhCmd } },
+        },
+        { rootDir: tempRepo, disableTelemetry: true }
+      );
+      assert.equal(res.decision, 'allow', `expected allow after Lighthouse for: ${allowedAfterLhCmd}`);
+    }
+  } finally {
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  }
+});

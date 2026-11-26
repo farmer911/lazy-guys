@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 17:22
+**Last Updated:** 2026-11-26 20:33
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -74,6 +74,12 @@
 - [x] Role-Isolated Portable Knowledge Packs (`fe-kb`, `be-kb`, `arch-kb`, `qa-kb`) & Zero-Build End-to-End `Zod` Contracts (`134/134` automated tests):
   - Installed `zod@4.6.7` + `@hookform/resolvers@7.0.9` (`0` vulnerabilities), authored shared zero-build contracts (`specs/contracts/{common,portfolio,package}.json/.ts` with `"type": "module"` native ESM compilation and `@contracts/*` Vite/Vitest/TS alias), and wired `POST /api/contact`, `apps/web/src/lib/api.ts`, and `ContactForm.tsx` (`zodResolver`, Vietnamese IME `isComposing` `Enter` guard, `focus-visible:ring-2`, `aria-describedby` + `role="alert"` / `role="status"`, and error-safe input preservation)
   - Executed 4 unguided RED baseline probes across FE, BE, Arch, and QA, then built 4 strictly disjoint domain-knowledge git worktree branches (`feat/{fe,be,arch,qa}-kb`, `48` changed files, `0` merge collisions) merged cleanly via Octopus merge (`eb902bb`): `17` pruned First-Match Decision Tree guides (`73–105`L each), `8` static `scanner-rules.json` checks with `keepWhen`/`dropWhen`, `18` new TDD unit/integration tests (`scripts/{fe,be,arch,qa}-kb.test.mjs` + API/RTL), Role Skill + `apps/{web,api,e2e}/AGENTS.md` wiring (with strict JSON-mode citation suppression), Guided GREEN subagent uplift proof, and byte-identical sync to `~/.gemini/config/skills/{fe,be,arch,qa}-kb` (`24/24` repo skills passing)
+- [x] Production Lighthouse Runtime Audit & Zero-CLS / Lazy-Chunk Optimization (`138/138` automated tests):
+  - Audited live production `vite preview` + PostgreSQL API via Lighthouse `12.8.2` before & after without adding speculative `vite.config.ts` bundler rules: lifted Desktop from `94/100/96/82` (`CLS 0.146`) to **`100/100/100/100` (`CLS 0`)** and Mobile (Slow 4G, 4x CPU) from `97/100/96/82` (`CLS 0.075`) to **`99/100/100/100` (`CLS 0`, `LCP 2.0s`, `TBT 0ms`)**
+  - Added geometry-matched `aria-busy` loading skeletons across `ExperienceSection`, `ProjectsSection`, and `TechStackSection` (including filter-pill placeholders), viewport-deferred `IntersectionObserver` + `React.lazy` splitting for `ContactForm` (`index.js` `151.71 kB` → `116.72 kB` gzip; `ContactForm` `36.90 kB` gzip), and `<meta name="description">`, `public/favicon.svg`, and `public/robots.txt`, backed by `2` new RTL tests (`App.lighthouse.test.tsx`) and `1` Playwright E2E spec (`portfolio.spec.ts`)
+- [x] Self-Evolve Rule-to-Script Promotion (`Perf Audit Artifact & Preview Parity Lock` — `140/140` automated tests):
+  - Promoted the Lighthouse artifact-persistence & post-audit `vite dev` vs `vite preview` handoff gap into mechanical runtime guards (`inspectPerfAuditAndPreviewGuard` + stateful `lastPerfAuditSeq` tracking in `scripts/agent-hooks.mjs`), blocking `lighthouse` without `--output-path`, `lighthouse` alongside unbundled `dev:web`, and post-Lighthouse `dev:web` launches unless `npm run preview:web` or `ALLOW_DEV_AFTER_PERF=1` is used (`36` hook tests)
+  - Added root `"preview:web"` production build+preview script in `package.json`, enforced mechanically via `validatePackageScripts` in `scripts/check-harness.mjs` (`35` harness tests), and anchored `Ad-Hoc Audit & Preview Parity` in `AGENTS.md`
 
 ### What's In Progress
 
@@ -108,7 +114,7 @@
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks`, `127.0.0.1` Postgres on port 5434, idempotent `schema.sql`/`seed.sql`)
 - [x] `npm run check:harness`: pass (`24/24` skills `<= 250`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`, 0 errors/warnings)
-- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness + `7` kb-cli + `17` role-kb = `92` Node + `24` Python workflow + `10` API PG integration + `6` Web RTL = `132/132` tests)
-- [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings, native ESM `dist/` verified)
-- [x] `npm run test:e2e`: pass (`2/2` Chromium E2E tests -> **`134/134` total automated tests**)
+- [x] `npm run test:unit`: pass (`95` Node + `24` Python workflow + `10` API PG integration + `8` Web RTL = `137/137` tests)
+- [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings, `index` `116.72 kB` gzip + lazy `ContactForm` `36.90 kB` gzip)
+- [x] `npm run test:e2e`: pass (`3/3` Chromium E2E tests -> **`140/140` total automated tests**)
 - [x] `npm audit --audit-level=high`: `found 0 vulnerabilities`

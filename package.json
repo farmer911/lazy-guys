@@ -9,6 +9,7 @@
   "scripts": {
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
+    "preview:web": "npm run build --workspace=apps/web && npm run preview --workspace=apps/web -- --port 5173 --strictPort",
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "check:harness": "node scripts/check-harness.mjs",
     "stats:tokens": "node scripts/token-stats.mjs",

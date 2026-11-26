@@ -674,6 +674,256 @@ function inspectGitAndDockerGuard(cmdNoComments, depth = 0) {
   return null;
 }
 
+function analyzePerfAndDevCommand(cmdNoComments, depth = 0) {
+  const summary = {
+    hasRealLighthouse: false,
+    lighthouseMissingOutput: false,
+    hasUnbundledWebDev: false,
+    hasAllowDevAfterPerf: false,
+  };
+  if (depth > 3) return summary;
+
+  const mergeInner = (inner) => {
+    if (inner.hasRealLighthouse) summary.hasRealLighthouse = true;
+    if (inner.lighthouseMissingOutput) summary.lighthouseMissingOutput = true;
+    if (inner.hasUnbundledWebDev) summary.hasUnbundledWebDev = true;
+    if (inner.hasAllowDevAfterPerf) summary.hasAllowDevAfterPerf = true;
+  };
+
+  for (const seg of splitShellSegments(cmdNoComments)) {
+    const argv = tokenizeShellArgv(seg);
+    if (argv.length === 0) continue;
+
+    let idx = 0;
+    while (idx < argv.length) {
+      const tok = argv[idx];
+      if (/^ALLOW_DEV_AFTER_PERF=(?:1|true)$/i.test(tok)) {
+        summary.hasAllowDevAfterPerf = true;
+        idx++;
+        continue;
+      }
+      if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tok)) {
+        idx++;
+        continue;
+      }
+      if (['export', 'declare', 'typeset', 'local', 'readonly'].includes(tok)) {
+        for (let k = idx + 1; k < argv.length; k++) {
+          if (/^ALLOW_DEV_AFTER_PERF=(?:1|true)$/i.test(argv[k])) {
+            summary.hasAllowDevAfterPerf = true;
+          }
+        }
+        idx = argv.length;
+        break;
+      }
+      if (['if', 'then', 'elif', 'else', 'do', 'while', 'until', '!'].includes(tok)) {
+        idx++;
+        continue;
+      }
+      const tokBase = path.basename(tok).toLowerCase();
+      if (tokBase === 'env') {
+        idx++;
+        while (idx < argv.length) {
+          const arg = argv[idx];
+          if (/^ALLOW_DEV_AFTER_PERF=(?:1|true)$/i.test(arg)) {
+            summary.hasAllowDevAfterPerf = true;
+            idx++;
+            continue;
+          }
+          if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(arg)) {
+            idx++;
+            continue;
+          }
+          if (arg === '--') {
+            idx++;
+            break;
+          }
+          if (arg === '-S' || arg === '--split-string') {
+            mergeInner(analyzePerfAndDevCommand(stripShellComments(argv[idx + 1] ?? ''), depth + 1));
+            idx += 2;
+            continue;
+          }
+          const splitInline = arg.match(/^(?:-S|--split-string=)(.+)$/);
+          if (splitInline) {
+            mergeInner(analyzePerfAndDevCommand(stripShellComments(splitInline[1]), depth + 1));
+            idx++;
+            continue;
+          }
+          if (['-u', '--unset', '-C', '--chdir', '-P'].includes(arg)) {
+            idx += 2;
+            continue;
+          }
+          if (arg.startsWith('-')) {
+            idx++;
+            continue;
+          }
+          break;
+        }
+        continue;
+      }
+      if (['command', 'time', 'nohup', 'builtin', 'exec', 'sudo', 'nice', 'timeout'].includes(tokBase)) {
+        idx++;
+        while (idx < argv.length && argv[idx].startsWith('-')) {
+          if (argv[idx] === '--') {
+            idx++;
+            break;
+          }
+          idx++;
+        }
+        if (tokBase === 'timeout' && idx < argv.length) idx++;
+        continue;
+      }
+      break;
+    }
+    if (idx >= argv.length) continue;
+
+    const cmdBase = path.basename(argv[idx]).toLowerCase();
+    if (['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish'].includes(cmdBase)) {
+      for (let j = idx + 1; j < argv.length; j++) {
+        if (/^-[a-zA-Z]*c[a-zA-Z]*$/.test(argv[j]) && j + 1 < argv.length) {
+          mergeInner(analyzePerfAndDevCommand(stripShellComments(argv[j + 1]), depth + 1));
+        }
+      }
+      continue;
+    }
+    if (cmdBase === 'eval' && idx + 1 < argv.length) {
+      mergeInner(analyzePerfAndDevCommand(stripShellComments(argv.slice(idx + 1).join(' ')), depth + 1));
+      continue;
+    }
+
+    let resolvedBin = cmdBase;
+    let binArgs = argv.slice(idx + 1);
+    if (['npx', 'pnpx', 'bunx'].includes(cmdBase)) {
+      let j = idx + 1;
+      while (j < argv.length) {
+        const t = argv[j];
+        if (t === '--') {
+          j++;
+          break;
+        }
+        if (['-p', '--package', '-w', '--workspace', '-c'].includes(t)) {
+          j += 2;
+          continue;
+        }
+        if (t.startsWith('-')) {
+          j++;
+          continue;
+        }
+        break;
+      }
+      if (j < argv.length) {
+        resolvedBin = path.basename(argv[j]).toLowerCase().replace(/@.+$/, '');
+        binArgs = argv.slice(j + 1);
+      }
+    }
+
+    if (resolvedBin === 'lighthouse') {
+      const isInfoOnly = binArgs.some((t) =>
+        [
+          '--version',
+          '-V',
+          '-v',
+          '--help',
+          '-h',
+          '--list-all-audits',
+          '--list-locales',
+          '--list-trace-categories',
+        ].includes(t)
+      );
+      if (!isInfoOnly) {
+        summary.hasRealLighthouse = true;
+        let outputPath = '';
+        for (let k = 0; k < binArgs.length; k++) {
+          const t = binArgs[k];
+          if (t === '--output-path') {
+            outputPath = binArgs[k + 1] ?? '';
+            break;
+          }
+          if (t.startsWith('--output-path=')) {
+            outputPath = t.slice('--output-path='.length);
+            break;
+          }
+        }
+        const cleanedOut = outputPath.trim();
+        if (
+          !cleanedOut ||
+          cleanedOut.startsWith('-') ||
+          cleanedOut === 'stdout' ||
+          cleanedOut === '/dev/null'
+        ) {
+          summary.lighthouseMissingOutput = true;
+        }
+      }
+      continue;
+    }
+
+    if (['npm', 'pnpm', 'yarn', 'bun'].includes(cmdBase)) {
+      const rest = argv.slice(idx + 1);
+      if (rest.includes('dev:web')) {
+        summary.hasUnbundledWebDev = true;
+      } else if (
+        rest.includes('dev') &&
+        rest.some(
+          (t, i) =>
+            /(?:^|=)(?:apps\/web|@lazy-guy\/web)$/.test(t) ||
+            (['-w', '--workspace', '-C', '--prefix'].includes(t) &&
+              /(?:apps\/web|@lazy-guy\/web)$/.test(rest[i + 1] ?? ''))
+        )
+      ) {
+        summary.hasUnbundledWebDev = true;
+      }
+      continue;
+    }
+
+    if (resolvedBin === 'vite') {
+      const isInfoOnly = binArgs.some((t) => ['--version', '-v', '--help', '-h'].includes(t));
+      if (!isInfoOnly) {
+        let subcmd = '';
+        for (let k = 0; k < binArgs.length; k++) {
+          const t = binArgs[k];
+          if (['--port', '-p', '--host', '-c', '--config', '--mode', '-m', '--base', '--logLevel', '-l'].includes(t)) {
+            k++;
+            continue;
+          }
+          if (t.startsWith('-')) continue;
+          subcmd = t.toLowerCase();
+          break;
+        }
+        if (!subcmd || subcmd === 'dev' || subcmd === 'serve') {
+          summary.hasUnbundledWebDev = true;
+        }
+      }
+    }
+  }
+
+  return summary;
+}
+
+function inspectPerfAuditAndPreviewGuard(cmdNoComments, state) {
+  const info = analyzePerfAndDevCommand(cmdNoComments);
+  if (info.hasRealLighthouse && info.lighthouseMissingOutput) {
+    return {
+      decision: 'deny',
+      reason:
+        'Harness Perf Audit Lock: Lighthouse runs must persist a verifiable report file via --output-path=<file> (never stdout or /dev/null) and link the artifact to the user.',
+    };
+  }
+  if (info.hasRealLighthouse && info.hasUnbundledWebDev) {
+    return {
+      decision: 'deny',
+      reason:
+        'Harness Perf Audit Lock: Never run Lighthouse against an unbundled Vite dev server (dev:web / vite); build and serve via "npm run preview:web" (vite preview) instead.',
+    };
+  }
+  if ((state?.lastPerfAuditSeq || 0) > 0 && info.hasUnbundledWebDev && !info.hasAllowDevAfterPerf) {
+    return {
+      decision: 'deny',
+      reason:
+        'Harness Environment Parity Lock: This session ran a Lighthouse audit on a production build; starting unbundled dev:web (vite dev) for user inspection causes a dev-vs-prod score mismatch. Run "npm run preview:web" (vite preview) instead, or prefix ALLOW_DEV_AFTER_PERF=1 if HMR dev mode was explicitly requested and disclosed.',
+    };
+  }
+  return null;
+}
+
 function sanitizeBenignCurlDevNull(text) {
   return String(text ?? '').replace(
     /\s+(?:-[a-zA-Z]*o\s*|--output(?:=|\s+))\/dev\/null\b/g,
@@ -1122,6 +1372,11 @@ export function evaluateHookEvent(payload, options = {}) {
         return finish(gitDockerGuard);
       }
 
+      const perfGuard = inspectPerfAuditAndPreviewGuard(cmdNoComments, readExecState(rootDir, convKey));
+      if (perfGuard) {
+        return finish(perfGuard);
+      }
+
       const cmdMutates = hasShellMutation(cmd);
 
       if (
@@ -1259,6 +1514,13 @@ export function evaluateHookEvent(payload, options = {}) {
           }
         }
       }
+      const perfInfo = !effectiveErr ? analyzePerfAndDevCommand(stripShellComments(rawCmd)) : null;
+      const ranValidLighthouse = Boolean(
+        perfInfo?.hasRealLighthouse && !perfInfo.lighthouseMissingOutput
+      );
+      if (ranValidLighthouse) {
+        state.lastPerfAuditSeq = state.seq;
+      }
       if (mutatedCodePath) {
         state.lastCodeEditSeq = state.seq;
         state.lastCodeEditPath = mutatedCodePath;
@@ -1269,6 +1531,8 @@ export function evaluateHookEvent(payload, options = {}) {
         state.lastVerifyCommand = shortCmd;
         state.lastVerifyPassed = !effectiveErr;
         state.lastVerifyError = effectiveErr || null;
+        writeExecState(rootDir, convKey, state);
+      } else if (ranValidLighthouse) {
         writeExecState(rootDir, convKey, state);
       }
     }

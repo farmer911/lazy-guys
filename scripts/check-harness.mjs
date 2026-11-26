@@ -571,6 +571,22 @@ function validateEvaluationFile(rootDir, feat, errors, hasGitRepo) {
   }
 }
 
+function validatePackageScripts(rootDir, errors) {
+  const pkgPath = path.join(rootDir, 'package.json');
+  if (!fs.existsSync(pkgPath)) return;
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    const previewCmd = String(pkg?.scripts?.['preview:web'] ?? '').trim();
+    if (!previewCmd || !/\bbuild\b/.test(previewCmd) || !/\bpreview\b/.test(previewCmd)) {
+      errors.push(
+        'package.json must define scripts["preview:web"] building and serving the production web bundle (build + preview)'
+      );
+    }
+  } catch (err) {
+    errors.push(`package.json is not valid JSON: ${err.message}`);
+  }
+}
+
 export function validateHarness(rootDir) {
   const errors = [];
   const hasGitRepo = fs.existsSync(path.join(rootDir, '.git'));
@@ -584,6 +600,7 @@ export function validateHarness(rootDir) {
   validateHooks(rootDir, errors, hasGitRepo);
   validateGitTrackedSecrets(rootDir, errors, hasGitRepo);
   validateDockerCompose(rootDir, errors);
+  validatePackageScripts(rootDir, errors);
   validateStitchManifest(rootDir, errors);
 
   const ciPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
