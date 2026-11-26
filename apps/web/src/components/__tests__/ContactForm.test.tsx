@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import type { ContactSubmissionInput } from '@contracts/portfolio';
 import { ContactForm } from '@/components/ContactForm';
 import { portfolioApi } from '@/lib/api';
 
@@ -21,15 +22,23 @@ describe('ContactForm', () => {
     await user.click(screen.getByRole('button', { name: /send message/i }));
 
     expect(sendSpy).not.toHaveBeenCalled();
+    expect(nameInput).toHaveAttribute('aria-describedby', 'contact-name-error');
+    expect(messageInput).toHaveAttribute('aria-describedby', 'contact-message-error');
+    expect(screen.getAllByRole('alert').length).toBe(2);
 
+    const validPayload: ContactSubmissionInput = {
+      name: 'Jane',
+      email: 'recruiter@acme.com',
+      message: 'Open Senior Engineer role',
+    };
     sendSpy.mockResolvedValueOnce({ ok: true, receivedAt: '2026-11-22T00:00:00.000Z' });
     await user.clear(nameInput);
     await user.clear(messageInput);
-    await user.type(nameInput, 'Jane');
-    await user.type(messageInput, 'Open Senior Engineer role');
+    await user.type(nameInput, validPayload.name);
+    await user.type(messageInput, validPayload.message);
     await user.click(screen.getByRole('button', { name: /send message/i }));
 
-    expect(await screen.findByText(/message sent\. thank you!/i)).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(/message sent\. thank you!/i);
 
     sendSpy.mockRejectedValueOnce(new Error('Network failure'));
     await user.type(nameInput, 'Jane');

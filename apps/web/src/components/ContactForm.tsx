@@ -5,7 +5,7 @@ import { Send } from 'lucide-react';
 import {
   ContactSubmissionSchema,
   type ContactSubmissionInput,
-} from '../../../../specs/contracts/portfolio.js';
+} from '@contracts/portfolio';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { portfolioApi } from '@/lib/api';
@@ -71,11 +71,16 @@ export const ContactForm = () => {
                 <input
                   id="contact-name"
                   aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? 'contact-name-error' : undefined}
                   {...register('name')}
                   placeholder="Your name"
                   className={INPUT_CLASS_NAME}
                 />
-                {errors.name && <p className="text-xs text-rose-400">{errors.name.message}</p>}
+                {errors.name && (
+                  <p id="contact-name-error" role="alert" className="text-xs text-rose-400">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <label htmlFor="contact-email" className="block text-xs font-medium text-slate-300">
@@ -85,11 +90,16 @@ export const ContactForm = () => {
                   id="contact-email"
                   type="email"
                   aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'contact-email-error' : undefined}
                   {...register('email')}
                   placeholder="recruiter@company.com"
                   className={INPUT_CLASS_NAME}
                 />
-                {errors.email && <p className="text-xs text-rose-400">{errors.email.message}</p>}
+                {errors.email && (
+                  <p id="contact-email-error" role="alert" className="text-xs text-rose-400">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="space-y-1">
@@ -100,11 +110,16 @@ export const ContactForm = () => {
                 id="contact-message"
                 rows={3}
                 aria-invalid={Boolean(errors.message)}
+                aria-describedby={errors.message ? 'contact-message-error' : undefined}
                 {...register('message')}
                 placeholder="Role details or interview availability..."
                 className={INPUT_CLASS_NAME}
               />
-              {errors.message && <p className="text-xs text-rose-400">{errors.message.message}</p>}
+              {errors.message && (
+                <p id="contact-message-error" role="alert" className="text-xs text-rose-400">
+                  {errors.message.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={isSubmitting}>
@@ -112,7 +127,9 @@ export const ContactForm = () => {
                 {isSubmitting ? 'Sending...' : 'Send Message'}
               </Button>
               {submitted && (
-                <span className="text-sm text-emerald-400">Message sent. Thank you!</span>
+                <span role="status" className="text-sm text-emerald-400">
+                  Message sent. Thank you!
+                </span>
               )}
               {submitError && (
                 <p role="alert" className="text-sm text-rose-400">

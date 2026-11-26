@@ -18,7 +18,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@contracts/*": ["../../specs/contracts/*"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom/vitest"]
   },

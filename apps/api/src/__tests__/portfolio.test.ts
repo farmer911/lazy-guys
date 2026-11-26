@@ -1,7 +1,9 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   ContactSubmissionSchema,
@@ -171,5 +173,21 @@ describe('portfolio API integration', () => {
     const projects = (await projRes.json()) as Project[];
     const summary: ProjectSummary | undefined = projects[0];
     expect(summary?.slug).toBeTruthy();
+  });
+
+  it('compiles shared contracts and Express app to native ESM loadable from dist/', async () => {
+    const apiRoot = path.resolve(import.meta.dirname, '../..');
+    execFileSync('npm', ['run', 'build'], { cwd: apiRoot, stdio: 'pipe' });
+
+    const distContractPath = path.join(apiRoot, 'dist', 'specs', 'contracts', 'portfolio.js');
+    const distAppPath = path.join(apiRoot, 'dist', 'apps', 'api', 'src', 'app.js');
+    const contractJs = fs.readFileSync(distContractPath, 'utf8');
+    expect(contractJs).toContain('export const ContactSubmissionSchema');
+    expect(contractJs).not.toContain('exports.ContactSubmissionSchema');
+
+    const loaded = (await import(pathToFileURL(distAppPath).href)) as {
+      createApp?: unknown;
+    };
+    expect(typeof loaded.createApp).toBe('function');
   });
 });

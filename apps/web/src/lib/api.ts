@@ -7,7 +7,7 @@ import type {
   Project,
   ProjectSummary,
   TechStack,
-} from '../../../../specs/contracts/portfolio.js';
+} from '@contracts/portfolio';
 
 export type {
   ContactSubmissionAck,
