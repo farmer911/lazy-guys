@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 13:47
+**Last Updated:** 2026-11-26 17:22
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -71,6 +71,9 @@
   - Authored and `RED -> GREEN` subagent pressure-tested `.agents/skills/authoring-agent-knowledge/SKILL.md` (`80` lines) + `references/{guide-anatomy-and-router,pruning-and-scanner-spec}.md`, eliminating all 6 unguided baseline defects (orphan files, uninstalled `@ast-grep/cli` binary assumption, routing-table answer leakage, unpruned textbook tables, missing conditional JSON-subagent citation exemption, and `// ignore` anti-gaming pollution)
   - Dogfooded `authoring-agent-knowledge` to scaffold and author `.agents/skills/modern-fullstack-guidance/` (`62`-line Thin Router + `6` pruned guides + `4` `scanner-rules.json` rules); live read-only `scan` on `apps/web/src` surfaced `6` real line-exact hits (`AboutSection.tsx:32,39,45` `<Button>` in `<a>` and `ContactForm.tsx:68,87,104` bare `focus:outline-none`) with `0` false positives, and guided subagent `GREEN #2` eliminated both `<Button asChild>` hallucination and `document.body.style.overflow` scroll-lock bugs observed in `RED #2`
   - Synced both skills byte-for-byte to `~/.gemini/config/skills/`, exported standalone multi-agent plugin repository `/Users/phucnguyen/Dev/modern-fullstack-guidance`, and locked both in `scripts/check-harness.mjs` & `.agents/skills/using-superpowers/SKILL.md` (`20/20` repo skills passing)
+- [x] Role-Isolated Portable Knowledge Packs (`fe-kb`, `be-kb`, `arch-kb`, `qa-kb`) & Zero-Build End-to-End `Zod` Contracts (`134/134` automated tests):
+  - Installed `zod@4.6.7` + `@hookform/resolvers@7.0.9` (`0` vulnerabilities), authored shared zero-build contracts (`specs/contracts/{common,portfolio,package}.json/.ts` with `"type": "module"` native ESM compilation and `@contracts/*` Vite/Vitest/TS alias), and wired `POST /api/contact`, `apps/web/src/lib/api.ts`, and `ContactForm.tsx` (`zodResolver`, Vietnamese IME `isComposing` `Enter` guard, `focus-visible:ring-2`, `aria-describedby` + `role="alert"` / `role="status"`, and error-safe input preservation)
+  - Executed 4 unguided RED baseline probes across FE, BE, Arch, and QA, then built 4 strictly disjoint domain-knowledge git worktree branches (`feat/{fe,be,arch,qa}-kb`, `48` changed files, `0` merge collisions) merged cleanly via Octopus merge (`eb902bb`): `17` pruned First-Match Decision Tree guides (`73–105`L each), `8` static `scanner-rules.json` checks with `keepWhen`/`dropWhen`, `18` new TDD unit/integration tests (`scripts/{fe,be,arch,qa}-kb.test.mjs` + API/RTL), Role Skill + `apps/{web,api,e2e}/AGENTS.md` wiring (with strict JSON-mode citation suppression), Guided GREEN subagent uplift proof, and byte-identical sync to `~/.gemini/config/skills/{fe,be,arch,qa}-kb` (`24/24` repo skills passing)
 
 ### What's In Progress
 
@@ -93,20 +96,19 @@
 
 ## Files Modified This Session
 
-- `scripts/agent-hooks.mjs` & `scripts/agent-hooks.test.mjs` - Shell-AST git/docker/wrapper guard, command-substitution & subshell splitting, non-greedy `task-done` unwrap, exact `step_index` transcript verification, APFS case-insensitive & `[Message]` envelope hardening (`34/34` tests)
-- `scripts/check-harness.mjs` & `scripts/check-harness.test.mjs` - Oxc AST hygiene (`Record<string, any>`, `@ts-expect-error`, `console?.log`, `it.todo`/`test.fixme`/`it.skipIf`), `hooks.json` matcher lock, comment-stripped `.githooks`/`ci.yml` `|| :`/early `exit 0` checks, `specs/contracts` parse check, tightened `liveChecks`, missing-`SKILL.md` & static anti-hallucination skill gates (`34/34` tests)
-- `scripts/token-stats.mjs` & `init.sh` - `NaN`/malformed numeric token guard; `$&`-safe `.env` parsing & `127.0.0.1` wait loop
-- `.agents/workflows/{graph_core,project_init,feature_delivery,bugfix,test_graph_core}.py` - Fixed `build_evaluator_prompt` contract, `BUGFIX_TRIAGE_SCHEMA`, rollback-safe `finalize_done_after_eval`, `assert_role_diff_compliance` (`git diff -z`), `validate_agent_output`, `timeout=600`, `commonpath` guard, checkpoint resume across all 3 DAGs (`24/24` tests)
-- `.agents/skills/*` (`18` skills, `923` lines total, `37–89`L) - Fixed evaluator bold-markdown contract, `executing-plans/scripts/*`, `specs/{plans,designs}/` paths, `apps/{web,e2e}/AGENTS.md` wiring, `design-stitch-flow` manifest/schema contract, `brainstorming`/`self-evolve` red flags, `using-superpowers` routing, and cleaned vendored narrative drift
-- `AGENTS.md`, `designs/README.md`, `specs/contracts/README.md`, `.gitignore`, `.agents/STATE.md`, `progress.md`, `session-handoff.md` - Synced documentation, rules, and handoff state
+- `specs/contracts/{common.ts,portfolio.ts,package.json}` - Shared zero-build TypeScript response envelopes, single-hop DTO composition, and `Zod` v4 schemas compiled as native ESM
+- `apps/api/{package.json,tsconfig.json,src/config/env.ts,src/routes/portfolio.ts,src/__tests__/portfolio.test.ts}` - End-to-end `ContactSubmissionSchema` boundary validation, `dist/` ESM verification (`10/10` tests), and compiled `.env` resolution
+- `apps/web/{package.json,tsconfig.json,vite.config.ts,vitest.config.ts,src/lib/api.ts,src/components/ContactForm.tsx,src/components/__tests__/ContactForm.test.tsx}` - `@contracts/*` alias, `zodResolver`, Vietnamese IME `Enter` guard, `focus-visible:ring-2`, `aria-describedby` + `role="alert"` / `role="status"`, and input preservation (`6/6` tests)
+- `.agents/skills/{fe-kb,be-kb,arch-kb,qa-kb}/**` & `scripts/{fe,be,arch,qa}-kb.test.mjs` - 4 self-contained portable role Knowledge Packs (`17` guides, `8` scanner rules, `17` KB unit tests), synced byte-for-byte to `~/.gemini/config/skills/`
+- `.agents/skills/{fe-shadcn-clean,be-express-pg,tech-lead-contract,qa-vercel-audit,using-superpowers}/SKILL.md` & `apps/{web,api,e2e}/AGENTS.md` - Wired role-specific on-demand KB retrieval (with strict JSON citation suppression) and Tier-1 invariants
+- `specs/designs/2026-11-26-role-knowledge-packs-design.md`, `specs/plans/2026-11-26-role-knowledge-packs.md`, `init.sh`, `package.json`, `.agents/STATE.md`, `progress.md`, `session-handoff.md`
 
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks`, `127.0.0.1` Postgres on port 5434, idempotent `schema.sql`/`seed.sql`)
-- [x] `npm run check:harness`: pass (`20/20` skills `<= 250`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
+- [x] `npm run check:harness`: pass (`24/24` skills `<= 250`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`, 0 errors/warnings)
-- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness + `7` kb-cli = `75` Node + `24` Python workflow + `8` API PG integration + `5` Web RTL = `112/112` tests)
-- [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
-- [x] `npm run test:e2e`: pass (`2/2` Chromium E2E tests -> **`107/107` total automated tests**)
+- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness + `7` kb-cli + `17` role-kb = `92` Node + `24` Python workflow + `10` API PG integration + `6` Web RTL = `132/132` tests)
+- [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings, native ESM `dist/` verified)
+- [x] `npm run test:e2e`: pass (`2/2` Chromium E2E tests -> **`134/134` total automated tests**)
 - [x] `npm audit --audit-level=high`: `found 0 vulnerabilities`
-- [x] Independent 3-Round Adversarial Audit Certification: **Tier S (`9.5 / 10`)**, `0` Critical, `0` High, `0` Medium (`38/38` fresh stress probes `0` failures)

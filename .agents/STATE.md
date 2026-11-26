@@ -1,12 +1,12 @@
 # Active Task State
 
 ## Goal
-Build the `authoring-agent-knowledge` Meta-Skill (Full Kit with zero-dep Node ESM `kb-cli.mjs`: `init`, BM25 `search`, `.kbrc`-gated `retrieve`, `keepWhen`/`dropWhen` `scan`, `validate`), dogfood it to build `modern-fullstack-guidance`, sync both to Global (`~/.gemini/config/skills/`), export the standalone multi-agent plugin (`/Users/phucnguyen/Dev/modern-fullstack-guidance`), and lock repository harness gates.
+Design and implement 4 portable Role Knowledge Packs (`fe-kb`, `be-kb`, `arch-kb`, `qa-kb`) in isolated git worktree branches (`feat/fe-kb`, `feat/be-kb`, `feat/arch-kb`, `feat/qa-kb`) + end-to-end `zod` & `@hookform/resolvers` shared contract-to-BE-to-FE architecture across `lazy-guy`, merged cleanly onto `main`.
 
 ## Checklist
-- [x] Step 1 (RED Baselines): Verify `./init.sh` baseline, capture unguided subagent baselines for Meta-Skill & Fullstack Pack, and write failing `scripts/kb-cli.test.mjs`
-- [x] Step 2 (GREEN CLI): Implement zero-dep `.agents/skills/authoring-agent-knowledge/scripts/kb-cli.mjs` and pass `node --test scripts/kb-cli.test.mjs`
-- [x] Step 3 (GREEN Meta-Skill): Author `authoring-agent-knowledge/SKILL.md` + `references/*` addressing RED failures and verify with guided subagent
-- [x] Step 4 (GREEN Dogfood Pack): Scaffold & author `.agents/skills/modern-fullstack-guidance/` (`SKILL.md`, 6 pruned guides, `scanner-rules.json`, `.kbrc.json`), run live read-only `scan` on `apps/web/src`, and verify guided subagent uplift
-- [x] Step 5 (Sync & Export): Sync both skills byte-for-byte to `~/.gemini/config/skills/` and export `/Users/phucnguyen/Dev/modern-fullstack-guidance` via `--standalone-plugin`
-- [x] Step 6 (Harness Gate & Proof): Wire `using-superpowers`, `package.json`, `check-harness.mjs` + tests, update `progress.md` / `session-handoff.md`, run fresh `./init.sh`, and write `walkthrough.md`
+- [x] Step 1 (Alignment & Startup): Clarify scope/Zod/packaging decisions with user and verify `./init.sh` green baseline
+- [x] Step 2 (Written Design & Builder Check): Write `specs/designs/2026-11-26-role-knowledge-packs-design.md`, pass independent builder check, and obtain user approval
+- [x] Step 3 (Implementation Plan & Base Foundation): Author `specs/plans/2026-11-26-role-knowledge-packs.md`, complete Task 1 (`zod` + shared contracts) on `feat/kb-foundation`, capture 4 unguided RED baselines, and branch 4 isolated domain worktrees
+- [x] Step 4 (Parallel Domain Worktree Execution): Build & commit `feat/fe-kb`, `feat/be-kb`, `feat/arch-kb`, and `feat/qa-kb` with strict TDD and zero file overlap (`48` files, `0` collisions)
+- [x] Step 5 (Final Review & TDD Remediation): Pass Guided GREEN subagent verification, sync global packs (`~/.gemini/config/skills/`), run independent `Final Code Review`, and remediate all Critical/Important findings via RED -> GREEN TDD
+- [x] Step 6 (Main Integration & Cleanup): Merge all branches cleanly onto `main`, update `progress.md` & `session-handoff.md`, verify `./init.sh && npm run test:e2e && npm audit --audit-level=high`, and remove temporary `.worktrees/*` and branches

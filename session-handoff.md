@@ -21,17 +21,18 @@
 - [x] Completed final harness wrap-up: fixed quoted-string verification bypass (`stripQuotedStrings()`), removed last 4 stale skill references (`0` foreign/stale refs), added Anti-Sycophancy & ROI Pushback in `AGENTS.md`, and added `.agents/skills/self-evolve/SKILL.md` (`31`L, Rule-to-Script Promotion; `72/72` unit/integration tests)
 - [x] Completed full report fact-check, anti-hallucination & harness overhaul, and 3 independent adversarial audit rounds (`Round 1` Red-Team Security, `Round 2` Skill Suite & Pressure Testing, `Round 3 + 3b` Full-Platform Tier S Certification) — achieved certified **Tier S (`9.5 / 10`)** with `0` Critical, `0` High, `0` Medium findings across `107/107` automated tests, `18/18` skills (`923` lines total, `37–89`L, avg `51.3`L), and `38/38` fresh adversarial stress & false-positive probes
 - [x] Shipped Agent Knowledge Engineering Full Kit (`authoring-agent-knowledge` Meta-Skill + `kb-cli.mjs` + `modern-fullstack-guidance` Dogfood Pack): zero-dep Node ESM CLI (`init --standalone-plugin`, BM25 `search`, `.kbrc.json`-gated `retrieve`, `keepWhen`/`dropWhen` `scan`, non-orphan `validate`; `7/7` tests in `scripts/kb-cli.test.mjs`), `RED -> GREEN` pressure-tested both skills (`80`L & `62`L `SKILL.md`), synced byte-for-byte to `~/.gemini/config/skills/`, and exported standalone multi-agent plugin repo `/Users/phucnguyen/Dev/modern-fullstack-guidance` (`112/112` unit/integration tests, `20/20` skills passing)
+- [x] Shipped 4 Portable Role Knowledge Packs (`fe-kb`, `be-kb`, `arch-kb`, `qa-kb` — `17` pruned guides + `8` static scanner rules) & End-to-End Zero-Build `Zod` v4 Contracts (`specs/contracts/{common,portfolio,package}` -> `apps/api` -> `apps/web` `ContactForm` with `zodResolver`, Vietnamese IME `Enter` guard, `focus-visible:ring-2`, `aria-describedby` + `role="alert"`/`role="status"`), developed across isolated domain git worktrees with `0` merge conflicts, verified via Guided GREEN subagent uplift + independent Final Code Review, and synced byte-for-byte to `~/.gemini/config/skills/` (`134/134` automated tests, `24/24` skills passing)
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
 | Full Startup Gate | `./init.sh` | PASS | 0 errors, 0 warnings; `python3` verified, `127.0.0.1` PostgreSQL bound, `core.hooksPath=.githooks` + idempotent schema/seed applied |
-| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, secret-free git index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature DAG, Oxc AST hygiene (`apps/` + `specs/contracts/`), `20/20` skills (`<= 250`L), `stitch-manifest.json`, and `evaluations/feat-001..004.json` |
+| Mechanical + Evaluator Gate | `npm run check:harness` | PASS | Verified `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, secret-free git index, `127.0.0.1` Docker port, read-only CI permissions, single-active-feature DAG, Oxc AST hygiene (`apps/` + `specs/contracts/`), `24/24` skills (`<= 250`L), `stitch-manifest.json`, and `evaluations/feat-001..004.json` |
 | Typecheck | `npm run typecheck` | PASS | `apps/api`, `apps/web`, `apps/e2e` (`noUnusedLocals`/`Parameters`/`ImplicitReturns`/`Fallthrough`) |
-| Unit & Integration Suite | `npm run test:unit` | PASS | `34` agent-hooks + `34` check-harness + `7` kb-cli = `75` Node + `24` Python workflow + `8` API PG + `5` Web RTL = `112/112` passed |
-| Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings |
-| Playwright E2E | `npm run test:e2e` | PASS | `2/2` Chromium tests (`107/107` total automated tests) |
+| Unit & Integration Suite | `npm run test:unit` | PASS | `92` Node (`agent-hooks`, `check-harness`, `kb-cli`, `fe-kb`, `be-kb`, `arch-kb`, `qa-kb`) + `24` Python workflow + `10` API PG + `6` Web RTL = `132/132` passed |
+| Production Build | `npm run build` | PASS | Clean `dist/` builds with 0 warnings + native ESM contract load verified |
+| Playwright E2E | `npm run test:e2e` | PASS | `2/2` Chromium tests (`134/134` total automated tests) |
 | Security Audit | `npm audit --audit-level=high` | PASS | `found 0 vulnerabilities` |
 
 ## Files Changed
