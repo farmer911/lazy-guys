@@ -1,0 +1,34 @@
+{
+  "rules": [
+    {
+      "id": "playwright-one-shot-isvisible",
+      "guideId": "playwright-anti-flake-and-live-probing",
+      "pattern": "\\bexpect\\(\\s*await\\s+[^\\n;]*?\\.isVisible\\(\\s*\\)\\s*\\)",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],
+      "message": "One-shot expect(await locator.isVisible()) bypasses Playwright auto-retry and races async hydration; use await expect(locator).toBeVisible() or toBeHidden() (retrieve playwright-anti-flake-and-live-probing).",
+      "keepWhen": [
+        "Assertion intentionally inspects synchronous instantaneous visibility at a frozen page.clock tick after a deterministic DOM barrier has already resolved."
+      ],
+      "dropWhen": [
+        "Call invokes a non-Playwright domain method named isVisible(), or appears inside a string literal, comment, or scanner fixture."
+      ]
+    },
+    {
+      "id": "hardcoded-test-sleep",
+      "guideId": "playwright-anti-flake-and-live-probing",
+      "pattern": "\\bwaitForTimeout\\s*\\(",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],
+      "message": "Hardcoded waitForTimeout() slows suites and flakes under CI load; await web-first locator assertions or page.waitForResponse() instead (retrieve playwright-anti-flake-and-live-probing).",
+      "keepWhen": [
+        "Spec intentionally measures a real wall-clock debounce, throttle, or CSS transition window that page.clock fake timers cannot advance."
+      ],
+      "dropWhen": [
+        "Occurrence sits inside a code comment, documentation string, or scanner unit test fixture."
+      ]
+    }
+  ]
+}
