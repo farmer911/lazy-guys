@@ -89,6 +89,8 @@ function makeTempFixture() {
     'task-guardrail',
     'adversarial-audit',
     'self-evolve',
+    'authoring-agent-knowledge',
+    'modern-fullstack-guidance',
     'be-express-pg',
     'pm-prd-story',
     'design-stitch-flow',
@@ -99,12 +101,25 @@ function makeTempFixture() {
   ];
   for (const skillName of coreSkills) {
     fs.mkdirSync(path.join(dir, '.agents', 'skills', skillName), { recursive: true });
-    const body = skillName === 'evaluating-features' ? '# ok\nSee evaluator-prompt.md\n' : '# ok\n';
+    const body =
+      skillName === 'evaluating-features'
+        ? '# ok\nSee evaluator-prompt.md\n'
+        : skillName === 'authoring-agent-knowledge'
+          ? '# ok\nSee kb-cli.mjs\n'
+          : '# ok\n';
     fs.writeFileSync(
       path.join(dir, '.agents', 'skills', skillName, 'SKILL.md'),
       `---\nname: ${skillName}\ndescription: Use when testing ${skillName} skill presence. Not for unrelated tasks.\n---\n${body}`
     );
   }
+  fs.mkdirSync(
+    path.join(dir, '.agents', 'skills', 'authoring-agent-knowledge', 'scripts'),
+    { recursive: true }
+  );
+  fs.writeFileSync(
+    path.join(dir, '.agents', 'skills', 'authoring-agent-knowledge', 'scripts', 'kb-cli.mjs'),
+    '// cli\n'
+  );
   fs.writeFileSync(
     path.join(dir, '.agents', 'skills', 'evaluating-features', 'evaluator-prompt.md'),
     '# prompt\n'

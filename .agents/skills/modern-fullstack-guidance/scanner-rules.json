@@ -1,0 +1,67 @@
+{
+  "rules": [
+    {
+      "id": "no-button-inside-anchor",
+      "guideId": "interactive-link-button-semantics",
+      "pattern": "<a\\b[^>]*>\\s*<(?:Button|button)\\b",
+      "flags": "g",
+      "multiline": true,
+      "fileExtensions": [".tsx", ".jsx", ".html"],
+      "message": "Interactive <Button>/<button> nested inside <a> violates HTML5 content model and creates double tab stops; retrieve interactive-link-button-semantics.",
+      "keepWhen": [
+        "Never valid in rendered HTML5 DOM; refactor to a single <a> styled via buttonVariants() or verified Radix Slot."
+      ],
+      "dropWhen": [
+        "Match occurs inside a string literal, code comment, or negative test fixture deliberately asserting invalid markup."
+      ]
+    },
+    {
+      "id": "no-bare-focus-outline-none",
+      "guideId": "accessible-validation-and-ime",
+      "pattern": "\\bfocus:outline-none\\b",
+      "excludeLinePattern": "\\bfocus-visible:(?:ring|outline|border)",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".tsx", ".jsx"],
+      "message": "focus:outline-none removes keyboard focus indicator without a focus-visible replacement on the same line; retrieve accessible-validation-and-ime.",
+      "keepWhen": [
+        "Input sits inside a composite field wrapper that visibly highlights via parent has-[:focus-visible]:ring-* styling."
+      ],
+      "dropWhen": [
+        "A focus-visible:ring-* or focus-visible:outline-* utility is already applied on an adjacent line inside cn()/clsx()."
+      ]
+    },
+    {
+      "id": "no-json-roundtrip-clone",
+      "guideId": "modern-clone-sort-groupby-abort",
+      "pattern": "\\bJSON\\.parse\\(\\s*JSON\\.stringify\\(",
+      "excludeLinePattern": "\\btoWireJson\\b",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],
+      "message": "Avoid JSON.parse(JSON.stringify(...)) for in-memory cloning or sorting; retrieve modern-clone-sort-groupby-abort.",
+      "keepWhen": [
+        "Caller intentionally normalizes wire JSON by invoking .toJSON(), converting Date instances to ISO strings, or stripping undefined keys.",
+        "Input may contain functions, DOM nodes, or unwrapped reactive Proxy instances that throw DataCloneError in structuredClone."
+      ],
+      "dropWhen": [
+        "Match is in a serialization test fixture, generated SDK, or third-party vendor file."
+      ]
+    },
+    {
+      "id": "no-local-date-parse-iso-day",
+      "guideId": "postgres-utc-calendar-dates",
+      "pattern": "\\bnew\\s+Date\\(\\s*['\"]\\d{4}-\\d{2}-\\d{2}['\"]\\s*\\)",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".ts", ".tsx", ".js", ".jsx"],
+      "message": "new Date('YYYY-MM-DD') parses as UTC midnight and shifts calendar dates backward in negative UTC timezones; retrieve postgres-utc-calendar-dates.",
+      "keepWhen": [
+        "Result is exclusively read via getUTCFullYear/getUTCMonth/getUTCDate or formatted with explicit timeZone: 'UTC'."
+      ],
+      "dropWhen": [
+        "Test explicitly probes UTC-midnight vs local-timezone boundary behavior."
+      ]
+    }
+  ]
+}

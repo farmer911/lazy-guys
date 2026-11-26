@@ -2,7 +2,7 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 03:25
+**Last Updated:** 2026-11-26 13:47
 **Active Feature:** feat-005 - Recruiter Portfolio Polish
 
 ## Status
@@ -66,6 +66,11 @@
   - **Audit Round 2 (Independent Skill Suite & Pressure Testing — Grade `86/100` → remediated):** Closed `| sh`, `set +o pipefail`/`errexit`, `--list`/`--showConfig`/`vitest list`, `openSync`/`writeSync`/`child_process`/`subprocess`/`curl -O`/`wget`, and fixed false positives (`npm install`, `playwright install`, `curl -o /dev/null`, `>>/dev/null`, quoted commit messages); aligned all `18/18` `SKILL.md` files (`923` lines total, `37–89`L, avg `51.3`L) with zero routing contradictions, zero stale paths (`specs/plans/`, `specs/designs/`), zero vendored narrative drift, wired `apps/{web,e2e}/AGENTS.md` + `BUGFIX_TRIAGE_SCHEMA`, tightened `specs/contracts/*.ts` AST parsing & `liveChecks`, hardened `scripts/token-stats.mjs` (`NaN` guard), and fixed `executing-plans/scripts/{task-brief,sdd-workspace,task-start,task-done}`.
   - **Audit Round 3 + 3b Re-Verification (Independent Principal Platform Auditor — Certified Tier S `9.5/10`):** Closed bare `-- ` verification injection, quoted `git -c`/`--no-verify` via `splitShellSegments` + `tokenizeShellArgv`, 5 exit-masking & exact `step_index` transcript-stealing bypasses, `bugfix.py` pre-commit compatibility, `curl -o<file>`/`/usr/bin/install`/`io.FileIO`, `hooks.json` matcher narrowing & `|| :`/early `exit 0` in `.githooks`/`ci.yml`, `[Message]` envelope unwrap, `cd apps && sed -i`, `it.todo` & missing-`SKILL.md` checks, `project_init.py` checkpoint resume, `commonpath` guard, UTF-8 `git diff -z`, plus Round 3.5 `NEW-C1` (subshells/brace groups/`$()`/backticks/`export`/`declare`/`env -S`/`command -p`/`time`/`exec`/`nohup`/`nice`/`timeout`/`bash -ce`/`docker-compose`) and `NEW-C2` (non-greedy `unwrapTaskDoneCommand` + outer-chain rejection). Re-verified `38/38` fresh adversarial stress & false-positive probes (`0` failures).
   - **Pre-existing non-blocking backlog logged for `feat-005`:** `apps/web/src/components/AboutSection.tsx:31-49` nests `<Button>` inside `<a href>` (replace with `buttonVariants()` on `<a>` during `feat-005` alongside CV download CTA, `aria-pressed` filter state, and `ProjectsSection` card spacing).
+- [x] Agent Knowledge Engineering Full Kit (`authoring-agent-knowledge` Meta-Skill + `modern-fullstack-guidance` Dogfood Pack + Multi-Agent Plugin Export — `112/112` unit/integration tests):
+  - Built zero-dependency Node ESM CLI `.agents/skills/authoring-agent-knowledge/scripts/kb-cli.mjs` (`init` with `--standalone-plugin` multi-agent manifests, Field-Boosted BM25 `search` with camelCase/kebab splitting, `.kbrc.json`-gated `retrieve` with `> 9.5 KB` temp-file spillover, multiline & line-scoped `scan` with `keepWhen`/`dropWhen`, and mechanical non-orphan `validate`), backed by `7/7` TDD unit tests in `scripts/kb-cli.test.mjs` wired into `npm run test:unit`
+  - Authored and `RED -> GREEN` subagent pressure-tested `.agents/skills/authoring-agent-knowledge/SKILL.md` (`80` lines) + `references/{guide-anatomy-and-router,pruning-and-scanner-spec}.md`, eliminating all 6 unguided baseline defects (orphan files, uninstalled `@ast-grep/cli` binary assumption, routing-table answer leakage, unpruned textbook tables, missing conditional JSON-subagent citation exemption, and `// ignore` anti-gaming pollution)
+  - Dogfooded `authoring-agent-knowledge` to scaffold and author `.agents/skills/modern-fullstack-guidance/` (`62`-line Thin Router + `6` pruned guides + `4` `scanner-rules.json` rules); live read-only `scan` on `apps/web/src` surfaced `6` real line-exact hits (`AboutSection.tsx:32,39,45` `<Button>` in `<a>` and `ContactForm.tsx:68,87,104` bare `focus:outline-none`) with `0` false positives, and guided subagent `GREEN #2` eliminated both `<Button asChild>` hallucination and `document.body.style.overflow` scroll-lock bugs observed in `RED #2`
+  - Synced both skills byte-for-byte to `~/.gemini/config/skills/`, exported standalone multi-agent plugin repository `/Users/phucnguyen/Dev/modern-fullstack-guidance`, and locked both in `scripts/check-harness.mjs` & `.agents/skills/using-superpowers/SKILL.md` (`20/20` repo skills passing)
 
 ### What's In Progress
 
@@ -98,9 +103,9 @@
 ## Evidence of Completion
 
 - [x] `./init.sh`: exit code 0, 0 errors, 0 warnings (`core.hooksPath=.githooks`, `127.0.0.1` Postgres on port 5434, idempotent `schema.sql`/`seed.sql`)
-- [x] `npm run check:harness`: pass (`18/18` skills `37–89`L avg `51.3`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
+- [x] `npm run check:harness`: pass (`20/20` skills `<= 250`L, `hooks.json` matchers, `.githooks`/`ci.yml` unmasked gates, Oxc AST hygiene, `stitch-manifest.json`, `evaluations/feat-001..004.json` git-ancestor `PASS`)
 - [x] `npm run typecheck`: pass (`apps/api`, `apps/web`, `apps/e2e`, 0 errors/warnings)
-- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness = `68` Node + `24` Python workflow + `8` API PG integration + `5` Web RTL = `105/105` tests)
+- [x] `npm run test:unit`: pass (`34` agent-hooks + `34` check-harness + `7` kb-cli = `75` Node + `24` Python workflow + `8` API PG integration + `5` Web RTL = `112/112` tests)
 - [x] `npm run build`: pass (`apps/api` + `apps/web`, 0 warnings)
 - [x] `npm run test:e2e`: pass (`2/2` Chromium E2E tests -> **`107/107` total automated tests**)
 - [x] `npm audit --audit-level=high`: `found 0 vulnerabilities`

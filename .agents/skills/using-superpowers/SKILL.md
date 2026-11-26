@@ -22,6 +22,8 @@ Pick **one** mode — never stack both ceremonies on the same task:
    - Optional static git-diff review mid-branch → `requesting-code-review`
    - Audit / re-check / grade harness, skills, or architecture → `adversarial-audit`
    - User correction, reviewer bypass finding, or recurring bug → `self-evolve`
+   - Design, author, audit, or package domain knowledge bases / reference packs for agents → `authoring-agent-knowledge`
+   - Modern HTML/CSS/Dialog UI, accessible IME forms, modern JS APIs, or PostgreSQL UTC calendar dates → `modern-fullstack-guidance`
    - Pre-`"done"` live audit → `evaluating-features` (paired with `qa-vercel-audit` for live UI/a11y/Stitch verification; mandatory)
    - Branch integration, PR, or worktree cleanup after gates pass → `finishing-a-development-branch`
 3. **Skip skill ceremony** for pure Q&A, simple read-only code lookups, or single-line 1-file tweaks — answer directly with verified facts (never skip `adversarial-audit` when asked to audit, verify cleanliness, or grade the system).
