@@ -2,13 +2,18 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-26 20:33
-**Active Feature:** feat-005 - Recruiter Portfolio Polish
+**Last Updated:** 2026-11-26 21:44
+**Active Feature:** feat-005 - Electric Cobalt Multi-Page Portfolio, Contact JD (Link/PDF + Date), CV PDF Export & Daily Analytics (`ready-for-eval`, Evaluator Round 2 PASS `9/9/9/9` at `652c728`)
 
 ## Status
 
 ### What's Done
 
+- [x] `feat-005` Implementation & Live QA Evaluation (`652c728` — Evaluator Round 2 `3d9c147f` graded **PASS 9/9/9/9**, `0` blockingIssues):
+  - **Frozen Stitch Ground Truth (`designs/`):** Exported `9` HTML screen snapshots and dual-mode `Electric Cobalt Studio` Light/Dark tokens from Stitch `projects/15082605221977705976` into `designs/screens/*.html`, `designs/design-tokens.json`, and `designs/stitch-manifest.json`.
+  - **Database & Zero-Build Contracts (`db/`, `specs/contracts/portfolio.ts`):** Extended `profiles`, `experiences`, `projects` (`case_study` JSONB, `impact_metrics`, `category`, `tech_tags`) and added `contact_submissions` (with `idempotency_key`, `jd_type`, `jd_url`, `submitted_date DATE`), `contact_attachments` (`BYTEA`, `uploaded_date DATE`), `analytics_daily_metrics`, `analytics_daily_visitors`, and `analytics_daily_pages` with composite B-tree indexes.
+  - **Backend APIs (`apps/api`):** Added `GET /api/projects/:slug`, upgraded `POST /api/contact` (JSON + `multipart/form-data`, `%PDF-` magic-byte & 5 MB checks, UTC `submitted_date`, DB rate limit, single-statement Writable CTE) + `GET /api/contact/:id/jd-pdf`, dynamic `GET /api/cv/pdf` (`pdf-lib`, `Cache-Control: no-store`), and privacy-safe `POST /api/analytics/visit` (`SHA-256(utcDate+ip+ua)`) + `GET /api/analytics/daily` (`generate_series` zero-filled daily metrics) (`17/17` API PG tests).
+  - **Frontend Design System & 5 React Router Pages (`apps/web`):** Installed `react-router` (`^8.5.3`), configured Tailwind v4 `@custom-variant dark`, `:root`/`.dark` tokens, `@theme`, reusable global CSS classes in `apps/web/src/index.css` + `@media print`, zero-FOUC `<head>` theme script, refactored 2-tier components (`100%` arrow functions, `buttonVariants`, `SectionHeader`, `KpiMetricCard`, `FilterChipRail`, `ProjectBentoCard`, `Navbar` with `Escape` focus restore, `RecruiterFooterCta`, `ContactForm` with `aria-pressed` JD Link/PDF & UUID `idempotencyKey`), and route-lazy pages (`/`, `/projects`, `/case-study/:slug`, `/experience`, `/contact`) (`15/15` RTL tests, `0` build warnings, `4/4` Playwright E2E across `375x812`, `768x1024`, `1280x800`).
 - [x] `feat-001`: Monorepo, Docker PostgreSQL & `./init.sh` bootstrap — Evaluator `PASS` (`evaluations/feat-001.json`, 9/8/8/8)
 - [x] `feat-002`: PostgreSQL schema, seed & Express REST API — Evaluator `PASS` (`evaluations/feat-002.json`, 9/8/8/9 after fixing 3 defects surfaced in Round 1)
 - [x] `feat-003`: Portfolio UI & RTL tests — Evaluator `PASS` (`evaluations/feat-003.json`, 9/8/8/9 after fixing 4 mobile/timezone/form defects surfaced in Round 1)
@@ -83,13 +88,13 @@
 
 ### What's In Progress
 
-- [ ] `feat-005`: Recruiter Portfolio Polish (awaiting scope selection)
+- [ ] `feat-005`: Staged `ready-for-eval` at `652c728` (Evaluator Round 2 `3d9c147f` returned `PASS` `9/9/9/9`; `evaluations/feat-005.json` requires direct file persistence outside Generator hook lock)
 
 ### What's Next
 
 1. Run `./init.sh` to verify baseline health
-2. Choose `feat-005` enhancement (Evaluator noted CV download CTA, `aria-pressed` on tech stack filter buttons, and Project card alignment as high-value recruiter polish items)
-3. Implement via TDD -> stage `ready-for-eval` -> dispatch `feature-evaluator`
+2. Persist `evaluations/feat-005.json` from an unblocked Evaluator session and flip `feat-005` to `"done"` in `feature_list.json`
+3. Optional next feature: build `/analytics` frontend dashboard page consuming existing `GET /api/analytics/daily` endpoint
 
 ## Blockers / Risks
 
