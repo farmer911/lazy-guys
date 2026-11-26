@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "id": "concurrently-in-transaction-sql",
+      "guideId": "postgres-schema-indexing-and-migrations",
+      "pattern": "\\bBEGIN\\s*;(?:(?!\\bCOMMIT\\b)[\\s\\S])*?\\bCREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+CONCURRENTLY\\b",
+      "flags": "gi",
+      "multiline": true,
+      "fileExtensions": [".sql", ".ts", ".js", ".mjs"],
+      "message": "CREATE INDEX CONCURRENTLY inside a BEGIN...COMMIT transaction block aborts at runtime with SQLSTATE 25001; retrieve postgres-schema-indexing-and-migrations.",
+      "keepWhen": [
+        "Never valid inside an active PostgreSQL transaction block; split CREATE INDEX CONCURRENTLY into a standalone non-transactional migration step or use plain CREATE INDEX IF NOT EXISTS in bootstrap schema.sql."
+      ],
+      "dropWhen": [
+        "Match occurs inside SQL comments, markdown documentation strings, or a negative migration test deliberately asserting SQLSTATE 25001."
+      ]
+    },
+    {
+      "id": "in-memory-route-state-map",
+      "guideId": "scale-ready-stateless-design",
+      "pattern": "^(?:export\\s+)?(?:const|let)\\s+[A-Za-z0-9_$]+\\s*=\\s*new\\s+Map\\b",
+      "excludeLinePattern": "new\\s+Map\\s*(?:<[^>]*>)?\\s*\\(\\s*\\[",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".ts", ".js"],
+      "message": "Module-scoped mutable Map in API/service source diverges across horizontal replicas and risks unbounded memory growth; retrieve scale-ready-stateless-design.",
+      "keepWhen": [
+        "Module belongs to a single-process build script, CLI utility, or read-only registry populated once during process startup and never mutated per request."
+      ],
+      "dropWhen": [
+        "Occurrence lives in a unit/integration test mock, test fixture, or client-only ephemeral UI helper."
+      ]
+    }
+  ]
+}
