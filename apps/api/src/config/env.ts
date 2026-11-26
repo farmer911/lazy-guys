@@ -1,8 +1,12 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
 
+const srcEnvPath = path.resolve(import.meta.dirname, '../../../../.env');
+const distEnvPath = path.resolve(import.meta.dirname, '../../../../../../../.env');
+
 dotenv.config({
-  path: path.resolve(import.meta.dirname, '../../../../.env'),
+  path: fs.existsSync(srcEnvPath) ? srcEnvPath : distEnvPath,
   quiet: true,
 });
 

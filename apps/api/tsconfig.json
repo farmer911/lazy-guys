@@ -16,5 +16,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "../../specs/contracts/**/*.ts"]
+  "include": ["src", "../../specs/contracts/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }

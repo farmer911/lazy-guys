@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "rm -rf dist && tsc -p tsconfig.json --excludeFiles \"src/__tests__/**\"",
+    "build": "rm -rf dist && tsc -p tsconfig.json && rm -rf dist/apps/api/src/__tests__",
     "start": "node dist/apps/api/src/index.js",
-    "test": "vitest run src",
+    "test": "vitest run --dir src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
