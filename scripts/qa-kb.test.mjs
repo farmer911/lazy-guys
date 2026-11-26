@@ -151,3 +151,19 @@ test('qa-vercel-audit/SKILL.md and apps/e2e/AGENTS.md wire qa-kb CLI, strict QA_
   assert.match(e2eAgentsRaw, /whitespace/i);
   assert.match(e2eAgentsRaw, /scrollWidth\s*<=\s*(?:window\.)?innerWidth/);
 });
+
+test('qa-kb guides use zero-dep native fetch over supertest and scope multi-alert Playwright locators', () => {
+  const trophyRaw = fs.readFileSync(
+    path.join(QA_KB_DIR, 'guides', 'strategy', 'testing-trophy-and-high-signal-assertions.md'),
+    'utf8'
+  );
+  const adversarialRaw = fs.readFileSync(
+    path.join(QA_KB_DIR, 'guides', 'user-perspective', 'adversarial-ux-and-edge-case-matrix.md'),
+    'utf8'
+  );
+
+  assert.match(trophyRaw, /app\.listen\(\s*0/);
+  assert.doesNotMatch(trophyRaw, /with `supertest`/);
+  assert.match(trophyRaw, /getByRole\('alert'\)\.first\(\)/);
+  assert.match(adversarialRaw, /getByRole\('alert'\)\.first\(\)/);
+});

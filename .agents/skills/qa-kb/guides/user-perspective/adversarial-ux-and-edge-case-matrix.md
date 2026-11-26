@@ -27,7 +27,7 @@ test('rejects whitespace-only fields, ignores IME composition Enter, and blocks 
   await page.getByLabel('Email').fill('recruiter@acme.dev');
   await page.getByLabel('Message').fill('   \n\t  ');
   await page.getByRole('button', { name: /send message/i }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('alert').first()).toBeVisible();
 
   // 2. Vietnamese/CJK IME composition Enter (keyCode 229 / isComposing) must NOT prematurely submit
   const messageBox = page.getByLabel('Message');

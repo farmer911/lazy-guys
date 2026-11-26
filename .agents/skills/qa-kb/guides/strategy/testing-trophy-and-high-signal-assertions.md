@@ -15,7 +15,7 @@ Pick the first rule that matches. If unsure, use Rule 1.
 ### Rule 1: Allocate coverage across real boundaries (Testing Trophy)
 
 Put the bulk of verification in **integration** tests against real PostgreSQL and rendered component trees rather than isolated mocks:
-1. **API + Database Integration (`apps/api`):** Invoke real Express routers with `supertest` against a real test PostgreSQL schema/seed; assert HTTP status, response shape, and persisted SQL rows (`SELECT ...`).
+1. **API + Database Integration (`apps/api`):** Bind the real Express app to an ephemeral loopback port (`app.listen(0, '127.0.0.1')`) and call it via Node built-in `fetch` (zero external test-client dependencies) against a real PostgreSQL schema/seed; assert HTTP status, response shape, and persisted SQL rows (`SELECT ...`).
 2. **Stateful UI Integration (`apps/web`):** Drive real React components with `@testing-library/user-event` and assert accessible DOM transitions (`role="alert"`, `aria-pressed`, disabled states) without mocking child components.
 3. **Critical End-to-End Journeys (`apps/e2e`):** Run Playwright against the live Vite + Express + PostgreSQL `webServer` stack (`localhost:5173` -> `localhost:4000`).
 
@@ -35,13 +35,13 @@ test('client validation blocks malformed email without mutating live API', async
   await page.getByRole('button', { name: /send message/i }).click();
 
   // Settle on the rendered validation barrier FIRST before checking network count
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('alert').first()).toBeVisible();
   await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true');
   expect(contactPosts).toEqual([]);
 });
 ```
 
-- **DO** observe real requests passively via `page.on('request', ...)` and await the settled validation DOM barrier (`await expect(page.getByRole('alert')).toBeVisible()`) before asserting `expect(contactPosts).toEqual([])`.
+- **DO** observe real requests passively via `page.on('request', ...)` and await the settled validation DOM barrier (`await expect(page.getByRole('alert').first()).toBeVisible()`) before asserting `expect(contactPosts).toEqual([])`.
 - **DON'T** intercept `/api/*` with `page.route(...)` during happy-path or validation specs, and never assert `expect(apiCalled).toBe(false)` synchronously before async form validation settles.
 
 ### Rule 2: Use `page.route` strictly for fault injection that seed data cannot trigger
