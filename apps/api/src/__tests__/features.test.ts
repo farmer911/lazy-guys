@@ -163,6 +163,42 @@ describe('feat-005 backend APIs (project case study, contact JD link/pdf, CV PDF
     expect(rows[0]?.byte_size).toBe(VALID_PDF_BYTES.byteLength);
   });
 
+  it('accepts multipart submissions with empty optional strings and returns accurate 400 errors for invalid optional fields', async () => {
+    const emptyOptForm = new FormData();
+    emptyOptForm.set('name', 'Form User');
+    emptyOptForm.set('email', 'formuser@test-eval.dev');
+    emptyOptForm.set('message', 'Valid inquiry with blank optional fields.');
+    emptyOptForm.set('company', '');
+    emptyOptForm.set('engagementType', '');
+    emptyOptForm.set('compTier', '');
+    emptyOptForm.set('preferredSlot', '');
+    emptyOptForm.set('idempotencyKey', '');
+    emptyOptForm.set('jdUrl', '');
+
+    const okRes = await fetch(`${baseUrl}/contact`, {
+      method: 'POST',
+      body: emptyOptForm,
+    });
+    expect(okRes.status).toBe(201);
+    const okAck = (await okRes.json()) as ContactSubmissionAck;
+    expect(okAck.jdType).toBe('none');
+    if (okAck.id) createdContactIds.push(okAck.id);
+
+    const badEnumRes = await fetch(`${baseUrl}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Valid Name',
+        email: 'valid@test-eval.dev',
+        message: 'Valid message',
+        engagementType: 'part_time',
+      }),
+    });
+    expect(badEnumRes.status).toBe(400);
+    const badEnumBody = (await badEnumRes.json()) as ApiErrorResponse;
+    expect(badEnumBody.error).not.toBe('name, email, and message are required');
+  });
+
   it('rejects disguised non-PDF attachments, oversized PDFs, and simultaneous jdUrl + jdPdf', async () => {
     const fakePdfRes = await fetch(`${baseUrl}/contact`, {
       method: 'POST',
@@ -224,6 +260,7 @@ describe('feat-005 backend APIs (project case study, contact JD link/pdf, CV PDF
     expect(pdfRes.status).toBe(200);
     expect(pdfRes.headers.get('content-type')).toContain('application/pdf');
     expect(pdfRes.headers.get('content-disposition')).toContain('lazy-guy-resume.pdf');
+    expect(pdfRes.headers.get('cache-control')).toBe('no-store');
 
     const bytes = Buffer.from(await pdfRes.arrayBuffer());
     expect(bytes.subarray(0, 5).toString('ascii')).toBe('%PDF-');

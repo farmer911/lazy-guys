@@ -1,4 +1,4 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router } from 'express';
 import type {
   Experience,
   Profile,
@@ -6,15 +6,10 @@ import type {
   TechStack,
 } from '../../../../specs/contracts/portfolio.js';
 import { pool } from '../db/pool.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 import { generateResumePdf } from '../services/pdfResume.js';
 
 export const cvRouter = Router();
-
-const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    fn(req, res, next).catch(next);
-  };
 
 cvRouter.get(
   '/cv/pdf',
@@ -69,7 +64,7 @@ cvRouter.get(
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="lazy-guy-resume.pdf"');
-    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).send(Buffer.from(pdfBytes));
   })
 );

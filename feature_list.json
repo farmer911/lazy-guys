@@ -38,7 +38,7 @@
       "description": "Extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; add GET /api/projects/:slug, persistent POST /api/contact supporting JD URL or PDF upload with calendar date (YYYY-MM-DD) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf export via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily endpoints.",
       "dependencies": ["feat-004"],
       "status": "ready-for-eval",
-      "evidence": "./init.sh (16/16 API PG + 8/8 RTL + 95 Node + 24 Python) and 3/3 E2E passed; awaiting independent evaluator."
+      "evidence": "./init.sh (17/17 API PG + 8/8 RTL + 95 Node + 24 Python) and 3/3 E2E passed after Round 1 fixes; awaiting independent evaluator Round 2."
     },
     {
       "id": "feat-006",

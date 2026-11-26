@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Request } from 'express';
 import {
   AnalyticsVisitSchema,
   DailyAnalyticsQuerySchema,
@@ -8,14 +8,9 @@ import {
   type TopPageMetric,
 } from '../../../../specs/contracts/portfolio.js';
 import { pool } from '../db/pool.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const analyticsRouter = Router();
-
-const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    fn(req, res, next).catch(next);
-  };
 
 const computeVisitorHash = (req: Request): string => {
   const utcDate = new Date().toISOString().slice(0, 10);

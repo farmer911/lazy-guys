@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Request } from 'express';
 import { z } from 'zod';
 import {
   ContactSubmissionSchema,
@@ -9,16 +9,34 @@ import {
   type JdAttachmentType,
 } from '../../../../specs/contracts/portfolio.js';
 import { pool } from '../db/pool.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 export const portfolioRouter = Router();
 
 type DuplexRequestInit = RequestInit & { duplex: 'half' };
 
-const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    fn(req, res, next).catch(next);
-  };
+const OPTIONAL_CONTACT_FIELDS = [
+  'company',
+  'engagementType',
+  'compTier',
+  'preferredSlot',
+  'idempotencyKey',
+  'jdUrl',
+] as const;
+
+const normalizeContactPayload = (raw: unknown): Record<string, unknown> => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {};
+  }
+  const normalized: Record<string, unknown> = { ...(raw as Record<string, unknown>) };
+  for (const field of OPTIONAL_CONTACT_FIELDS) {
+    const val = normalized[field];
+    if (typeof val === 'string' && val.trim() === '') {
+      normalized[field] = undefined;
+    }
+  }
+  return normalized;
+};
 
 const parseMultipartContact = async (req: Request): Promise<Record<string, unknown>> => {
   const webBody = Readable.toWeb(req) as unknown as WebReadableStream;
@@ -51,17 +69,22 @@ const parseMultipartContact = async (req: Request): Promise<Record<string, unkno
   const fileEntry = form.get('jdPdf');
   if (fileEntry && typeof fileEntry === 'object' && 'arrayBuffer' in fileEntry) {
     const buf = Buffer.from(await fileEntry.arrayBuffer());
-    if (buf.byteLength > MAX_JD_PDF_BYTES) {
-      const err = new Error('Payload too large') as Error & { status?: number };
-      err.status = 413;
-      throw err;
+    if (buf.byteLength > 0) {
+      if (buf.byteLength > MAX_JD_PDF_BYTES) {
+        const err = new Error('Payload too large') as Error & { status?: number };
+        err.status = 413;
+        throw err;
+      }
+      const fileName =
+        'name' in fileEntry && typeof fileEntry.name === 'string' && fileEntry.name.trim()
+          ? fileEntry.name
+          : 'jd.pdf';
+      payload.jdPdf = {
+        fileName,
+        mimeType: fileEntry.type || 'application/pdf',
+        contentBase64: buf.toString('base64'),
+      };
     }
-    const fileName = 'name' in fileEntry && typeof fileEntry.name === 'string' ? fileEntry.name : 'jd.pdf';
-    payload.jdPdf = {
-      fileName,
-      mimeType: fileEntry.type || 'application/pdf',
-      contentBase64: buf.toString('base64'),
-    };
   }
 
   return payload;
@@ -190,24 +213,33 @@ portfolioRouter.post(
     }
 
     const contentType = String(req.headers['content-type'] ?? '').toLowerCase();
-    const rawPayload = contentType.includes('multipart/form-data')
-      ? await parseMultipartContact(req)
-      : (req.body ?? {});
+    const rawPayload = normalizeContactPayload(
+      contentType.includes('multipart/form-data')
+        ? await parseMultipartContact(req)
+        : (req.body ?? {})
+    );
 
     const parsed = ContactSubmissionSchema.safeParse(rawPayload);
     if (!parsed.success) {
       const emailFormatIssue = parsed.error.issues.find(
         (issue) => issue.path[0] === 'email' && issue.message === 'Valid email is required'
       );
-      const jdIssue = parsed.error.issues.find(
-        (issue) => issue.path[0] === 'jdUrl' || issue.path[0] === 'jdPdf'
+      const missingCoreIssue = parsed.error.issues.find(
+        (issue) =>
+          issue.path[0] === 'name' ||
+          issue.path[0] === 'message' ||
+          (issue.path[0] === 'email' && issue.message === 'Email is required') ||
+          (issue.path[0] === 'email' && issue.code === 'invalid_type')
       );
+      const firstIssue = parsed.error.issues[0];
       res.status(400).json({
         error: emailFormatIssue
           ? 'Valid email is required'
-          : jdIssue
-            ? jdIssue.message
-            : 'name, email, and message are required',
+          : missingCoreIssue
+            ? 'name, email, and message are required'
+            : firstIssue
+              ? `${firstIssue.path.length > 0 ? `${String(firstIssue.path[0])}: ` : ''}${firstIssue.message}`
+              : 'Invalid contact submission',
       });
       return;
     }
