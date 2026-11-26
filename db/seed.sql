@@ -7,7 +7,11 @@ INSERT INTO profiles (
   email,
   github_url,
   linkedin_url,
-  achievements
+  resume_url,
+  achievements,
+  availability_text,
+  calendar_url,
+  kpi_metrics
 ) VALUES (
   '11111111-1111-1111-1111-111111111111',
   'Lazy Guy',
@@ -17,14 +21,26 @@ INSERT INTO profiles (
   'hello@lazyguy.dev',
   'https://github.com/lazyguy',
   'https://linkedin.com/in/lazyguy',
+  '/api/cv/pdf',
   ARRAY[
     'Reduced API p95 latency by 45% via PostgreSQL indexing and query tuning',
     'Led migration to TypeScript monorepo with 90%+ E2E critical-path coverage',
     'Built internal design system adopted across 4 product squads'
-  ]
-) ON CONFLICT (id) DO NOTHING;
+  ],
+  'Open to Senior / Staff Roles',
+  'https://cal.com/lazyguy/20min',
+  '[
+    {"label": "API p95 Latency", "value": "-45%", "detail": "PostgreSQL composite B-tree indexing & CTE batching"},
+    {"label": "E2E Critical Coverage", "value": "94%", "detail": "Playwright Chromium + real PostgreSQL CI gates"},
+    {"label": "Lighthouse Production", "value": "100/100", "detail": "Zero-CLS skeletons & lazy-split route chunks"}
+  ]'::jsonb
+) ON CONFLICT (id) DO UPDATE SET
+  resume_url = EXCLUDED.resume_url,
+  availability_text = EXCLUDED.availability_text,
+  calendar_url = EXCLUDED.calendar_url,
+  kpi_metrics = EXCLUDED.kpi_metrics;
 
-INSERT INTO experiences (profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, sort_order)
+INSERT INTO experiences (profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, tech_tags, sort_order)
 SELECT
   v.profile_id::uuid,
   v.company,
@@ -35,6 +51,7 @@ SELECT
   v.is_current,
   v.summary,
   v.highlights,
+  v.tech_tags,
   v.sort_order
 FROM (
   VALUES
@@ -48,6 +65,7 @@ FROM (
       TRUE,
       'Architecting customer-facing web apps and scalable Node.js/PostgreSQL services.',
       ARRAY['Designed multi-tenant REST APIs serving 50k+ DAU', 'Established Playwright E2E gate in CI/CD'],
+      ARRAY['TypeScript', 'React 19', 'Node.js', 'PostgreSQL', 'Playwright'],
       1
     ),
     (
@@ -60,9 +78,10 @@ FROM (
       FALSE,
       'Built interactive dashboards with React, TypeScript, Tailwind CSS, and TanStack Query.',
       ARRAY['Cut bundle size by 32% with route-level code splitting', 'Implemented accessible UI primitives with shadcn/ui'],
+      ARRAY['React', 'Tailwind CSS', 'TanStack Query', 'Zustand', 'Vitest'],
       2
     )
-) AS v(profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, sort_order)
+) AS v(profile_id, company, role, location, start_date, end_date, is_current, summary, highlights, tech_tags, sort_order)
 WHERE NOT EXISTS (
   SELECT 1
   FROM experiences e
@@ -71,16 +90,44 @@ WHERE NOT EXISTS (
     AND e.role = v.role
 );
 
-INSERT INTO projects (profile_id, title, slug, summary, role, highlights, tech_tags, repo_url, live_url, featured, sort_order)
+UPDATE experiences
+SET tech_tags = CASE
+  WHEN company = 'Acme Tech' THEN ARRAY['TypeScript', 'React 19', 'Node.js', 'PostgreSQL', 'Playwright']
+  WHEN company = 'Beta Studio' THEN ARRAY['React', 'Tailwind CSS', 'TanStack Query', 'Zustand', 'Vitest']
+  ELSE tech_tags
+END
+WHERE profile_id = '11111111-1111-1111-1111-111111111111'
+  AND cardinality(tech_tags) = 0;
+
+INSERT INTO projects (profile_id, title, slug, category, summary, role, highlights, tech_tags, impact_metrics, case_study, repo_url, live_url, featured, sort_order)
 VALUES
   (
     '11111111-1111-1111-1111-111111111111',
     'Lazy Guy Portfolio Platform',
     'lazy-guy-portfolio',
+    'Full-Stack Web',
     'Recruiter-focused developer portfolio with live PostgreSQL data, REST API, and E2E test suite.',
     'Sole Author',
     ARRAY['Monorepo with React + Express + PostgreSQL', 'Automated RTL unit tests and Playwright smoke checks'],
     ARRAY['React', 'TypeScript', 'Tailwind CSS', 'Express', 'PostgreSQL', 'Playwright'],
+    '[
+      {"label": "API p95", "value": "14 ms", "detail": "Single-statement Writable CTEs"},
+      {"label": "CLS", "value": "0.000", "detail": "Geometry-matched loading skeletons"}
+    ]'::jsonb,
+    '{
+      "subtitle": "Zero-build Zod v4 contracts, stateless PostgreSQL analytics, and Electric Cobalt dual-theme UI.",
+      "bottleneck": "Recruiter portfolios often suffer from stale hardcoded JSON, CLS layout jumps during hydration, and timezone-shifted employment dates.",
+      "architectureFlow": ["Browser SPA (React 19 + Router)", "Shared Zod v4 Contracts", "Stateless Express 5 API", "PostgreSQL 16 Writable CTEs"],
+      "adrDecisions": [
+        {"title": "Zero-Build Monorepo Contracts", "decision": "Share specs/contracts/*.ts directly via NodeNext ESM and Vite aliases.", "tradeoff": "Avoids dual build pipelines while guaranteeing runtime/compile-time parity."},
+        {"title": "Stateless PostgreSQL Rollups", "decision": "Use SHA-256 daily visitor hashing + single-statement Writable CTEs instead of Redis.", "tradeoff": "Horizontally scalable with zero extra stateful infrastructure."}
+      ],
+      "benchmarks": [
+        {"metric": "Desktop Lighthouse", "before": "94 / 0.146 CLS", "after": "100 / 0.000 CLS"},
+        {"metric": "CV PDF Export", "before": "Static external file", "after": "< 15 ms live pdf-lib stream"}
+      ],
+      "nextSteps": "Add recruiter email webhook notifications when SMTP relay is configured."
+    }'::jsonb,
     'https://github.com/lazyguy/lazy-guy',
     'https://lazyguy.dev',
     TRUE,
@@ -90,16 +137,38 @@ VALUES
     '11111111-1111-1111-1111-111111111111',
     'Pulse Metrics Dashboard',
     'pulse-metrics',
+    'Backend & PostgreSQL',
     'Real-time observability board tracking API latency, error budgets, and deployment health.',
     'Lead Frontend',
     ARRAY['Sub-second polling with TanStack Query', 'Zero-downtime Docker Compose local dev'],
     ARRAY['React', 'Zustand', 'TanStack Query', 'Node.js', 'Docker'],
+    '[
+      {"label": "Query Speedup", "value": "4.2x", "detail": "Composite index (service, created_at, id)"},
+      {"label": "Bundle Cut", "value": "-32%", "detail": "Route-level React.lazy splitting"}
+    ]'::jsonb,
+    '{
+      "subtitle": "High-frequency telemetry visualization with deterministic keyset pagination and zero-drop error budgets.",
+      "bottleneck": "OFFSET pagination across millions of telemetry events degraded p95 latency beyond 650 ms under concurrent inserts.",
+      "architectureFlow": ["Telemetry Ingestor", "PostgreSQL Keyset Index", "Express Aggregation API", "TanStack Query UI"],
+      "adrDecisions": [
+        {"title": "Keyset Cursor Pagination", "decision": "Replaced OFFSET with (metric_ts, id) keyset cursors.", "tradeoff": "O(limit) index scan independent of page depth."},
+        {"title": "Selector-Scoped Zustand", "decision": "Split filter state into atomic selectors.", "tradeoff": "Eliminated sibling chart re-renders on range toggles."}
+      ],
+      "benchmarks": [
+        {"metric": "Feed p95 Query", "before": "650 ms (OFFSET)", "after": "18 ms (Keyset)"},
+        {"metric": "Initial JS Gzip", "before": "168 kB", "after": "114 kB"}
+      ],
+      "nextSteps": "Add automated SLO burn-rate alert rules."
+    }'::jsonb,
     'https://github.com/lazyguy/pulse-metrics',
     NULL,
     TRUE,
     2
   )
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE SET
+  category = EXCLUDED.category,
+  impact_metrics = EXCLUDED.impact_metrics,
+  case_study = EXCLUDED.case_study;
 
 INSERT INTO tech_stacks (profile_id, name, category, proficiency, years_exp, sort_order)
 SELECT
@@ -124,3 +193,10 @@ WHERE NOT EXISTS (
   WHERE t.profile_id = v.profile_id::uuid
     AND t.name = v.name
 );
+
+INSERT INTO analytics_daily_metrics (metric_date, total_views, unique_visitors, cv_downloads, contact_inquiries)
+VALUES
+  ((NOW() AT TIME ZONE 'UTC')::date - 3, 28, 16, 4, 1),
+  ((NOW() AT TIME ZONE 'UTC')::date - 2, 42, 23, 6, 2),
+  ((NOW() AT TIME ZONE 'UTC')::date - 1, 35, 19, 5, 1)
+ON CONFLICT (metric_date) DO NOTHING;

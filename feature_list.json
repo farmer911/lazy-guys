@@ -34,9 +34,17 @@
     },
     {
       "id": "feat-005",
-      "name": "Recruiter Portfolio Polish",
-      "description": "Add next user-facing enhancement (e.g., CV download, project detail modal, or admin CRUD) while maintaining 0-error/0-warning gate.",
+      "name": "Backend Schema, Contact JD (Link/PDF + Date), CV PDF Export & Daily Visitor Analytics APIs",
+      "description": "Extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; add GET /api/projects/:slug, persistent POST /api/contact supporting JD URL or PDF upload with calendar date (YYYY-MM-DD) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf export via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily endpoints.",
       "dependencies": ["feat-004"],
+      "status": "ready-for-eval",
+      "evidence": "./init.sh (16/16 API PG + 8/8 RTL + 95 Node + 24 Python) and 3/3 E2E passed; awaiting independent evaluator."
+    },
+    {
+      "id": "feat-006",
+      "name": "Electric Cobalt Multi-Page UI (Stitch Freeze, React Router, Light/Dark Tailwind v4 & Responsive Components)",
+      "description": "Freeze Stitch Electric Cobalt Studio (projects/15082605221977705976) into designs/, configure Light/Dark Tailwind v4 tokens + reusable global CSS in apps/web/src/index.css, build 2-tier reusable components, wire 5 React Router pages (/, /projects, /case-study/:slug, /experience, /contact) with JD link/PDF upload, CV PDF download, silent visit tracking, and responsive 375/768/1280 E2E.",
+      "dependencies": ["feat-005"],
       "status": "not-started",
       "evidence": ""
     }
