@@ -1,0 +1,6 @@
+# QA Knowledge Pack — Guide Index
+
+- [testing-trophy-and-high-signal-assertions.md](strategy/testing-trophy-and-high-signal-assertions.md) — Testing Trophy layer allocation, real PostgreSQL + live-stack E2E integration, fault-only `page.route` rules, and banning mock-echo or source-grep tests.
+- [adversarial-ux-and-edge-case-matrix.md](user-perspective/adversarial-ux-and-edge-case-matrix.md) — User-perspective destructive probes: rapid double-submit races, whitespace-only strings, 500-char unbroken overflow, Vietnamese IME `Enter`, literal `<script>` rendering, and non-destructive `400`/`500` input preservation.
+- [accessibility-focus-and-responsive-probes.md](ui-audit/accessibility-focus-and-responsive-probes.md) — Programmatic keyboard `Tab`/`Shift+Tab` + `:focus-visible` probes, modal focus traps & `Escape` restoration, ARIA state contracts, and live `1280x800` + `375x812` `scrollWidth <= innerWidth` assertions.
+- [playwright-anti-flake-and-live-probing.md](e2e/playwright-anti-flake-and-live-probing.md) — Accessible locators, auto-retrying `toBeVisible()` over one-shot `isVisible()`, network/DOM synchronization over `waitForTimeout()`, and `beforeEach`/`afterEach` `console.error` + `pageerror` + `5xx` collectors.
