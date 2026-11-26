@@ -38,7 +38,7 @@
       "description": "Freeze Stitch Electric Cobalt Studio (projects/15082605221977705976) into designs/; extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; implement GET /api/projects/:slug, persistent POST /api/contact (JD URL or PDF upload <= 5MB with YYYY-MM-DD submitted_date) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily; build Light/Dark Tailwind v4 + global CSS design system, 2-tier reusable components, and 5 responsive React Router pages (/, /projects, /case-study/:slug, /experience, /contact).",
       "dependencies": ["feat-004"],
       "status": "ready-for-eval",
-      "evidence": "./init.sh (95 Node + 24 Python + 17/17 API PG + 14/14 Web RTL) and 4/4 Playwright E2E passed with 0 warnings; awaiting independent evaluator."
+      "evidence": "./init.sh (95 Node + 24 Python + 17/17 API PG + 15/15 Web RTL) and 4/4 Playwright E2E passed after Round 1 QA fixes; awaiting evaluator Round 2."
     }
   ]
 }

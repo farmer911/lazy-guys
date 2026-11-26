@@ -106,7 +106,10 @@ describe('ContactForm', () => {
     await user.type(screen.getByLabelText(/email/i), 'sarah@scaleup.io');
     await user.type(screen.getByLabelText(/message/i), 'Staff Full-Stack inquiry');
 
-    await user.click(screen.getByRole('button', { name: /jd link/i }));
+    const jdLinkBtn = screen.getByRole('button', { name: /jd link/i });
+    expect(jdLinkBtn).toHaveAttribute('aria-pressed', 'false');
+    await user.click(jdLinkBtn);
+    expect(jdLinkBtn).toHaveAttribute('aria-pressed', 'true');
     await user.type(screen.getByLabelText(/jd url/i), 'https://boards.greenhouse.io/scaleup/123');
     await user.click(screen.getByRole('button', { name: /send message/i }));
 
@@ -115,6 +118,7 @@ describe('ContactForm', () => {
         name: 'Sarah Jenkins',
         jdUrl: 'https://boards.greenhouse.io/scaleup/123',
         preferredSlot: 'Thursday · 02:00 PM ICT',
+        idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/i),
       })
     );
 

@@ -75,9 +75,10 @@ export const ContactPage = ({ profile }: ContactPageProps) => {
                   <Button
                     key={slot}
                     type="button"
+                    aria-pressed={active}
                     variant={active ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setSelectedSlot(slot)}
+                    onClick={() => setSelectedSlot(active ? '' : slot)}
                     className={cn('w-full justify-between text-left')}
                   >
                     <span>{slot}</span>

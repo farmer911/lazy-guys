@@ -118,7 +118,9 @@ describe('AppRoutes multi-page navigation & views', () => {
     renderRoute('/projects');
 
     expect(await screen.findByText('Lazy Guy Portfolio Platform')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /selected engineering work/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: /selected engineering work/i })
+    ).toBeInTheDocument();
     expect(screen.getByText('Pulse Metrics Dashboard')).toBeInTheDocument();
 
     const backendBtn = screen.getByRole('button', { name: /backend & postgresql/i });
@@ -137,6 +139,16 @@ describe('AppRoutes multi-page navigation & views', () => {
     expect(screen.getByText('Hydration CLS jumps and timezone-shifted dates.')).toBeInTheDocument();
   });
 
+  it('renders Case study not found for unknown /case-study/:slug instead of falling back', async () => {
+    vi.spyOn(portfolioApi, 'getProjectBySlug').mockRejectedValueOnce(new Error('404'));
+    renderRoute('/case-study/nonexistent-slug-999');
+
+    expect(await screen.findByText(/case study not found/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Lazy Guy Portfolio Platform' })
+    ).not.toBeInTheDocument();
+  });
+
   it('renders /experience with PDF Resume download CTA and interactive skillset matrix', async () => {
     renderRoute('/experience');
 
@@ -151,7 +163,9 @@ describe('AppRoutes multi-page navigation & views', () => {
     renderRoute('/contact');
 
     const slotBtn = await screen.findByRole('button', { name: /thursday · 02:00 pm ict/i });
+    expect(slotBtn).toHaveAttribute('aria-pressed', 'false');
     await user.click(slotBtn);
+    expect(slotBtn).toHaveAttribute('aria-pressed', 'true');
 
     expect(screen.getByLabelText(/preferred slot/i)).toHaveValue('Thursday · 02:00 PM ICT (UTC+7)');
   });

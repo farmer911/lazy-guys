@@ -43,5 +43,9 @@ describe('Navbar', () => {
     expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
     await user.click(menuBtn);
     expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(menuBtn).toHaveFocus();
   });
 });

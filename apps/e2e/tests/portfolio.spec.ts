@@ -41,7 +41,9 @@ test.describe('Electric Cobalt Portfolio E2E', () => {
       .toBe(isNowDark);
 
     await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Projects' }).click();
-    await expect(page.getByRole('heading', { name: /selected engineering work/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: /selected engineering work/i })
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Lazy Guy Portfolio Platform' })).toBeVisible();
 
     await page.getByRole('link', { name: /read case study/i }).first().click();
@@ -84,6 +86,9 @@ test.describe('Electric Cobalt Portfolio E2E', () => {
     const menuBtn = page.getByRole('button', { name: /toggle navigation menu/i });
     await menuBtn.click();
     await expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+    await expect(menuBtn).toBeFocused();
   });
 
   test('exposes SEO metadata, valid robots.txt, SVG favicon, and lazy-loaded contact form on scroll', async ({
@@ -133,11 +138,16 @@ test.describe('Electric Cobalt Portfolio E2E', () => {
     expect(pdfBytes.subarray(0, 5).toString('ascii')).toBe('%PDF-');
 
     await page.goto('/contact');
-    await page.getByRole('button', { name: /thursday · 02:00 pm ict/i }).click();
+    const slotBtn = page.getByRole('button', { name: /thursday · 02:00 pm ict/i });
+    await expect(slotBtn).toHaveAttribute('aria-pressed', 'false');
+    await slotBtn.click();
+    await expect(slotBtn).toHaveAttribute('aria-pressed', 'true');
     await page.getByLabel('Name').fill('E2E Recruiter');
     await page.getByLabel('Email').fill('e2e-link@acme.dev');
     await page.getByLabel('Message').fill('Live E2E inquiry with JD URL');
-    await page.getByRole('button', { name: /jd link/i }).click();
+    const jdLinkBtn = page.getByRole('button', { name: /jd link/i });
+    await jdLinkBtn.click();
+    await expect(jdLinkBtn).toHaveAttribute('aria-pressed', 'true');
     await page.getByLabel(/jd url/i).fill('https://boards.greenhouse.io/acme/jobs/101');
     await page.getByRole('button', { name: /send message/i }).click();
     await expect(page.getByRole('status').filter({ hasText: /message sent/i })).toBeVisible();

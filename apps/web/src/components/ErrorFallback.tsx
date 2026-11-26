@@ -7,15 +7,15 @@ export const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   const message = error instanceof Error ? error.message : String(error);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-slate-50">
-      <Card className="w-full max-w-md border-rose-500/40">
+    <div className="flex min-h-screen items-center justify-center bg-canvas p-4 text-ink">
+      <Card className="w-full max-w-md border-status-err/40">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-rose-400">
+          <CardTitle className="flex items-center gap-2 text-status-err">
             <AlertTriangle className="h-5 w-5" /> Something went wrong
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-slate-300">{message}</p>
+          <p className="text-sm text-ink-secondary">{message}</p>
           <Button onClick={resetErrorBoundary} size="sm">
             Try again
           </Button>
@@ -23,4 +23,4 @@ export const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
       </Card>
     </div>
   );
-}
+};

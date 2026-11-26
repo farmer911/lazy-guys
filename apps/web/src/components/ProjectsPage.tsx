@@ -47,6 +47,7 @@ export const ProjectsPage = ({ projects, isLoading }: ProjectsPageProps) => {
     <div className="space-y-10">
       <div className="space-y-4">
         <SectionHeader
+          as="h1"
           eyebrow="Shipped Work Catalog"
           title="Selected Engineering Work"
           description="Production systems built with measurable latency targets, strict TypeScript hygiene, and full end-to-end test gates."

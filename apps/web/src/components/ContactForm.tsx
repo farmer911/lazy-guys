@@ -57,6 +57,11 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
   const [jdPdf, setJdPdf] = useState<JdPdfAttachmentInput | undefined>(undefined);
   const [jdFileError, setJdFileError] = useState<string | null>(null);
   const [localSlot, setLocalSlot] = useState(preferredSlot ?? '');
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : undefined
+  );
 
   const effectiveSlot = onSlotChange ? (preferredSlot ?? '') : localSlot;
 
@@ -128,11 +133,16 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
 
   const onSubmit = async (values: ContactSubmissionInput) => {
     if (jdMode === 'pdf' && jdFileError) return;
+    if (jdMode === 'pdf' && !jdPdf) {
+      setJdFileError('Please select a valid PDF file or switch JD mode.');
+      return;
+    }
     setSubmittedInfo(null);
     setSubmitError(null);
 
     const payload: ContactSubmissionInput = {
       ...values,
+      idempotencyKey,
       preferredSlot: effectiveSlot.trim() || undefined,
       jdUrl: jdMode === 'link' ? values.jdUrl?.trim() || undefined : undefined,
       jdPdf: jdMode === 'pdf' ? jdPdf : undefined,
@@ -156,6 +166,9 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
       });
       setJdPdf(undefined);
       setJdMode('none');
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        setIdempotencyKey(crypto.randomUUID());
+      }
       if (onSlotChange) onSlotChange('');
       else setLocalSlot('');
     } catch {
@@ -313,6 +326,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                   <Button
                     type="button"
                     size="sm"
+                    aria-pressed={jdMode === 'none'}
                     variant={jdMode === 'none' ? 'default' : 'outline'}
                     onClick={() => switchJdMode('none')}
                   >
@@ -321,6 +335,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                   <Button
                     type="button"
                     size="sm"
+                    aria-pressed={jdMode === 'link'}
                     variant={jdMode === 'link' ? 'default' : 'outline'}
                     onClick={() => switchJdMode('link')}
                   >
@@ -330,6 +345,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                   <Button
                     type="button"
                     size="sm"
+                    aria-pressed={jdMode === 'pdf'}
                     variant={jdMode === 'pdf' ? 'default' : 'outline'}
                     onClick={() => switchJdMode('pdf')}
                   >

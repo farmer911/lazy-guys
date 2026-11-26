@@ -14,15 +14,18 @@ interface CaseStudyPageProps {
 
 export const CaseStudyPage = ({ projects }: CaseStudyPageProps) => {
   const { slug } = useParams();
+  const hasExplicitSlug = Boolean(slug);
   const activeSlug = slug || projects[0]?.slug || 'lazy-guy-portfolio';
 
-  const { data: project, isPending } = useQuery<Project>({
+  const { data: project, isPending, isError } = useQuery<Project>({
     queryKey: ['project', activeSlug],
     queryFn: () => portfolioApi.getProjectBySlug(activeSlug),
     retry: false,
   });
 
-  const resolvedProject = project ?? projects.find((p) => p.slug === activeSlug) ?? projects[0];
+  const resolvedProject = hasExplicitSlug
+    ? project ?? (isError ? undefined : projects.find((p) => p.slug === slug))
+    : project ?? projects[0];
   const cs = resolvedProject?.case_study;
 
   return (

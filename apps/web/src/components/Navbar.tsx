@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Download, Menu, Moon, Sun, Terminal, X } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -16,8 +16,21 @@ const NAV_ITEMS = [
 
 export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const theme = usePortfolioStore((state) => state.theme);
   const toggleTheme = usePortfolioStore((state) => state.toggleTheme);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   const linkClassName = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -73,6 +86,7 @@ export const Navbar = () => {
           </a>
 
           <Button
+            ref={menuButtonRef}
             type="button"
             variant="outline"
             size="icon"
