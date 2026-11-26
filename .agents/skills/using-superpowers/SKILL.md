@@ -24,6 +24,10 @@ Pick **one** mode — never stack both ceremonies on the same task:
    - User correction, reviewer bypass finding, or recurring bug → `self-evolve`
    - Design, author, audit, or package domain knowledge bases / reference packs for agents → `authoring-agent-knowledge`
    - Modern HTML/CSS/Dialog UI, accessible IME forms, modern JS APIs, or PostgreSQL UTC calendar dates → `modern-fullstack-guidance`
+   - Frontend React `useEffect` boundaries, 2-tier component granularity, anti-props-drilling, `interface` vs `type`, or Zod + React Hook Form patterns → `fe-kb`
+   - Backend Express/PostgreSQL query optimization, N+1 elimination, `pool.connect()` transactions, `ON CONFLICT` concurrency, or Zod API boundary validation → `be-kb`
+   - System architecture, stateless horizontal scaling, shared API response envelopes & DTO composition, or PostgreSQL composite indexing → `arch-kb`
+   - QA testing strategy, adversarial user edge-case matrices, live DOM accessibility/responsive probes, or Playwright anti-flake patterns → `qa-kb`
    - Pre-`"done"` live audit → `evaluating-features` (paired with `qa-vercel-audit` for live UI/a11y/Stitch verification; mandatory)
    - Branch integration, PR, or worktree cleanup after gates pass → `finishing-a-development-branch`
 3. **Skip skill ceremony** for pure Q&A, simple read-only code lookups, or single-line 1-file tweaks — answer directly with verified facts (never skip `adversarial-audit` when asked to audit, verify cleanliness, or grade the system).

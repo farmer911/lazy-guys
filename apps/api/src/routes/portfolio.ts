@@ -1,9 +1,8 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
+import { ContactSubmissionSchema } from '../../../../specs/contracts/portfolio.js';
 import { pool } from '../db/pool.js';
 
 export const portfolioRouter = Router();
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const asyncHandler =
   (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
@@ -80,15 +79,16 @@ portfolioRouter.get(
 );
 
 portfolioRouter.post('/contact', (req, res) => {
-  const { name, email, message } = req.body ?? {};
-  const isNonEmpty = (val: unknown): val is string =>
-    typeof val === 'string' && val.trim().length > 0;
-  if (!isNonEmpty(name) || !isNonEmpty(email) || !isNonEmpty(message)) {
-    res.status(400).json({ error: 'name, email, and message are required' });
-    return;
-  }
-  if (!EMAIL_RE.test(email.trim())) {
-    res.status(400).json({ error: 'Valid email is required' });
+  const parsed = ContactSubmissionSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    const emailFormatIssue = parsed.error.issues.find(
+      (issue) => issue.path[0] === 'email' && issue.message === 'Valid email is required'
+    );
+    res.status(400).json({
+      error: emailFormatIssue
+        ? 'Valid email is required'
+        : 'name, email, and message are required',
+    });
     return;
   }
   res.status(201).json({

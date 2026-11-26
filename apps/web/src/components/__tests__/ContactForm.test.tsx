@@ -39,6 +39,44 @@ describe('ContactForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/failed to send/i);
     expect(screen.queryByText(/message sent\. thank you!/i)).not.toBeInTheDocument();
+    expect(nameInput).toHaveValue('Jane');
+    expect(emailInput).toHaveValue('recruiter@acme.com');
+    expect(messageInput).toHaveValue('Follow-up note');
+
+    sendSpy.mockRestore();
+  });
+
+  it('suppresses premature Enter submit during Vietnamese IME composition and preserves focus-visible rings', async () => {
+    const user = userEvent.setup();
+    const sendSpy = vi.spyOn(portfolioApi, 'sendContact').mockResolvedValue({
+      ok: true,
+      receivedAt: '2026-11-26T00:00:00.000Z',
+    });
+
+    render(<ContactForm />);
+
+    const nameInput = screen.getByLabelText(/name/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const messageInput = screen.getByLabelText(/message/i);
+
+    expect(nameInput.className).toMatch(/focus-visible:ring/);
+    expect(emailInput.className).toMatch(/focus-visible:ring/);
+    expect(messageInput.className).toMatch(/focus-visible:ring/);
+
+    await user.type(nameInput, 'Nguyễn Phúc');
+    await user.type(emailInput, 'phuc@acme.vn');
+    await user.type(messageInput, 'Trao đổi vị trí Senior');
+
+    const composingEnter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      code: 'Enter',
+      bubbles: true,
+      cancelable: true,
+      isComposing: true,
+    });
+    const allowed = nameInput.dispatchEvent(composingEnter);
+    expect(allowed).toBe(false);
+    expect(sendSpy).not.toHaveBeenCalled();
 
     sendSpy.mockRestore();
   });

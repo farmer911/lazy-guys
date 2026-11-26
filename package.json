@@ -12,7 +12,7 @@
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "check:harness": "node scripts/check-harness.mjs",
     "stats:tokens": "node scripts/token-stats.mjs",
-    "test:unit": "node --test scripts/check-harness.test.mjs scripts/agent-hooks.test.mjs scripts/kb-cli.test.mjs && PYTHONPATH=.agents/workflows python3 -m unittest discover -s .agents/workflows -p \"test_*.py\" && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
+    "test:unit": "node --test scripts/*.test.mjs && PYTHONPATH=.agents/workflows python3 -m unittest discover -s .agents/workflows -p \"test_*.py\" && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
     "test:e2e": "npm run test --workspace=apps/e2e",
     "typecheck": "npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/e2e"
   }

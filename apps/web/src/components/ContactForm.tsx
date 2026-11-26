@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Send } from 'lucide-react';
+import {
+  ContactSubmissionSchema,
+  type ContactSubmissionInput,
+} from '../../../../specs/contracts/portfolio.js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { portfolioApi } from '@/lib/api';
 
-interface ContactFormValues {
-  name: string;
-  email: string;
-  message: string;
-}
+const INPUT_CLASS_NAME =
+  'w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:border-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40';
 
 export const ContactForm = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -19,19 +21,22 @@ export const ContactForm = () => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ContactFormValues>({
+  } = useForm<ContactSubmissionInput>({
+    resolver: zodResolver(ContactSubmissionSchema),
     defaultValues: { name: '', email: '', message: '' },
   });
 
-  const onSubmit = async (values: ContactFormValues) => {
+  const handleCompositionEnter = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.keyCode === 229)) {
+      event.preventDefault();
+    }
+  };
+
+  const onSubmit = async (values: ContactSubmissionInput) => {
     setSubmitted(false);
     setSubmitError(null);
     try {
-      await portfolioApi.sendContact({
-        name: values.name.trim(),
-        email: values.email.trim(),
-        message: values.message.trim(),
-      });
+      await portfolioApi.sendContact(values);
       setSubmitted(true);
       reset();
     } catch {
@@ -52,7 +57,12 @@ export const ContactForm = () => {
           <CardDescription>Send a direct note about roles, interviews, or projects.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4" noValidate>
+          <form
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
+            onKeyDown={handleCompositionEnter}
+            className="space-y-4"
+            noValidate
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <label htmlFor="contact-name" className="block text-xs font-medium text-slate-300">
@@ -60,12 +70,10 @@ export const ContactForm = () => {
                 </label>
                 <input
                   id="contact-name"
-                  {...register('name', {
-                    required: 'Name is required',
-                    validate: (v) => v.trim().length > 0 || 'Name is required',
-                  })}
+                  aria-invalid={Boolean(errors.name)}
+                  {...register('name')}
                   placeholder="Your name"
-                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-400 focus:outline-none"
+                  className={INPUT_CLASS_NAME}
                 />
                 {errors.name && <p className="text-xs text-rose-400">{errors.name.message}</p>}
               </div>
@@ -76,15 +84,10 @@ export const ContactForm = () => {
                 <input
                   id="contact-email"
                   type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Valid email is required',
-                    },
-                  })}
+                  aria-invalid={Boolean(errors.email)}
+                  {...register('email')}
                   placeholder="recruiter@company.com"
-                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-400 focus:outline-none"
+                  className={INPUT_CLASS_NAME}
                 />
                 {errors.email && <p className="text-xs text-rose-400">{errors.email.message}</p>}
               </div>
@@ -96,12 +99,10 @@ export const ContactForm = () => {
               <textarea
                 id="contact-message"
                 rows={3}
-                {...register('message', {
-                  required: 'Message is required',
-                  validate: (v) => v.trim().length > 0 || 'Message is required',
-                })}
+                aria-invalid={Boolean(errors.message)}
+                {...register('message')}
                 placeholder="Role details or interview availability..."
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-400 focus:outline-none"
+                className={INPUT_CLASS_NAME}
               />
               {errors.message && <p className="text-xs text-rose-400">{errors.message.message}</p>}
             </div>
@@ -124,4 +125,4 @@ export const ContactForm = () => {
       </Card>
     </section>
   );
-}
+};

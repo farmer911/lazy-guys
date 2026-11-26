@@ -3,6 +3,12 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  ContactSubmissionSchema,
+  type Project,
+  type ProjectSummary,
+} from '../../../../specs/contracts/portfolio.js';
+import type { ApiErrorResponse } from '../../../../specs/contracts/common.js';
 import { createApp } from '../app.js';
 import { pool } from '../db/pool.js';
 
@@ -133,5 +139,37 @@ describe('portfolio API integration', () => {
     const after = await countAll();
 
     expect(after).toEqual(before);
+  });
+
+  it('validates and trims payloads via shared ContactSubmissionSchema and single-hop Project DTO contract', async () => {
+    const parsed = ContactSubmissionSchema.safeParse({
+      name: '  Jane Recruiter  ',
+      email: '  jane@acme.io  ',
+      message: '  Interested in Staff role  ',
+    });
+    expect(parsed).toEqual({
+      success: true,
+      data: {
+        name: 'Jane Recruiter',
+        email: 'jane@acme.io',
+        message: 'Interested in Staff role',
+      },
+    });
+
+    const missingRes = await fetch(`${baseUrl}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(missingRes.status).toBe(400);
+    const errBody = (await missingRes.json()) as ApiErrorResponse;
+    expect(errBody).toEqual({
+      error: 'name, email, and message are required',
+    });
+
+    const projRes = await fetch(`${baseUrl}/projects`);
+    const projects = (await projRes.json()) as Project[];
+    const summary: ProjectSummary | undefined = projects[0];
+    expect(summary?.slug).toBeTruthy();
   });
 });

@@ -102,6 +102,7 @@ echo "[3/5] Installing workspace dependencies..."
 npm install
 
 echo "[4/5] Starting PostgreSQL via Docker Compose..."
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-lazy-guys}"
 docker compose up -d
 
 echo "Waiting for PostgreSQL to accept connections..."
