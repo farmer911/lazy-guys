@@ -1,0 +1,38 @@
+{
+  "rules": [
+    {
+      "id": "effect-sync-setstate",
+      "guideId": "effect-boundaries-and-derived-state",
+      "pattern": "\\buseEffect\\(\\s*\\(\\s*\\)\\s*=>\\s*\\{\\s*(?:if\\s*\\([^)]*\\)\\s*\\{?\\s*)?set[A-Z][A-Za-z0-9_]*\\s*\\(",
+      "excludeLinePattern": "\\b(?:addEventListener|IntersectionObserver|ResizeObserver|MutationObserver|matchMedia|setTimeout|setInterval|requestAnimationFrame)\\b",
+      "flags": "g",
+      "multiline": true,
+      "fileExtensions": [".tsx", ".ts", ".jsx", ".js"],
+      "message": "Synchronous setState at the top of useEffect triggers redundant render cascades or stale entity resets; retrieve effect-boundaries-and-derived-state.",
+      "keepWhen": [
+        "Controlled editor intentionally preserves unsaved local edits across parent prop refreshes and reconciles only when an explicit external revision token increments.",
+        "State transition measures committed DOM layout geometry that cannot be computed before paint."
+      ],
+      "dropWhen": [
+        "Match occurs inside a unit test fixture, code comment, or external browser observer callback."
+      ]
+    },
+    {
+      "id": "bare-focus-outline-none",
+      "guideId": "async-ux-and-accessibility-behaviors",
+      "pattern": "\\bfocus:outline-none\\b",
+      "excludeLinePattern": "\\bfocus-visible:(?:ring|outline|border)",
+      "flags": "g",
+      "multiline": false,
+      "fileExtensions": [".tsx", ".jsx"],
+      "message": "focus:outline-none strips the keyboard focus ring without a focus-visible replacement on the same line; retrieve async-ux-and-accessibility-behaviors.",
+      "keepWhen": [
+        "Inner control sits inside a composite field shell whose parent container renders a visible has-[:focus-visible]:ring-2 indicator."
+      ],
+      "dropWhen": [
+        "Element already applies focus-visible:ring-* or focus-visible:outline-* on an adjacent line inside cn() or cva().",
+        "Occurrence is inside a negative scanner test fixture or markdown snippet."
+      ]
+    }
+  ]
+}
