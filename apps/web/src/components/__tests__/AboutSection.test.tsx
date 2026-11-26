@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { AboutSection } from '../AboutSection';
 import type { Profile } from '@/lib/api';
@@ -20,7 +21,11 @@ const sampleProfile: Profile = {
 
 describe('AboutSection', () => {
   it('renders profile name, headline, bio, and achievements', () => {
-    render(<AboutSection profile={sampleProfile} />);
+    render(
+      <MemoryRouter>
+        <AboutSection profile={sampleProfile} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByRole('heading', { name: 'Lazy Guy' })).toBeInTheDocument();
     expect(screen.getByText('Full-Stack Software Engineer')).toBeInTheDocument();

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "primary-fixed-dim": "#658eff",
+        "on-tertiary-fixed": "#480049",
+        "surface-container-high": "#e0e0ff",
+        "inverse-on-surface": "#9799c6",
+        "surface-bright": "#f8f5ff",
+        "on-primary-container": "#001e5a",
+        "on-tertiary": "#ffeef8",
+        "error-dim": "#9f0519",
+        "secondary-fixed": "#cbceff",
+        "primary-container": "#7b9cff",
+        "outline": "#71749e",
+        "surface-container-lowest": "#ffffff",
+        "tertiary-dim": "#802d7d",
+        "on-secondary-fixed": "#1c248e",
+        "on-surface": "#282b51",
+        "on-secondary-container": "#323aa2",
+        "on-tertiary-fixed-variant": "#711f6f",
+        "on-primary": "#f1f2ff",
+        "tertiary-fixed": "#fe9cf4",
+        "on-secondary": "#f3f1ff",
+        "surface-dim": "#cfd1ff",
+        "surface": "#f8f5ff",
+        "secondary": "#4850b7",
+        "surface-container-highest": "#d9daff",
+        "on-secondary-fixed-variant": "#3c45ab",
+        "tertiary": "#8e3a8a",
+        "inverse-surface": "#06092f",
+        "secondary-dim": "#3b43aa",
+        "on-tertiary-container": "#661466",
+        "primary-dim": "#0046bb",
+        "surface-container": "#e7e6ff",
+        "on-error": "#ffefee",
+        "tertiary-container": "#fe9cf4",
+        "background": "#f8f5ff",
+        "secondary-container": "#cbceff",
+        "on-primary-fixed": "#000000",
+        "surface-variant": "#d9daff",
+        "primary": "#0050d4",
+        "on-primary-fixed-variant": "#00266e",
+        "error": "#b31b25",
+        "surface-container-low": "#f1efff",
+        "outline-variant": "#a7aad7",
+        "on-background": "#282b51",
+        "surface-tint": "#0050d4",
+        "inverse-primary": "#618bff",
+        "tertiary-fixed-dim": "#ef8fe5",
+        "primary-fixed": "#7b9cff",
+        "error-container": "#fb5151",
+        "on-error-container": "#570008",
+        "secondary-fixed-dim": "#bbbfff",
+        "on-surface-variant": "#555881"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {},
+      "fontFamily": {
+        "headline": [
+          "Space Grotesk"
+        ],
+        "display": [
+          "Space Grotesk"
+        ],
+        "body": [
+          "Inter"
+        ],
+        "label": [
+          "Public Sans"
+        ]
+      },
+      "fontSize": {}
+    },
+  },
+}</script></head><body class="bg-surface font-body text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-surface-container-high/60 shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4"><div class="flex items-center gap-3 shrink-0"><a class="flex items-center gap-2 group" href="#"><span class="font-headline font-bold text-lg tracking-tight text-on-surface group-hover:text-primary transition-colors">lazy-guy<span class="text-primary">.dev</span></span></a><span class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-medium bg-surface-container-high text-on-surface-variant">v2.4.0</span><div class="hidden md:flex items-center gap-1.5 pl-2 border-l border-surface-container-high"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span><span class="text-[11px] font-label font-medium text-on-surface-variant">Available for Q2/Q3 Roles</span></div></div><nav class="hidden lg:flex items-center gap-1 bg-surface-container-low p-1 rounded-xl" data-active-classes="bg-primary text-on-primary font-semibold shadow-sm"><a class="px-3.5 py-1.5 text-xs font-label text-on-surface-variant hover:text-on-surface rounded-lg transition-all" data-path="home" href="#">Home</a><a class="px-3.5 py-1.5 text-xs font-label text-on-surface-variant hover:text-on-surface rounded-lg transition-all" data-path="projects" href="#">Projects</a><a class="px-3.5 py-1.5 text-xs font-label text-on-surface-variant hover:text-on-surface rounded-lg transition-all" data-path="case-study" href="#">Case Study</a><a class="px-3.5 py-1.5 text-xs font-label text-on-surface-variant hover:text-on-surface rounded-lg transition-all" data-path="experience-and-cv" href="#">Experience &amp; CV</a><a aria-current="page" class="px-3.5 py-1.5 rounded-lg transition-all bg-primary text-on-primary font-semibold shadow-sm" data-path="contact" href="#">Contact</a></nav><div class="flex items-center gap-3 shrink-0"><div class="flex items-center bg-surface-container-low p-1 rounded-full border border-surface-container-high"><button aria-label="Light theme" class="flex items-center justify-center w-7 h-7 rounded-full bg-surface text-primary shadow-xs transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">light_mode</span></button><button aria-label="Dark theme" class="flex items-center justify-center w-7 h-7 rounded-full text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">dark_mode</span></button></div><a class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-on-primary hover:bg-primary-dim text-xs font-label font-semibold shadow-sm transition-colors" href="#"><span class="material-symbols-outlined text-[16px]">download</span><span>Download CV</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full">
+<!-- Interactive Toast Notification -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-16 opacity-0 pointer-events-none transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface-container-lowest shadow-xl border border-surface-container-high text-xs font-label text-on-surface" id="copy-toast">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span class="font-medium" id="toast-message">Copied to clipboard!</span>
+</div>
+<div class="max-w-7xl mx-auto w-full px-6 lg:px-12 py-10 lg:py-14 space-y-12">
+<!-- 01. HEADER SECTION -->
+<header class="flex flex-col space-y-6">
+<div class="flex flex-wrap items-center gap-3">
+<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low text-xs font-mono font-medium text-on-surface-variant">
+<span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+          DIRECT HIRING PIPELINE // RECRUITER FASTLANE
+        </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface text-xs font-label font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+          AVAILABLE Q2/Q3 2025
+        </span>
+</div>
+<div class="space-y-3 max-w-4xl">
+<h1 class="font-headline font-bold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface text-balance">
+          Let's Build Something Resilient Together.
+        </h1>
+<p class="font-body text-base lg:text-lg text-on-surface-variant leading-relaxed max-w-3xl">
+          Skip the 4-round recruiter screening loop. Connect directly with a battle-tested Senior / Staff Full-Stack Engineer who treats database latency, developer velocity, and product polish with equal obsession.
+        </p>
+</div>
+<!-- SLA KPI Bar -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-2 bg-surface-container-low rounded-2xl">
+<div class="flex items-center gap-3 px-4 py-3 bg-surface-container-lowest rounded-xl shadow-xs">
+<span class="material-symbols-outlined text-primary text-xl shrink-0">bolt</span>
+<div class="min-w-0">
+<span class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant block">Turnaround SLA</span>
+<span class="text-xs font-label font-semibold text-on-surface truncate block">Guaranteed response &lt; 12 hours</span>
+</div>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 bg-surface-container-lowest rounded-xl shadow-xs">
+<span class="material-symbols-outlined text-primary text-xl shrink-0">location_on</span>
+<div class="min-w-0">
+<span class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant block">Base &amp; Overlap</span>
+<span class="text-xs font-label font-semibold text-on-surface truncate block">HCM (UTC+7 · Full Remote / Hybrid)</span>
+</div>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 bg-surface-container-lowest rounded-xl shadow-xs">
+<span class="material-symbols-outlined text-primary text-xl shrink-0">badge</span>
+<div class="min-w-0">
+<span class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant block">Target IC Scope</span>
+<span class="text-xs font-label font-semibold text-on-surface truncate block">Senior / Staff Full-Stack, Platform Lead</span>
+</div>
+</div>
+</div>
+</header>
+<!-- 02. MAIN TWO-COLUMN SPLIT -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT COLUMN (5 Columns) -->
+<div class="lg:col-span-5 space-y-6">
+<!-- Live Status Card -->
+<div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm space-y-5">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">sensors</span>
+<h2 class="font-headline font-bold text-sm tracking-tight text-on-surface uppercase">Live Status &amp; Availability</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-surface-container text-on-surface">SYNCED</span>
+</div>
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs font-label font-semibold text-on-surface w-full">
+<span class="h-2 w-2 rounded-full bg-primary animate-ping"></span>
+            Ready for Immediate Technical Interviews
+          </div>
+<!-- Metrics Matrix -->
+<div class="grid grid-cols-2 gap-3 pt-2">
+<div class="p-3 rounded-xl bg-surface-container-low space-y-1">
+<span class="text-[11px] font-mono text-on-surface-variant uppercase block">Response SLA</span>
+<span class="text-sm font-headline font-bold text-on-surface">&lt; 12 Hours</span>
+</div>
+<div class="p-3 rounded-xl bg-surface-container-low space-y-1">
+<span class="text-[11px] font-mono text-on-surface-variant uppercase block">Notice Period</span>
+<span class="text-sm font-headline font-bold text-on-surface">Immediate / 2w</span>
+</div>
+<div class="p-3 rounded-xl bg-surface-container-low space-y-1 col-span-2">
+<span class="text-[11px] font-mono text-on-surface-variant uppercase block">Timezone Synergy</span>
+<span class="text-xs font-label font-medium text-on-surface">UTC+7 · 4h standard overlap with US/EU squads</span>
+</div>
+<div class="p-3 rounded-xl bg-surface-container-low space-y-1 col-span-2">
+<span class="text-[11px] font-mono text-on-surface-variant uppercase block">Work Authorization</span>
+<span class="text-xs font-label font-medium text-on-surface">B2B Contractor / Global EOR (Deel, Remote.com)</span>
+</div>
+</div>
+<!-- Interactive Calendar Walkthrough Slot Selector -->
+<div class="space-y-3 pt-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-headline font-semibold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+                20-Min Architecture Walkthrough
+              </span>
+<span class="text-[10px] font-mono text-on-surface-variant">Cal.com Sync</span>
+</div>
+<div class="space-y-2" id="slot-container">
+<button class="slot-pill w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-low text-xs font-label hover:bg-surface-container transition-all text-left" onclick="selectSlot(this, 'Tomorrow 09:30 AM ICT')" type="button">
+<span class="font-medium text-on-surface">Tomorrow · 09:30 AM ICT (UTC+7)</span>
+<span class="text-[11px] font-mono text-primary font-semibold">Select slot</span>
+</button>
+<button class="slot-pill w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-low text-xs font-label hover:bg-surface-container transition-all text-left" onclick="selectSlot(this, 'Thursday 02:00 PM ICT')" type="button">
+<span class="font-medium text-on-surface">Thursday · 02:00 PM ICT (UTC+7)</span>
+<span class="text-[11px] font-mono text-primary font-semibold">Select slot</span>
+</button>
+<button class="slot-pill w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-low text-xs font-label hover:bg-surface-container transition-all text-left" onclick="selectSlot(this, 'Friday 10:00 AM ICT')" type="button">
+<span class="font-medium text-on-surface">Friday · 10:00 AM ICT (UTC+7)</span>
+<span class="text-[11px] font-mono text-primary font-semibold">Select slot</span>
+</button>
+</div>
+<a class="inline-flex items-center gap-1.5 text-xs font-label font-semibold text-primary hover:text-primary-dim transition-colors pt-1" href="https://cal.com" rel="noopener noreferrer" target="_blank">
+<span>View full Cal.com calendar &amp; timezone converter</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</a>
+</div>
+</div>
+<!-- Direct One-Click Channels Card -->
+<div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm space-y-4">
+<div class="flex items-center gap-2 pb-1">
+<span class="material-symbols-outlined text-primary text-lg">alternate_email</span>
+<h2 class="font-headline font-bold text-sm tracking-tight text-on-surface uppercase">Direct Verified Channels</h2>
+</div>
+<div class="space-y-2.5">
+<!-- Email Item with Copy Trigger -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[18px]">mail</span>
+</div>
+<div class="min-w-0">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase block">Primary Inbox</span>
+<span class="text-xs font-mono font-medium text-on-surface truncate block">hello@lazy-guy.dev</span>
+</div>
+</div>
+<button class="shrink-0 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-label font-semibold transition-colors flex items-center gap-1" onclick="copyToClipboard('hello@lazy-guy.dev', 'Email address copied!')" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+<!-- GitHub Item -->
+<a class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group" href="https://github.com" rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<div class="min-w-0">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase block">Engineering Artifacts</span>
+<span class="text-xs font-mono font-medium text-on-surface truncate block">github.com/lazy-guy</span>
+</div>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant group-hover:text-primary transition-colors">1.4k+ commits</span>
+</a>
+<!-- LinkedIn Item -->
+<a class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group" href="https://linkedin.com" rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">work</span>
+</div>
+<div class="min-w-0">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase block">Professional Graph</span>
+<span class="text-xs font-mono font-medium text-on-surface truncate block">linkedin.com/in/lazy-guy-dev</span>
+</div>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant group-hover:text-primary transition-colors">Recommendations</span>
+</a>
+<!-- Instant Messaging -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[18px]">forum</span>
+</div>
+<div class="min-w-0">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase block">Urgent Async Chat</span>
+<span class="text-xs font-mono font-medium text-on-surface truncate block">@lazyguy_tech (Telegram/Signal)</span>
+</div>
+</div>
+<button class="shrink-0 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-label font-semibold transition-colors flex items-center gap-1" onclick="copyToClipboard('@lazyguy_tech', 'Handle copied!')" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Fast Recruiter FAQ -->
+<div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm space-y-4">
+<div class="flex items-center gap-2 pb-1">
+<span class="material-symbols-outlined text-primary text-lg">help_outline</span>
+<h2 class="font-headline font-bold text-sm tracking-tight text-on-surface uppercase">Fast Recruiter FAQ</h2>
+</div>
+<div class="space-y-3">
+<details class="group p-3 rounded-xl bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between cursor-pointer list-none text-xs font-label font-semibold text-on-surface">
+<span>Will you complete a take-home coding challenge?</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<p class="text-xs font-body text-on-surface-variant mt-2.5 leading-relaxed">
+                I strongly prefer pairing on production-grade problems or inspecting public ADRs and open source PRs. However, I am open to scoped time-boxed exercises (&lt; 2 hrs) for unique architecture discussions.
+              </p>
+</details>
+<details class="group p-3 rounded-xl bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between cursor-pointer list-none text-xs font-label font-semibold text-on-surface">
+<span>What is your day-to-day core production stack?</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<p class="text-xs font-body text-on-surface-variant mt-2.5 leading-relaxed font-mono">
+                TypeScript, React 19, Next.js App Router, Node.js 20, PostgreSQL 16, Redis Clusters, Docker, AWS ECS/Fargate, Terraform.
+              </p>
+</details>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (7 Columns) — Recruiter Quick Inquiry Form -->
+<div class="lg:col-span-7">
+<div class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-md space-y-6">
+<div class="space-y-1.5 pb-2">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container text-[11px] font-mono font-semibold text-on-surface">
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                DIRECT INBOX TO LEAD ENGINEER
+              </span>
+<span class="text-[11px] font-mono text-on-surface-variant">Zero Recruiter Friction</span>
+</div>
+<h2 class="font-headline font-bold text-2xl tracking-tight text-on-surface">
+              Send an Architectural Inquiry or Role Brief
+            </h2>
+<p class="text-xs font-body text-on-surface-variant">
+              Messages dispatch straight into my personal triage inbox. No automated applicant tracking black holes.
+            </p>
+</div>
+<!-- Form Element -->
+<form class="space-y-5" id="recruiter-inquiry-form" onsubmit="handleFormSubmit(event)">
+<!-- Row 1: Name & Work Email -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold text-on-surface" for="full-name">
+                  Your Full Name <span class="text-error font-mono">*</span>
+</label>
+<input class="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs font-body text-on-surface placeholder:text-on-surface-variant/50 focus:outline-hidden focus:bg-surface-container transition-all" id="full-name" placeholder="e.g. Sarah Jenkins" required="" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold text-on-surface" for="work-email">
+                  Work Email <span class="text-error font-mono">*</span>
+</label>
+<input class="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs font-body text-on-surface placeholder:text-on-surface-variant/50 focus:outline-hidden focus:bg-surface-container transition-all" id="work-email" placeholder="s.jenkins@scale-up.io" required="" type="email"/>
+</div>
+</div>
+<!-- Row 2: Company -->
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold text-on-surface" for="company-name">
+                Company / Organization
+              </label>
+<input class="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs font-body text-on-surface placeholder:text-on-surface-variant/50 focus:outline-hidden focus:bg-surface-container transition-all" id="company-name" placeholder="e.g. Acme FinTech / Series B SaaS / Stealth Venture" type="text"/>
+</div>
+<!-- Row 3: Opportunity Engagement Type (Pills) -->
+<div class="space-y-2">
+<label class="block text-xs font-label font-semibold text-on-surface">
+                Opportunity Engagement Type <span class="text-error font-mono">*</span>
+</label>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="engagement-selector">
+<label class="flex items-center justify-between p-3 rounded-xl bg-surface-container text-on-surface cursor-pointer shadow-xs transition-all select-none">
+<input checked="" class="hidden" name="engagement_type" onchange="updateEngagementStyles()" type="radio" value="Full-Time Staff/Senior IC"/>
+<span class="text-xs font-label font-medium">Full-Time IC</span>
+<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+</label>
+<label class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-container cursor-pointer transition-all select-none">
+<input class="hidden" name="engagement_type" onchange="updateEngagementStyles()" type="radio" value="Fractional Advisory"/>
+<span class="text-xs font-label font-medium">Fractional / Lead</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 text-primary">check_circle</span>
+</label>
+<label class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-container cursor-pointer transition-all select-none">
+<input class="hidden" name="engagement_type" onchange="updateEngagementStyles()" type="radio" value="Contract Architecture Audit"/>
+<span class="text-xs font-label font-medium">Arch Audit</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 text-primary">check_circle</span>
+</label>
+</div>
+</div>
+<!-- Row 4: Compensation / Tier -->
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold text-on-surface" for="comp-tier">
+                Estimated Compensation / Level Tier
+              </label>
+<div class="relative">
+<select class="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs font-body text-on-surface focus:outline-hidden focus:bg-surface-container transition-all appearance-none pr-10" id="comp-tier">
+<option value="lead">$140,000 - $185,000+ USD / Market Competitive (Senior / Staff)</option>
+<option value="staff">$185,000 - $220,000+ USD (Principal / Staff IC)</option>
+<option value="advisory">Advisory Retainer / Fractional ($120 - $160/hr)</option>
+<option value="custom">Let's discuss based on team scope &amp; equity structure</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant pointer-events-none text-[18px]">unfold_more</span>
+</div>
+</div>
+<!-- Row 5: Details / Proposed Scope -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="block text-xs font-label font-semibold text-on-surface" for="project-details">
+                  Role Details / Project Scope / Meeting Proposal <span class="text-error font-mono">*</span>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant">Markdown supported</span>
+</div>
+<textarea class="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs font-body text-on-surface placeholder:text-on-surface-variant/50 focus:outline-hidden focus:bg-surface-container transition-all resize-y" id="project-details" placeholder="We are scaling our multi-tenant payment gateway and need someone to lead our distributed transaction pipeline..." required="" rows="4"></textarea>
+</div>
+<!-- Row 6: Attachment Dropzone -->
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold text-on-surface">
+                Attach Job Spec / Architecture Whitepaper (Optional)
+              </label>
+<div class="cursor-pointer p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col items-center justify-center text-center space-y-1.5" id="dropzone" onclick="document.getElementById('file-upload').click()">
+<input class="hidden" id="file-upload" onchange="handleFileSelected(event)" type="file"/>
+<span class="material-symbols-outlined text-primary text-2xl">cloud_upload</span>
+<div class="text-xs font-label font-medium text-on-surface">
+<span class="text-primary hover:underline">Click to upload JD</span> or drag and drop
+                </div>
+<span class="text-[11px] font-mono text-on-surface-variant" id="file-label">PDF, DOCX, or Markdown up to 10MB</span>
+</div>
+</div>
+<!-- Submit Action Button -->
+<div class="pt-2">
+<button class="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-on-primary hover:bg-primary-dim font-headline font-semibold text-sm tracking-wide shadow-md transition-all active:scale-[0.99]" id="submit-btn" type="submit">
+<span>Send Message to lazy-guy.dev</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</form>
+<!-- Interactive Success State Banner (Hidden by default, shown upon test/submit) -->
+<div class="hidden p-4 rounded-xl bg-surface-container text-on-surface space-y-1.5 transition-all" id="form-success-banner">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">verified</span>
+<span class="text-xs font-headline font-bold uppercase tracking-tight">Direct Dispatch Successful</span>
+</div>
+<p class="text-xs font-body text-on-surface-variant">
+              Inquiry encrypted and pinged to lazy-guy's Telegram &amp; Slack feeds. Expected turnaround under 12 hours.
+            </p>
+</div>
+<!-- Bottom Privacy & Security Micro-Note -->
+<div class="flex items-center justify-between pt-2 text-[11px] font-mono text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">lock</span>
+              Zero tracking cookies • Strict confidentiality
+            </span>
+<span>Direct Socket Endpoint</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 03. BOTTOM TRUST & FAST VERIFICATION BAR -->
+<section class="space-y-4 pt-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">verified_user</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-on-surface">Instant Credential &amp; Identity Verification</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Credential 1 -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-xs flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">description</span>
+</div>
+<div class="min-w-0">
+<span class="text-xs font-headline font-bold text-on-surface truncate block">Official Resume PDF</span>
+<span class="text-[11px] font-mono text-on-surface-variant block">142 KB • ATS-Parsed Clean</span>
+</div>
+</div>
+<button class="shrink-0 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-xs font-label font-semibold transition-colors flex items-center gap-1" onclick="copyToClipboard('https://lazy-guy.dev/resume.pdf', 'Resume link copied!')" type="button">
+<span class="material-symbols-outlined text-[15px]">download</span>
+<span>Get</span>
+</button>
+</div>
+<!-- Credential 2 -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-xs flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">cloud_done</span>
+</div>
+<div class="min-w-0">
+<span class="text-xs font-headline font-bold text-on-surface truncate block">AWS Solutions Architect</span>
+<span class="text-[11px] font-mono text-on-surface-variant block">Assoc #82910 • Active</span>
+</div>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-md bg-surface-container text-[11px] font-mono font-semibold text-on-surface">
+            VERIFIED
+          </span>
+</div>
+<!-- Credential 3 -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-xs flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">school</span>
+</div>
+<div class="min-w-0">
+<span class="text-xs font-headline font-bold text-on-surface truncate block">HCMUT B.S. Comp Sci</span>
+<span class="text-[11px] font-mono text-on-surface-variant block">Distributed Systems Focus</span>
+</div>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-md bg-surface-container text-[11px] font-mono font-semibold text-on-surface">
+            HONORS
+          </span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  function copyToClipboard(text, message) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(message);
+      });
+    } else {
+      showToast(message);
+    }
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('copy-toast');
+    const toastMessage = document.getElementById('toast-message');
+    if (!toast || !toastMessage) return;
+
+    toastMessage.textContent = msg;
+    toast.classList.remove('opacity-0', 'translate-y-16', 'pointer-events-none');
+    toast.classList.add('opacity-100', 'translate-y-0');
+
+    setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0');
+      toast.classList.add('opacity-0', 'translate-y-16', 'pointer-events-none');
+    }, 2800);
+  }
+
+  function selectSlot(button, slotTime) {
+    const container = document.getElementById('slot-container');
+    const buttons = container.querySelectorAll('.slot-pill');
+    buttons.forEach(btn => {
+      btn.classList.remove('bg-surface-container', 'font-semibold');
+      btn.classList.add('bg-surface-container-low');
+      const actionText = btn.querySelector('.font-mono');
+      if (actionText) actionText.textContent = 'Select slot';
+    });
+
+    button.classList.remove('bg-surface-container-low');
+    button.classList.add('bg-surface-container', 'font-semibold');
+    const actionText = button.querySelector('.font-mono');
+    if (actionText) actionText.textContent = 'Selected ✓';
+
+    const projectDetails = document.getElementById('project-details');
+    if (projectDetails && !projectDetails.value.includes('Proposed Meeting Slot:')) {
+      projectDetails.value = `Proposed Meeting Slot: ${slotTime}\n\n` + projectDetails.value;
+    }
+    showToast(`Time slot selected: ${slotTime}`);
+  }
+
+  function updateEngagementStyles() {
+    const labels = document.querySelectorAll('#engagement-selector label');
+    labels.forEach(lbl => {
+      const input = lbl.querySelector('input');
+      const checkIcon = lbl.querySelector('.material-symbols-outlined');
+      if (input.checked) {
+        lbl.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+        lbl.classList.add('bg-surface-container', 'text-on-surface', 'shadow-xs');
+        if (checkIcon) checkIcon.classList.remove('opacity-0');
+      } else {
+        lbl.classList.remove('bg-surface-container', 'text-on-surface', 'shadow-xs');
+        lbl.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        if (checkIcon) checkIcon.classList.add('opacity-0');
+      }
+    });
+  }
+
+  function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const fileLabel = document.getElementById('file-label');
+      if (fileLabel) {
+        fileLabel.textContent = `Attached: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        fileLabel.classList.add('text-primary', 'font-semibold');
+      }
+      showToast('Spec document attached');
+    }
+  }
+
+  function handleFormSubmit(event) {
+    event.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const banner = document.getElementById('form-success-banner');
+    
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Encrypting & Dispatching...</span>`;
+    }
+
+    setTimeout(() => {
+      if (btn) {
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Message Sent</span>`;
+        btn.classList.remove('bg-primary');
+        btn.classList.add('bg-surface-container', 'text-on-surface');
+      }
+      if (banner) {
+        banner.classList.remove('hidden');
+      }
+      showToast('Inquiry delivered to lazy-guy inbox!');
+    }, 900);
+  }
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-surface-container-high mt-20"><div class="max-w-7xl mx-auto px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex flex-col sm:flex-row items-center gap-4 text-xs font-label text-on-surface-variant"><span class="font-mono font-medium text-on-surface">© 2025 lazy-guy.dev</span><span class="hidden sm:inline-block text-outline-variant">•</span><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] text-primary">schedule</span><span>HCM (UTC+7)</span></div><span class="hidden sm:inline-block text-outline-variant">•</span><div class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-primary"></span><span>All systems operational</span></div></div><div class="flex items-center gap-6 text-xs font-label"><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">code</span><span>GitHub</span></a><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">work</span><span>LinkedIn</span></a><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[16px]">mail</span><span>Email</span></a></div></div></footer></body></html>

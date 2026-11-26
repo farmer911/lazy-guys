@@ -44,6 +44,7 @@ describe('App Lighthouse runtime optimizations', () => {
   beforeEach(() => {
     observerCallback = null;
     globalThis.IntersectionObserver = FakeIntersectionObserver;
+    vi.spyOn(portfolioApi, 'recordVisit').mockResolvedValue(undefined);
   });
 
   afterEach(() => {

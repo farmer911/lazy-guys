@@ -1,37 +1,58 @@
 {
   "meta": {
-    "system": "lazy-guy-recruiter-dark",
-    "direction": "Restrained Slate-950 Recruiter Scannability (Impeccable Anti-Slop)",
-    "contrastTarget": "WCAG AA >= 4.5:1"
+    "system": "electric-cobalt-studio",
+    "stitchProjectId": "15082605221977705976",
+    "direction": "Crisp Daylight Swiss-Tech (Light) & Deep Slate Blueprint Grid (Dark)",
+    "contrastTarget": "WCAG AA >= 4.5:1 (Primary Ink >= 15:1 AAA)"
   },
-  "colors": {
-    "background": "#020617",
-    "surface": "#0f172a",
-    "surfaceMuted": "rgba(2, 6, 23, 0.6)",
-    "border": "#1e293b",
-    "borderInput": "#334155",
-    "textPrimary": "#f8fafc",
-    "textSecondary": "#cbd5e1",
-    "textMuted": "#94a3b8",
-    "accentPrimary": "#38bdf8",
-    "statusSuccess": "#34d399",
-    "statusError": "#fb7185"
+  "themes": {
+    "light": {
+      "canvas": "#f8fafc",
+      "surface": "#ffffff",
+      "surfaceSubtle": "#f1f5f9",
+      "borderSubtle": "#e2e8f0",
+      "borderStrong": "#cbd5e1",
+      "inkPrimary": "#0f172a",
+      "inkSecondary": "#334155",
+      "inkMuted": "#64748b",
+      "accentCobalt": "#2563eb",
+      "accentCobaltHover": "#1d4ed8",
+      "accentCobaltTint": "#eff6ff",
+      "accentSky": "#0ea5e9",
+      "statusEmerald": "#059669",
+      "statusRose": "#e11d48"
+    },
+    "dark": {
+      "canvas": "#0b1120",
+      "surface": "#111827",
+      "surfaceSubtle": "#1e293b",
+      "borderSubtle": "#1e293b",
+      "borderStrong": "#334155",
+      "inkPrimary": "#f8fafc",
+      "inkSecondary": "#cbd5e1",
+      "inkMuted": "#94a3b8",
+      "accentCobalt": "#3b82f6",
+      "accentCobaltHover": "#60a5fa",
+      "accentCobaltTint": "rgba(37, 99, 235, 0.18)",
+      "accentSky": "#38bdf8",
+      "statusEmerald": "#34d399",
+      "statusRose": "#fb7185"
+    }
   },
   "typography": {
-    "fontFamilySans": "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
-    "heroTitle": { "mobile": "1.875rem", "desktop": "2.25rem", "weight": 700, "tracking": "-0.025em" },
-    "sectionTitle": { "size": "1.5rem", "weight": 600, "tracking": "-0.025em" },
-    "cardTitle": { "size": "1.125rem", "weight": 600 },
-    "body": { "size": "0.875rem", "lineHeight": "1.5rem" },
-    "caption": { "size": "0.75rem", "lineHeight": "1rem" }
+    "fontFamilyDisplay": "'Space Grotesk', ui-sans-serif, system-ui, sans-serif",
+    "fontFamilySans": "'Inter', ui-sans-serif, system-ui, sans-serif",
+    "fontFamilyMono": "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace",
+    "heroTitle": "clamp(1.875rem, 1.25rem + 2.5vw, 3.25rem)",
+    "h1": "clamp(1.625rem, 1.25rem + 1.5vw, 2.5rem)",
+    "h2": "clamp(1.25rem, 1.05rem + 0.8vw, 1.75rem)",
+    "kpi": "clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem)",
+    "body": "clamp(0.9375rem, 0.9rem + 0.15vw, 1rem)"
   },
   "layout": {
-    "containerMaxWidth": "64rem",
-    "horizontalPadding": "1rem",
-    "sectionGap": "3rem",
-    "cardRadius": "0.75rem",
-    "controlRadius": "0.375rem",
+    "containerMaxWidth": "72rem",
     "mobileViewport": "375x812",
+    "tabletViewport": "768x1024",
     "desktopViewport": "1280x800"
   }
 }

@@ -1,15 +1,71 @@
 {
-  "stitchProjectId": "baseline-lazy-guy-portfolio-v1",
+  "stitchProjectId": "15082605221977705976",
   "status": "FROZEN_TO_GIT",
-  "approvedAt": "2026-11-23T15:30:00+07:00",
+  "approvedAt": "2026-11-26T21:01:08+07:00",
   "tokensPath": "designs/design-tokens.json",
   "screens": [
     {
-      "slug": "portfolio-home",
-      "title": "Recruiter Portfolio Single-Page Flow",
-      "path": "designs/screens/portfolio-home.html",
-      "sections": ["about", "experience", "projects", "tech-stack", "contact"],
-      "variantsCovered": ["default", "loading", "empty", "validation-error", "network-error", "mobile-375px"]
+      "slug": "00a-tokens",
+      "title": "00A. Responsive Typography, Breakpoint Grid & Color Tokens",
+      "path": "designs/screens/00a-tokens.html",
+      "sections": ["typography", "grid", "colors"],
+      "variantsCovered": ["light", "dark", "375px", "768px", "1280px"]
+    },
+    {
+      "slug": "00b-components",
+      "title": "00B. Responsive UI Component Library & State Matrix",
+      "path": "designs/screens/00b-components.html",
+      "sections": ["navbar", "buttons", "chips", "cards", "inputs"],
+      "variantsCovered": ["light", "dark", "hover", "focus-visible", "disabled", "error"]
+    },
+    {
+      "slug": "01-home",
+      "title": "01. Home — Executive Overview (Light + Dark + Mobile)",
+      "path": "designs/screens/01-home.html",
+      "sections": ["hero", "kpi-metrics", "featured-projects", "footer-cta"],
+      "variantsCovered": ["light", "dark", "mobile-375px", "tablet-768px", "desktop-1280px"]
+    },
+    {
+      "slug": "01-home-dark",
+      "title": "01. Home — Executive Overview (Dark Mode)",
+      "path": "designs/screens/01-home-dark.html",
+      "sections": ["hero", "kpi-metrics", "featured-projects", "footer-cta"],
+      "variantsCovered": ["dark", "blueprint-grid"]
+    },
+    {
+      "slug": "01-home-mobile-dark",
+      "title": "01. Home — Mobile (375px) Dark Mode",
+      "path": "designs/screens/01-home-mobile-dark.html",
+      "sections": ["mobile-drawer", "hero", "projects", "footer-cta"],
+      "variantsCovered": ["mobile-375px", "dark"]
+    },
+    {
+      "slug": "02-projects",
+      "title": "02. Projects — Shipped Work Showcase",
+      "path": "designs/screens/02-projects.html",
+      "sections": ["filter-chips", "project-bento-grid", "engineering-standards"],
+      "variantsCovered": ["light", "dark", "empty", "375px"]
+    },
+    {
+      "slug": "03-case-study",
+      "title": "03. Case Study — Deep-Dive Architecture",
+      "path": "designs/screens/03-case-study.html",
+      "sections": ["outline", "bottleneck", "architecture-flow", "adrs", "benchmarks"],
+      "variantsCovered": ["light", "dark", "375px"]
+    },
+    {
+      "slug": "04-experience-cv",
+      "title": "04. Experience & Interactive CV",
+      "path": "designs/screens/04-experience-cv.html",
+      "sections": ["cv-download", "experience-timeline", "skillset-matrix", "philosophy"],
+      "variantsCovered": ["light", "dark", "print", "375px"]
+    },
+    {
+      "slug": "05-contact",
+      "title": "05. Contact — Recruiter Quick Connect",
+      "path": "designs/screens/05-contact.html",
+      "sections": ["availability-slots", "verified-channels", "faq", "inquiry-form"],
+      "variantsCovered": ["light", "dark", "validation-error", "network-error", "375px"]
     }
   ]
 }

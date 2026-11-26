@@ -1,81 +1,55 @@
-import { Code2, ExternalLink, FolderGit2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowRight, FolderGit2 } from 'lucide-react';
+import { Link } from 'react-router';
+import { ProjectBentoCard } from '@/components/ProjectBentoCard';
+import { SectionHeader } from '@/components/SectionHeader';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Project } from '@/lib/api';
 
 interface ProjectsSectionProps {
-  projects: Project[];
-  isLoading?: boolean;
+  readonly projects: readonly Project[];
+  readonly isLoading?: boolean;
+  readonly showViewAllLink?: boolean;
 }
 
-export const ProjectsSection = ({ projects, isLoading = false }: ProjectsSectionProps) => {
-  return (
-    <section id="projects" className="space-y-4">
-      <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-        <FolderGit2 className="h-5 w-5 text-sky-400" /> Projects
-      </h2>
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2" aria-busy="true" aria-label="Loading projects">
-          <div className="h-60 animate-pulse rounded-xl border border-slate-800 bg-slate-900/60" />
-          <div className="h-60 animate-pulse rounded-xl border border-slate-800 bg-slate-900/60" />
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {projects.map((project) => (
-            <Card key={project.id} className="flex flex-col justify-between">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle>{project.title}</CardTitle>
-                    {project.role && <CardDescription>{project.role}</CardDescription>}
-                  </div>
-                  <div className="flex gap-2">
-                    {project.repo_url && (
-                      <a
-                        href={project.repo_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${project.title} repository`}
-                        className="text-slate-400 hover:text-slate-100"
-                      >
-                        <Code2 className="h-4 w-4" />
-                      </a>
-                    )}
-                    {project.live_url && (
-                      <a
-                        href={project.live_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${project.title} live demo`}
-                        className="text-slate-400 hover:text-slate-100"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-slate-300">{project.summary}</p>
-                {project.highlights.length > 0 && (
-                  <ul className="list-disc space-y-1 pl-5 text-xs text-slate-400">
-                    {project.highlights.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                )}
-                <div className="flex flex-wrap gap-1.5">
-                  {project.tech_tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
+export const ProjectsSection = ({
+  projects,
+  isLoading = false,
+  showViewAllLink = false,
+}: ProjectsSectionProps) => (
+  <section id="projects" className="space-y-5">
+    <SectionHeader
+      eyebrow="Flagship Systems"
+      title="Projects"
+      icon={<FolderGit2 className="h-5 w-5 text-cobalt" />}
+      action={
+        showViewAllLink ? (
+          <Link to="/projects" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            <span>View All Projects</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : undefined
+      }
+    />
+
+    {isLoading ? (
+      <div className="grid gap-4 md:grid-cols-2" aria-busy="true" aria-label="Loading projects">
+        <Skeleton className="h-60 w-full" />
+        <Skeleton className="h-60 w-full" />
+      </div>
+    ) : projects.length === 0 ? (
+      <Card>
+        <CardContent className="pt-6 text-sm text-ink-muted">
+          No projects match the current filter.
+        </CardContent>
+      </Card>
+    ) : (
+      <div className="grid gap-4 md:grid-cols-2">
+        {projects.map((project) => (
+          <ProjectBentoCard key={project.id} project={project} />
+        ))}
+      </div>
+    )}
+  </section>
+);

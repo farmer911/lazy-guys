@@ -1,11 +1,13 @@
 import { Briefcase } from 'lucide-react';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Experience } from '@/lib/api';
 
 interface ExperienceSectionProps {
-  experiences: Experience[];
-  isLoading?: boolean;
+  readonly experiences: readonly Experience[];
+  readonly isLoading?: boolean;
 }
 
 const formatDate = (value: string | null): string => {
@@ -21,48 +23,64 @@ const formatDate = (value: string | null): string => {
 export const ExperienceSection = ({
   experiences,
   isLoading = false,
-}: ExperienceSectionProps) => {
-  return (
-    <section id="experience" className="space-y-4">
-      <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-        <Briefcase className="h-5 w-5 text-sky-400" /> Experience
-      </h2>
-      {isLoading ? (
-        <div className="space-y-4" aria-busy="true" aria-label="Loading experience">
-          <div className="h-48 animate-pulse rounded-xl border border-slate-800 bg-slate-900/60" />
-          <div className="h-48 animate-pulse rounded-xl border border-slate-800 bg-slate-900/60" />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {experiences.map((exp) => (
-            <Card key={exp.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <CardTitle>{exp.role}</CardTitle>
-                    <CardDescription>
-                      {exp.company} {exp.location ? `• ${exp.location}` : ''}
-                    </CardDescription>
-                  </div>
-                  <Badge variant={exp.is_current ? 'default' : 'secondary'}>
-                    {formatDate(exp.start_date)} — {exp.is_current ? 'Present' : formatDate(exp.end_date)}
-                  </Badge>
+}: ExperienceSectionProps) => (
+  <section id="experience" className="space-y-5">
+    <SectionHeader
+      eyebrow="Career Timeline"
+      title="Experience"
+      icon={<Briefcase className="h-5 w-5 text-cobalt" />}
+    />
+
+    {isLoading ? (
+      <div className="space-y-4" aria-busy="true" aria-label="Loading experience">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    ) : experiences.length === 0 ? (
+      <Card>
+        <CardContent className="pt-6 text-sm text-ink-muted">
+          No experience records found.
+        </CardContent>
+      </Card>
+    ) : (
+      <div className="space-y-4">
+        {experiences.map((exp) => (
+          <Card key={exp.id}>
+            <CardHeader>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <CardTitle>{exp.role}</CardTitle>
+                  <CardDescription>
+                    {exp.company} {exp.location ? `• ${exp.location}` : ''}
+                  </CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-slate-300">{exp.summary}</p>
-                {exp.highlights.length > 0 && (
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-slate-400">
-                    {exp.highlights.map((highlight) => (
-                      <li key={highlight}>{highlight}</li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
+                <Badge variant={exp.is_current ? 'emerald' : 'secondary'}>
+                  {formatDate(exp.start_date)} — {exp.is_current ? 'Present' : formatDate(exp.end_date)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm leading-relaxed text-ink-secondary">{exp.summary}</p>
+              {exp.highlights.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5 text-sm text-ink-muted">
+                  {exp.highlights.map((highlight) => (
+                    <li key={highlight}>{highlight}</li>
+                  ))}
+                </ul>
+              )}
+              {exp.tech_tags && exp.tech_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {exp.tech_tags.map((tag) => (
+                    <Badge key={tag} variant="mono">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )}
+  </section>
+);

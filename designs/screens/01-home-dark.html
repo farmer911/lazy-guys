@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"inverse-primary":"#005bc4","secondary-fixed":"#c7cfff","tertiary":"#34D399","on-error":"#490006","tertiary-container":"#064E3B","secondary-fixed-dim":"#b4c1ff","surface-bright":"#263349","outline":"#334155","primary-fixed-dim":"#3B82F6","secondary":"#60A5FA","secondary-container":"#1E293B","surface-tint":"#85adff","surface-container-low":"#111827","on-tertiary-fixed-variant":"#681c73","on-secondary-container":"#CBD5E1","on-surface":"#F8FAFC","surface-variant":"#1E293B","on-surface-variant":"#94A3B8","on-background":"#F8FAFC","primary-dim":"#2563EB","surface":"#0B1120","on-secondary-fixed":"#00278f","on-tertiary-container":"#A7F3D0","error":"#ff716c","surface-dim":"#0B1120","on-error-container":"#ffa8a3","primary-container":"#2563EB","on-primary-container":"#FFFFFF","tertiary-dim":"#10B981","surface-container-high":"#1E293B","outline-variant":"#1E293B","primary-fixed":"#60A5FA","on-tertiary":"#691d74","background":"#0B1120","surface-container":"#111827","error-container":"#9f0519","inverse-surface":"#fbf8ff","primary":"#3B82F6","surface-container-lowest":"#0B1120","on-primary-fixed-variant":"#002a62","surface-container-highest":"#1E293B","inverse-on-surface":"#4b537a","on-secondary-fixed-variant":"#2d48ac","secondary-dim":"#3B82F6","on-secondary":"#00175f","tertiary-fixed":"#f199f7","tertiary-fixed-dim":"#e28ce9","on-primary-fixed":"#000000","on-tertiary-fixed":"#3e0047","error-dim":"#d7383b","on-primary":"#FFFFFF"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{},"fontFamily":{"headline":["Space Grotesk"],"display":["Space Grotesk"],"body":["Inter"],"label":["Public Sans"],"mono":["Space Mono","monospace"]},"fontSize":{}}}}</script><style id="cobalt-00b-dark-sync">
+    html, body {
+      background-color: #0B1120 !important;
+      color: #F8FAFC;
+    }
+    body {
+      background-color: #0B1120 !important;
+      background-size: 24px 24px !important;
+      background-image:
+        linear-gradient(to right, rgba(30, 41, 59, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.45) 1px, transparent 1px) !important;
+    }
+  </style></head><body class="bg-surface font-body text-on-surface min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="h-20 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-6"><div class="flex items-center gap-6 shrink-0"><a class="flex items-center gap-3 group transition-transform duration-200 active:scale-95" data-path="home" href="#"><img alt="lazy-guy.dev Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrCavsCGjPs2hNrcMyMkGHy1dtWZi3KQ7RZinWRgfOobQzv9Q05yUnU9tsXXke5lGTaCydp1IfRBzPwS2E7qZp_mO9qJHlXF6K4EhLKqCt8v44QtwXV5LSxyXjXuqfoyI--ZJJkDl2tcjy1RJKNRNt4_QQyQ8Xywk7RAl167uftH0VxyUghyueOkEb5BmHVGW4c2howQ9IijzC82hwVe6ft2l7m8SYI-NQm_WmjLbJ9JBQ"/><div class="flex flex-col"><span class="font-headline font-bold text-base tracking-tight text-on-surface group-hover:text-primary transition-colors">lazy-guy<span class="text-primary">.dev</span></span><span class="font-mono text-[10px] tracking-wider text-on-surface-variant uppercase">Senior Full-Stack</span></div></a><div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-outline-variant/40"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span><span class="text-xs font-label text-on-surface-variant tracking-wide">Available for Q2/Q3 Roles</span></div></div><nav class="hidden md:flex items-center gap-1.5 p-1.5 rounded-full bg-surface-container-low/80 border border-outline-variant/30" data-active-classes="bg-surface-container-high text-primary font-semibold border border-outline-variant/60 shadow-inner"><a aria-current="page" class="px-4 py-2 rounded-full transition-all bg-surface-container-high text-primary font-semibold border border-outline-variant/60 shadow-inner" data-path="home" href="#">Home</a><a class="px-4 py-2 rounded-full text-xs font-label text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" data-path="projects" href="#">Projects</a><a class="px-4 py-2 rounded-full text-xs font-label text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" data-path="case-study" href="#">Case Study</a><a class="px-4 py-2 rounded-full text-xs font-label text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" data-path="experience-cv" href="#">Experience &amp; CV</a><a class="px-4 py-2 rounded-full text-xs font-label text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" data-path="contact" href="#">Contact</a></nav><div class="flex items-center gap-3 shrink-0"><div aria-label="Theme Switcher" class="flex items-center p-1 rounded-full bg-surface-container-low border border-outline-variant/40" role="radiogroup"><button aria-label="Light mode" class="p-1.5 rounded-full text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[16px] block">light_mode</span></button><button aria-label="Dark mode (active)" class="p-1.5 rounded-full bg-surface-container-high text-primary shadow-[0_0_12px_rgba(133,173,255,0.35)] border border-outline-variant/50 transition-colors" type="button"><span class="material-symbols-outlined text-[16px] block">dark_mode</span></button></div><a class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dim text-on-primary text-xs font-label font-bold tracking-wide shadow-[0_0_20px_rgba(133,173,255,0.25)] hover:shadow-[0_0_25px_rgba(133,173,255,0.4)] transition-all" data-path="experience-cv" href="#"><span class="material-symbols-outlined text-[16px]">download</span><span>Download CV</span></a><div class="flex items-center pl-2 border-l border-outline-variant/30"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-outline-variant/50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCFaLiYl4-TcJicGQm6WgXxwHNz7pft1OVGulCFdI033vr7ccA9kk5axuh1fNxJNPp5Cef5e8x3sqm1kl_TtJcDlk0h5TENY8wSSsOwsiWmDkELE4Bll3ZAJMw2k-GAiAXR8DdPVTdun2EgPiPhNNpi-DXdrr0HlXOcmMDCEJSx1-6A7YLKKqGeZeMMT9hjeIbEssrzjNr1D3LrouEm7df184KfDnrJX0VQvD6m24O2kXYYLF-T7regbEtcZ8xfr4"/></div></div></div></header><main class="w-full pt-20 bg-surface flex-1"><div class="flex flex-col w-full">
+<!-- Top Background Ambient Glow -->
+<div class="relative w-full max-w-7xl mx-auto px-6 lg:px-12 py-10 md:py-16">
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="absolute -top-10 right-10 w-[300px] h-[250px] bg-secondary-container/20 rounded-full blur-[90px] pointer-events-none -z-10"></div>
+<!-- 1. HERO SECTION: Executive Overview for Recruiters & Tech Leads -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start mb-24">
+<!-- Left Column: Core Value Proposition & Bio -->
+<div class="lg:col-span-7 flex flex-col justify-center">
+<!-- Eyebrow status bar -->
+<div class="flex flex-wrap items-center gap-3 mb-6">
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high shadow-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+</span>
+<span class="text-xs font-mono font-medium tracking-tight text-on-surface">OPEN TO ROLES: Senior / Staff Full-Stack</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-label">
+<span class="material-symbols-outlined text-sm text-primary">location_on</span>
+<span>Ho Chi Minh City, VN (UTC+7 / Remote)</span>
+</div>
+</div>
+<!-- Main Headline -->
+<h1 class="font-headline font-bold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-[1.12] mb-6">
+          Senior Full-Stack Engineer crafting resilient distributed web apps with <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-fixed to-secondary-dim">product obsession.</span>
+</h1>
+<!-- Subhead Value Prop -->
+<p class="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-2xl mb-8">
+          7+ years scaling TypeScript, React, Node.js &amp; PostgreSQL architectures from zero to millions of requests. Specialized in mission-critical developer tooling, high-throughput microservices, and design system engineering.
+        </p>
+<!-- Primary Actions -->
+<div class="flex flex-wrap items-center gap-4 mb-8">
+<a class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary hover:bg-primary-dim text-on-primary font-label font-bold text-sm tracking-wide shadow-md transition-all" href="#flagship-work">
+<span>Explore Flagship Projects</span>
+<span class="material-symbols-outlined text-base">south</span>
+</a>
+<a class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label font-medium text-sm transition-all shadow-sm" href="#recruiter-fast-track">
+<span class="material-symbols-outlined text-base text-primary">mail</span>
+<span>Get in Touch</span>
+</a>
+</div>
+<!-- Tertiary Social / CV Links -->
+<div class="flex flex-wrap items-center gap-6 pt-6 bg-surface-container-low/50 rounded-xl px-4 py-3 w-fit">
+<a class="group flex items-center gap-2 text-xs font-mono text-on-surface-variant hover:text-primary transition-colors" href="https://github.com/lazy-guy" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">terminal</span>
+<span>github.com/lazy-guy</span>
+</a>
+<div class="w-1 h-1 rounded-full bg-outline-variant"></div>
+<a class="group flex items-center gap-2 text-xs font-mono text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">share</span>
+<span>linkedin.com/in/lazy-guy-dev</span>
+</a>
+<div class="w-1 h-1 rounded-full bg-outline-variant"></div>
+<a class="group flex items-center gap-2 text-xs font-mono text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">download</span>
+<span>Download CV (.pdf)</span>
+</a>
+</div>
+</div>
+<!-- Right Column: High-density Engineer Telemetry Card & Terminal -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+<!-- Telemetry HUD Card -->
+<div class="rounded-xl bg-surface-container-high p-6 shadow-xl relative overflow-hidden">
+<div class="flex items-center justify-between pb-4 mb-4 bg-surface-container-highest/40 -mx-6 -mt-6 px-6 pt-5">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-error-dim/80"></span>
+<span class="w-3 h-3 rounded-full bg-primary-container/80"></span>
+<span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+<span class="font-mono text-xs text-on-surface-variant ml-2 font-medium tracking-wide">engine@lazy-guy:~/core-runtime</span>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-surface text-primary">v2.4-stable</span>
+</div>
+<!-- Quick Metrics Bar -->
+<div class="grid grid-cols-2 gap-3 mb-5">
+<div class="p-3 rounded-lg bg-surface-container">
+<span class="text-[11px] font-mono text-on-surface-variant block uppercase tracking-wider">Prod Availability</span>
+<span class="text-xl font-headline font-bold text-on-surface">99.98%</span>
+<span class="text-[10px] font-mono text-emerald-400 block mt-0.5">SLO Target Exceeded</span>
+</div>
+<div class="p-3 rounded-lg bg-surface-container">
+<span class="text-[11px] font-mono text-on-surface-variant block uppercase tracking-wider">Deployments</span>
+<span class="text-xl font-headline font-bold text-primary">1,420+</span>
+<span class="text-[10px] font-mono text-on-surface-variant block mt-0.5">Automated CI/CD Runs</span>
+</div>
+</div>
+<!-- Stack Tags -->
+<div class="mb-4">
+<span class="text-[11px] font-mono text-on-surface-variant block mb-2 uppercase tracking-wider">Primary Stack Primitives</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">React 19</span>
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">TypeScript 5.4</span>
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">Node.js</span>
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">PostgreSQL</span>
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">Docker</span>
+<span class="px-2.5 py-1 rounded bg-surface text-primary font-mono text-[11px] font-semibold">Redis</span>
+</div>
+</div>
+<!-- Interactive Terminal / Code Snippet Preview -->
+<div class="rounded-lg bg-surface-container-lowest p-4 font-mono text-xs leading-relaxed overflow-x-auto text-on-surface-variant">
+<div class="flex items-center justify-between pb-2 mb-2 text-[10px] text-outline">
+<span>db/telemetry-pipeline.ts</span>
+<span>24 LOC</span>
+</div>
+<pre class="font-mono text-[11px] leading-5"><span class="text-secondary">import</span> { pool, telemetry } <span class="text-secondary">from</span> <span class="text-emerald-300">"@core/infra"</span>;
+
+<span class="text-secondary">export async function</span> <span class="text-primary font-bold">queryAggregatedMetrics</span>(
+  squadId: <span class="text-tertiary">string</span>,
+  windowMs = 3600_000
+): <span class="text-tertiary">Promise&lt;TelemetryReport&gt;</span> {
+  <span class="text-secondary">return</span> telemetry.<span class="text-primary">trace</span>(<span class="text-emerald-300">"metrics.eval"</span>, <span class="text-secondary">async</span> () =&gt; {
+    <span class="text-secondary">const</span> { rows } = <span class="text-secondary">await</span> pool.<span class="text-primary">query</span>(
+      <span class="text-emerald-300">`SELECT p95_latency, rpm, error_rate</span>
+<span class="text-emerald-300">       FROM mv_stream_telemetry</span>
+<span class="text-emerald-300">       WHERE squad_id = $1 AND timestamp &gt; NOW() - $2::interval`</span>,
+      [squadId, <span class="text-emerald-300">`${windowMs} milliseconds`</span>]
+    );
+    <span class="text-secondary">return</span> parseTelemetry(rows);
+  });
+}</pre>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. BENTO STRIP — Quantified Engineering Impact -->
+<section class="mb-28">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<span class="font-mono text-xs uppercase tracking-wider text-primary font-bold block mb-1">Measured Engineering Outcomes</span>
+<h2 class="font-headline font-bold text-2xl sm:text-3xl text-on-surface">Architectural Impact &amp; Delivery Rigor</h2>
+</div>
+<div class="text-xs font-mono text-on-surface-variant">
+          Audited Production Metrics • 2022–2025
+        </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Bento Card 1: API Latency & Query Optimization -->
+<div class="group relative rounded-xl bg-surface-container p-6 sm:p-8 flex flex-col justify-between hover:bg-surface-container-high transition-all shadow-md">
+<div>
+<div class="flex items-center justify-between mb-6">
+<span class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-mono text-[11px] font-medium">PostgreSQL &amp; Redis</span>
+<span class="material-symbols-outlined text-primary text-xl">bolt</span>
+</div>
+<div class="text-4xl lg:text-5xl font-headline font-bold text-on-surface tracking-tight mb-2">
+              -45%
+            </div>
+<div class="font-mono text-xs text-primary font-semibold tracking-wide uppercase mb-4">
+              [API p95 Latency Reduction]
+            </div>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+              Refactored legacy analytical queries and implemented distributed Redis caching layer, dropping p95 latency from 680ms to 370ms under 40k RPM peak load.
+            </p>
+</div>
+<!-- Mini Graphical Sparkline / Bar Chart -->
+<div class="pt-4 bg-surface-container-low/70 rounded-lg p-3">
+<div class="flex justify-between items-end gap-2 h-14">
+<div class="flex-1 flex flex-col items-center gap-1">
+<div class="w-full bg-error-dim/70 rounded-t h-12"></div>
+<span class="text-[9px] font-mono text-on-surface-variant">Before (680ms)</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1">
+<div class="w-full bg-primary rounded-t h-6 shadow-[0_0_10px_rgba(133,173,255,0.4)]"></div>
+<span class="text-[9px] font-mono text-primary font-semibold">After (370ms)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Card 2: Test Reliability & CI Pipeline -->
+<div class="group relative rounded-xl bg-surface-container p-6 sm:p-8 flex flex-col justify-between hover:bg-surface-container-high transition-all shadow-md">
+<div>
+<div class="flex items-center justify-between mb-6">
+<span class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-mono text-[11px] font-medium">CI Matrix &amp; E2E</span>
+<span class="material-symbols-outlined text-primary text-xl">verified</span>
+</div>
+<div class="text-4xl lg:text-5xl font-headline font-bold text-on-surface tracking-tight mb-2">
+              90%+
+            </div>
+<div class="font-mono text-xs text-primary font-semibold tracking-wide uppercase mb-4">
+              [TypeScript Monorepo + Playwright]
+            </div>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+              Spearheaded automated smoke &amp; regression pipelines reducing release rollback frequency from bi-weekly to zero incidents over 4 consecutive quarters.
+            </p>
+</div>
+<!-- Visual Badge / Metric Callout -->
+<div class="pt-4 bg-surface-container-low/70 rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+<span class="text-xs font-mono text-on-surface">Zero Critical Escapes</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant font-medium">12 Mos Tracked</span>
+</div>
+</div>
+<!-- Bento Card 3: Design System & Lead Time -->
+<div class="group relative rounded-xl bg-surface-container p-6 sm:p-8 flex flex-col justify-between hover:bg-surface-container-high transition-all shadow-md">
+<div>
+<div class="flex items-center justify-between mb-6">
+<span class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-mono text-[11px] font-medium">Design Systems &amp; Primitives</span>
+<span class="material-symbols-outlined text-primary text-xl">layers</span>
+</div>
+<div class="text-4xl lg:text-5xl font-headline font-bold text-on-surface tracking-tight mb-2">
+              4 Squads
+            </div>
+<div class="font-mono text-xs text-primary font-semibold tracking-wide uppercase mb-4">
+              [Standardized UI Core Delivery]
+            </div>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+              Designed tokenized UI architecture with Tailwind &amp; Radix primitives, slashing feature delivery lead time by 3.5 weeks per release cycle across 22 engineers.
+            </p>
+</div>
+<!-- Tokens Chip Display -->
+<div class="pt-4 bg-surface-container-low/70 rounded-lg p-3">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-surface text-secondary-dim font-bold">@ds/core</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-surface text-on-surface font-medium">Tokens v3.1</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-surface text-emerald-400 font-medium">42 Primitives</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. SELECTED FLAGSHIP WORK PREVIEW -->
+<section class="mb-28" id="flagship-work">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+<div>
+<span class="font-mono text-xs uppercase tracking-wider text-primary font-bold block mb-1">Curated Engineering Portfolio</span>
+<h2 class="font-headline font-bold text-2xl sm:text-3xl text-on-surface">Selected Flagship Architecture</h2>
+</div>
+<a class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-primary hover:text-primary-fixed transition-colors" data-path="projects" href="#">
+<span>View All 14 Projects in Catalog</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Flagship Project 1: HyperScale Metrics -->
+<article class="flex flex-col rounded-2xl bg-surface-container-high overflow-hidden shadow-xl transition-all duration-300 hover:translate-y-[-2px]">
+<!-- Visual Media Container -->
+<div class="relative h-60 w-full overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="High-density real-time system metrics dashboard in dark mode with luminous blue and cyan line telemetry graphs, live node status latency indicators, and PostgreSQL analytics visual components on an architectural midnight cobalt canvas." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHj4jr3pHhUnF7zL_HUXG6VlfXAoL8LTUJ4rO-6wgcIMrsaRFMp1kXXJtVmxH2xoweG3wjB0LdtBL1cYHY0cG23x2R-VelVqmRUV9Iy-vwSxArfwHpj9bcbmd72DDPD0zIONvZ-ScEWL-cuXniunRwZFmqDh2kvl8RpQCcUqobnbBln2pPcdVjs2hDfiDbbfhMoz1SnO9nHbDYUEbGeAh5AnAwNpuO3MUmTT3FIYeGdLLYyRY6uCh63vwG6orFKYE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-high via-surface-container-high/30 to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low/90 backdrop-blur-md font-mono text-[10px] text-primary font-bold uppercase tracking-wider">
+                Telemetry Platform
+              </span>
+</div>
+</div>
+<!-- Content Body -->
+<div class="p-6 sm:p-8 flex flex-col flex-1 justify-between">
+<div>
+<h3 class="font-headline font-bold text-xl sm:text-2xl text-on-surface mb-3">
+                HyperScale Metrics — Distributed Real-Time Telemetry
+              </h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+                Sub-second metrics aggregation dashboard processing 2.4M daily telemetry events with WebSockets and TimescaleDB, supporting live node clustering.
+              </p>
+<!-- Outcome Highlight -->
+<div class="flex items-center gap-3 p-3.5 rounded-lg bg-surface-container mb-6">
+<span class="material-symbols-outlined text-primary text-xl">speed</span>
+<div>
+<span class="text-xs font-mono text-on-surface block font-bold">Outcome</span>
+<span class="text-xs text-on-surface-variant">Reduced incident triage MTTR by 38% for tier-1 incidents</span>
+</div>
+</div>
+<!-- Tech Stack Tags -->
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">React</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">TypeScript</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">Node.js</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">WebSockets</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">TimescaleDB</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">TailwindCSS</span>
+</div>
+</div>
+<!-- Links -->
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<a class="inline-flex items-center gap-1.5 font-label font-bold text-xs text-primary hover:text-primary-fixed transition-colors" data-path="case-study" href="#">
+<span>View Case Study</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+<a class="inline-flex items-center gap-1.5 font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">code</span>
+<span>Source Code</span>
+</a>
+</div>
+</div>
+</article>
+<!-- Flagship Project 2: NovaPay Checkout Engine -->
+<article class="flex flex-col rounded-2xl bg-surface-container-high overflow-hidden shadow-xl transition-all duration-300 hover:translate-y-[-2px]">
+<!-- Visual Media Container -->
+<div class="relative h-60 w-full overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="Fintech payment orchestration interface mockup on high-contrast slate blue surface showing idempotent webhook transactions, multi-currency ledger pipelines, and zero-downtime PCI-compliant checkout analytics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOWER2WG5L6g3R9bcV0aa48RPleO_i8txZuEs6GgTAdc9wsnk8tzarFHfnkYH9PAihIv9jAgzrounthZGsT8vBryAXAXZJEMiBto8TUWDI9UPQnJTDd6zQjaj7AAEmWS2tgxN1-wvivwgk2KO4NA6xFlgb3XIwqSq4A1axirg0fTrvvYturZRzib7hmmzugg05EihC7r3TYB3FPt9tuqJLa9n8tRvtNR35q8selycHKoK_C2cLsb9YgU6Blkd7vcM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-high via-surface-container-high/30 to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low/90 backdrop-blur-md font-mono text-[10px] text-primary font-bold uppercase tracking-wider">
+                Fintech Engine
+              </span>
+</div>
+</div>
+<!-- Content Body -->
+<div class="p-6 sm:p-8 flex flex-col flex-1 justify-between">
+<div>
+<h3 class="font-headline font-bold text-xl sm:text-2xl text-on-surface mb-3">
+                NovaPay Checkout Engine — Multi-Tenant Payment Orchestration
+              </h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+                Zero-downtime PCI-compliant checkout workflow processing $18M+ ARR across Southeast Asia and global payment gateways with fallback resilience.
+              </p>
+<!-- Outcome Highlight -->
+<div class="flex items-center gap-3 p-3.5 rounded-lg bg-surface-container mb-6">
+<span class="material-symbols-outlined text-primary text-xl">format_image_left</span>
+<div>
+<span class="text-xs font-mono text-on-surface block font-bold">Outcome</span>
+<span class="text-xs text-on-surface-variant">99.99% transaction reliability with idempotent webhooks</span>
+</div>
+</div>
+<!-- Tech Stack Tags -->
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">Next.js</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">Node.js</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">PostgreSQL</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">Stripe API</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">Docker</span>
+<span class="px-2.5 py-1 rounded bg-surface font-mono text-xs text-primary-fixed">AWS ECS</span>
+</div>
+</div>
+<!-- Links -->
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<a class="inline-flex items-center gap-1.5 font-label font-bold text-xs text-primary hover:text-primary-fixed transition-colors" data-path="case-study" href="#">
+<span>View Case Study</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+<a class="inline-flex items-center gap-1.5 font-mono text-xs text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">description</span>
+<span>Architecture Doc</span>
+</a>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- 4. RECRUITER FAST-TRACK CALLOUT BANNER -->
+<section class="relative rounded-2xl bg-surface-container-high p-8 sm:p-12 shadow-2xl overflow-hidden mb-12" id="recruiter-fast-track">
+<!-- Glow & Accent Pattern -->
+<div class="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+<div class="absolute top-0 left-0 w-2 h-full bg-primary"></div>
+<div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+<div class="max-w-2xl">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-xl">contact_support</span>
+<span class="font-mono text-xs uppercase tracking-wider text-primary font-bold">Fast-Track For Talent Partners</span>
+</div>
+<h2 class="font-headline font-bold text-2xl sm:text-3xl text-on-surface tracking-tight mb-3">
+            Need a battle-tested Senior Engineer for your core team?
+          </h2>
+<p class="text-sm sm:text-base text-on-surface-variant leading-relaxed mb-6">
+            Available for full-time senior IC roles or strategic technical consulting. 2-minute recruiter scan: read my verified CV or book a direct 20-minute architecture chat.
+          </p>
+<!-- Email Copy Pill Component -->
+<div class="inline-flex items-center gap-3 p-1.5 pl-3 rounded-lg bg-surface-container font-mono text-xs">
+<span class="text-on-surface-variant">Direct Mail:</span>
+<span class="text-on-surface font-semibold" id="target-email">hello@lazy-guy.dev</span>
+<button aria-label="Copy email address" class="px-2.5 py-1.5 rounded bg-surface hover:bg-surface-variant text-primary hover:text-primary-fixed transition-colors flex items-center gap-1" id="copy-email-btn" type="button">
+<span class="material-symbols-outlined text-sm" id="copy-icon">content_copy</span>
+<span class="text-[11px] font-sans" id="copy-text">Copy</span>
+</button>
+</div>
+</div>
+<!-- Callout Action Buttons -->
+<div class="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-primary hover:bg-primary-dim text-on-primary font-label font-bold text-sm tracking-wide shadow-md transition-all" data-path="experience-cv" href="#">
+<span class="material-symbols-outlined text-base">file_download</span>
+<span>Download Full Resume (PDF)</span>
+</a>
+<a class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface font-label font-medium text-sm transition-all shadow-sm" data-path="contact" href="#">
+<span class="material-symbols-outlined text-base text-primary">calendar_today</span>
+<span>Schedule Introductory Call</span>
+</a>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  (function () {
+    const copyBtn = document.getElementById('copy-email-btn');
+    const copyText = document.getElementById('copy-text');
+    const copyIcon = document.getElementById('copy-icon');
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText('hello@lazy-guy.dev').then(function () {
+          if (copyText) copyText.textContent = 'Copied!';
+          if (copyIcon) copyIcon.textContent = 'done';
+          setTimeout(function () {
+            if (copyText) copyText.textContent = 'Copy';
+            if (copyIcon) copyIcon.textContent = 'content_copy';
+          }, 2000);
+        });
+      });
+    }
+  })();
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/30 py-12"><div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex flex-col items-center md:items-start gap-1"><div class="flex items-center gap-2"><span class="font-headline font-bold text-sm tracking-tight text-on-surface">lazy-guy<span class="text-primary">.dev</span></span><span class="text-outline font-mono text-xs">/</span><span class="text-on-surface-variant text-xs font-mono">v2.4.0</span></div><p class="text-xs text-on-surface-variant">© 2025 Architecture &amp; Code by lazy-guy. Built with Swiss precision.</p></div><div class="flex items-center gap-6 text-xs font-mono text-on-surface-variant"><div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-container-low border border-outline-variant/30"><span class="material-symbols-outlined text-sm text-primary">schedule</span><span>HCM (UTC+7): 14:32 ICT</span></div><div class="flex items-center gap-4"><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5" href="#"><span class="material-symbols-outlined text-sm">terminal</span><span>GitHub</span></a><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5" href="#"><span class="material-symbols-outlined text-sm">share</span><span>LinkedIn</span></a><a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5" href="#"><span class="material-symbols-outlined text-sm">mail</span><span>Status</span></a></div></div></div></footer></body></html>

@@ -89,4 +89,58 @@ describe('ContactForm', () => {
 
     sendSpy.mockRestore();
   });
+
+  it('supports switching between JD Link URL and PDF upload while rejecting non-PDF files', async () => {
+    const user = userEvent.setup();
+    const sendSpy = vi.spyOn(portfolioApi, 'sendContact').mockResolvedValue({
+      ok: true,
+      id: 'sub-123',
+      submittedDate: '2026-11-26',
+      jdType: 'link',
+      receivedAt: '2026-11-26T00:00:00.000Z',
+    });
+
+    render(<ContactForm preferredSlot="Thursday · 02:00 PM ICT" />);
+
+    await user.type(screen.getByLabelText(/name/i), 'Sarah Jenkins');
+    await user.type(screen.getByLabelText(/email/i), 'sarah@scaleup.io');
+    await user.type(screen.getByLabelText(/message/i), 'Staff Full-Stack inquiry');
+
+    await user.click(screen.getByRole('button', { name: /jd link/i }));
+    await user.type(screen.getByLabelText(/jd url/i), 'https://boards.greenhouse.io/scaleup/123');
+    await user.click(screen.getByRole('button', { name: /send message/i }));
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Sarah Jenkins',
+        jdUrl: 'https://boards.greenhouse.io/scaleup/123',
+        preferredSlot: 'Thursday · 02:00 PM ICT',
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: /upload pdf/i }));
+    const fileInput = screen.getByLabelText(/upload jd pdf/i);
+
+    const badFile = new File(['<html>not a pdf</html>'], 'evil.pdf', { type: 'application/pdf' });
+    await user.upload(fileInput, badFile);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/valid pdf/i);
+
+    const validPdf = new File(['%PDF-1.4\n%%EOF\n'], 'staff-jd.pdf', { type: 'application/pdf' });
+    await user.upload(fileInput, validPdf);
+    await user.type(screen.getByLabelText(/name/i), 'Sarah Jenkins');
+    await user.type(screen.getByLabelText(/email/i), 'sarah@scaleup.io');
+    await user.type(screen.getByLabelText(/message/i), 'Attached PDF JD');
+    await user.click(screen.getByRole('button', { name: /send message/i }));
+
+    expect(sendSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        jdPdf: expect.objectContaining({
+          fileName: 'staff-jd.pdf',
+          mimeType: 'application/pdf',
+        }),
+      })
+    );
+
+    sendSpy.mockRestore();
+  });
 });

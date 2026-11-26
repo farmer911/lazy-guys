@@ -34,19 +34,11 @@
     },
     {
       "id": "feat-005",
-      "name": "Backend Schema, Contact JD (Link/PDF + Date), CV PDF Export & Daily Visitor Analytics APIs",
-      "description": "Extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; add GET /api/projects/:slug, persistent POST /api/contact supporting JD URL or PDF upload with calendar date (YYYY-MM-DD) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf export via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily endpoints.",
+      "name": "Electric Cobalt Multi-Page Portfolio, Contact JD (Link/PDF + Date), CV PDF Export & Daily Analytics",
+      "description": "Freeze Stitch Electric Cobalt Studio (projects/15082605221977705976) into designs/; extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; implement GET /api/projects/:slug, persistent POST /api/contact (JD URL or PDF upload <= 5MB with YYYY-MM-DD submitted_date) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily; build Light/Dark Tailwind v4 + global CSS design system, 2-tier reusable components, and 5 responsive React Router pages (/, /projects, /case-study/:slug, /experience, /contact).",
       "dependencies": ["feat-004"],
       "status": "ready-for-eval",
-      "evidence": "./init.sh (17/17 API PG + 8/8 RTL + 95 Node + 24 Python) and 3/3 E2E passed after Round 1 fixes; awaiting independent evaluator Round 2."
-    },
-    {
-      "id": "feat-006",
-      "name": "Electric Cobalt Multi-Page UI (Stitch Freeze, React Router, Light/Dark Tailwind v4 & Responsive Components)",
-      "description": "Freeze Stitch Electric Cobalt Studio (projects/15082605221977705976) into designs/, configure Light/Dark Tailwind v4 tokens + reusable global CSS in apps/web/src/index.css, build 2-tier reusable components, wire 5 React Router pages (/, /projects, /case-study/:slug, /experience, /contact) with JD link/PDF upload, CV PDF download, silent visit tracking, and responsive 375/768/1280 E2E.",
-      "dependencies": ["feat-005"],
-      "status": "not-started",
-      "evidence": ""
+      "evidence": "./init.sh (95 Node + 24 Python + 17/17 API PG + 14/14 Web RTL) and 4/4 Playwright E2E passed with 0 warnings; awaiting independent evaluator."
     }
   ]
 }

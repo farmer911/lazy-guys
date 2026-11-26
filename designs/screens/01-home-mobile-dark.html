@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0B1120;color:#F8FAFC;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed-dim": "#b4c1ff", "surface-dim":"#0B1120", "on-tertiary-container":"#A7F3D0", "tertiary-dim":"#10B981", "outline-variant":"#1E293B", "surface":"#0B1120", "surface-variant":"#1E293B", "error-dim": "#d7383b", "inverse-on-surface": "#4b537a", "on-secondary-container":"#CBD5E1", "surface-container-lowest":"#0B1120", "outline":"#334155", "on-error": "#490006", "error": "#ff716c", "surface-container":"#111827", "on-secondary": "#00175f", "secondary-dim":"#3B82F6", "on-tertiary": "#691d74", "on-primary-fixed": "#000000", "surface-container-high":"#1E293B", "on-secondary-fixed": "#00278f", "secondary":"#60A5FA", "error-container": "#9f0519", "background":"#0B1120", "on-secondary-fixed-variant": "#2d48ac", "inverse-primary": "#005bc4", "secondary-container":"#1E293B", "secondary-fixed": "#c7cfff", "surface-bright":"#263349", "on-surface":"#F8FAFC", "on-primary":"#FFFFFF", "primary-fixed":"#60A5FA", "on-tertiary-fixed": "#3e0047", "primary-fixed-dim":"#3B82F6", "tertiary-container":"#064E3B", "on-surface-variant":"#94A3B8", "inverse-surface": "#fbf8ff", "primary":"#3B82F6", "tertiary":"#34D399", "surface-container-highest":"#1E293B", "on-primary-fixed-variant": "#002a62", "tertiary-fixed": "#f199f7", "on-tertiary-fixed-variant": "#681c73", "surface-container-low":"#111827", "on-primary-container":"#FFFFFF", "tertiary-fixed-dim": "#e28ce9", "primary-container":"#2563EB", "surface-tint": "#85adff", "on-error-container": "#ffa8a3", "primary-dim":"#2563EB", "on-background":"#F8FAFC" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": {}, "fontFamily": { "headline": ["Space Grotesk"], "display": ["Space Grotesk"], "body": ["Inter"], "label": ["Public Sans"] }, "fontSize": {} } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <style id="cobalt-00b-dark-sync">
+    html, body {
+      background-color: #0B1120 !important;
+      color: #F8FAFC;
+    }
+    body {
+      background-color: #0B1120 !important;
+      background-size: 24px 24px !important;
+      background-image:
+        linear-gradient(to right, rgba(30, 41, 59, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.45) 1px, transparent 1px) !important;
+    }
+  </style></head><body class="bg-surface font-body text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl"><div class="h-14 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><span class="font-headline font-bold text-sm tracking-tight text-on-surface">lazy-guy<span class="text-primary">.dev</span></span><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span class="text-[10px] font-label font-medium uppercase tracking-wider text-on-surface-variant">Ready</span></span></div><div class="flex items-center gap-1.5"><button aria-label="Toggle Theme" class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface" type="button"><span class="material-symbols-outlined text-[18px]">dark_mode</span></button><button aria-label="Open Menu" class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface" type="button"><span class="material-symbols-outlined text-[20px]">menu</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-14 pb-20 bg-surface flex-grow"><div class="flex flex-col w-full max-w-full overflow-hidden px-4 gap-6 text-on-surface">
+<!-- 1. Slide-Down Mobile Drawer Preview / Announcement Banner -->
+<section class="w-full">
+<div class="w-full bg-surface-container-high rounded-xl p-3 shadow-md flex items-center justify-between gap-2.5">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-2 h-2 rounded-full bg-secondary-dim flex-shrink-0"></span>
+<span class="font-label text-[11px] font-medium text-on-surface-variant truncate">
+          v2.4 Production • Mobile Drawer Active (44px targets)
+        </span>
+</div>
+<span class="font-headline text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-surface-variant text-primary flex-shrink-0">
+        Live
+      </span>
+</div>
+</section>
+<!-- 2. Single-Column Mobile Hero Section -->
+<section class="flex flex-col gap-4">
+<!-- Live Availability Badge -->
+<div class="inline-flex items-center self-start gap-2 px-3 py-1.5 rounded-full bg-surface-container shadow-sm">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-label text-xs font-semibold text-primary tracking-tight">
+        Available for Senior / Staff IC Roles • Remote / Hybrid
+      </span>
+</div>
+<!-- Main Headline -->
+<h1 class="font-headline text-[28px] leading-[1.2] font-bold tracking-tight text-on-surface">
+      Senior Full-Stack Engineer crafting resilient distributed web apps with product obsession.
+    </h1>
+<!-- Subtitle -->
+<p class="font-body text-sm leading-[22px] text-on-surface-variant">
+      7+ years scaling TypeScript, React, Node.js, and PostgreSQL architectures from zero to millions of requests. Specialized in mission-critical developer tooling, high-throughput microservices, and design system engineering.
+    </p>
+<!-- Full-Width CTA Stack (48px Touch Targets) -->
+<div class="flex flex-col gap-2.5 w-full mt-1">
+<a class="w-full h-12 bg-primary text-on-primary font-label font-semibold rounded-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]" href="#projects">
+<span>Explore Flagship Projects</span>
+<span class="material-symbols-outlined text-[18px]">arrow_downward</span>
+</a>
+<a class="w-full h-12 bg-surface-container-high text-on-surface font-label font-medium rounded-lg flex items-center justify-center gap-2 shadow-md transition-transform active:scale-[0.98]" href="#recruiter-intake">
+<span>Direct Recruiter Intake</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+<!-- Social Links Row (44px Touch Targets) -->
+<div class="grid grid-cols-2 gap-2.5 w-full mt-0.5">
+<a class="h-11 bg-surface-container-low rounded-lg flex items-center justify-center gap-2 text-xs font-label text-on-surface font-medium hover:bg-surface-container transition-colors shadow-sm" href="https://github.com" rel="noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[18px] text-secondary">code</span>
+<span class="truncate">GitHub (lazy-guy)</span>
+</a>
+<a class="h-11 bg-surface-container-low rounded-lg flex items-center justify-center gap-2 text-xs font-label text-on-surface font-medium hover:bg-surface-container transition-colors shadow-sm" href="https://linkedin.com" rel="noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[18px] text-secondary">domain</span>
+<span class="truncate">LinkedIn (/in/lazy-guy)</span>
+</a>
+</div>
+</section>
+<!-- 3. Mobile Interactive Terminal / Code Snippet Preview -->
+<section class="w-full bg-surface-container-low rounded-xl overflow-hidden shadow-xl flex flex-col">
+<!-- Terminal Titlebar -->
+<div class="h-10 px-3 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-container"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="ml-2 font-headline text-[11px] text-on-surface-variant tracking-tight truncate max-w-[150px]">
+          engine@lazy-guy:~/telemetry
+        </span>
+</div>
+<span class="font-headline text-[10px] font-semibold tracking-wider text-primary bg-surface-variant px-2 py-0.5 rounded">
+        99.98% SLA
+      </span>
+</div>
+<!-- Code Block -->
+<div class="p-4 bg-surface-container-lowest overflow-x-auto text-[11px] leading-relaxed font-headline">
+<div class="flex gap-2">
+<span class="text-outline select-none">01</span>
+<div>
+<span class="text-tertiary">export</span> <span class="text-tertiary">const</span> <span class="text-primary-fixed">staffEngineer</span>: <span class="text-secondary-fixed">Architect</span> = {
+        </div>
+</div>
+<div class="flex gap-2">
+<span class="text-outline select-none">02</span>
+<div class="pl-3">
+<span class="text-on-surface-variant">handle</span>: <span class="text-secondary-fixed-dim">'lazy-guy'</span>,
+        </div>
+</div>
+<div class="flex gap-2">
+<span class="text-outline select-none">03</span>
+<div class="pl-3">
+<span class="text-on-surface-variant">p95Target</span>: <span class="text-secondary-fixed-dim">'&lt; 38ms'</span>,
+        </div>
+</div>
+<div class="flex gap-2">
+<span class="text-outline select-none">04</span>
+<div class="pl-3">
+<span class="text-on-surface-variant">pooler</span>: <span class="text-secondary-fixed-dim">'PgBouncer Tx-Mode'</span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="text-outline select-none">05</span>
+<div>};</div>
+</div>
+</div>
+<!-- Mini Telemetry Stat Pills -->
+<div class="p-3 bg-surface-container flex flex-wrap gap-2">
+<div class="px-2.5 py-1 rounded bg-surface-container-high flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label text-[10px] text-on-surface-variant font-medium">Pipeline: <span class="text-on-surface font-semibold">38ms (p95)</span></span>
+</div>
+<div class="px-2.5 py-1 rounded bg-surface-container-high flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label text-[10px] text-on-surface-variant font-medium">Daily Ingestion: <span class="text-on-surface font-semibold">15M+</span></span>
+</div>
+<div class="px-2.5 py-1 rounded bg-surface-container-high flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+<span class="font-label text-[10px] text-on-surface-variant font-medium">CI Gate: <span class="text-on-surface font-semibold">4m 12s (-89%)</span></span>
+</div>
+</div>
+</section>
+<!-- 4. Stacked Mobile KPI Bento Cards (Compact Vertical Flow) -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<span class="font-headline text-xs uppercase tracking-wider font-bold text-on-surface-variant">Engineering Impact Metrics</span>
+<span class="text-[11px] font-label text-primary font-medium">Verified telemetry</span>
+</div>
+<!-- Bento 1: Latency Drop -->
+<div class="p-4 bg-surface-container rounded-xl flex items-center justify-between gap-4 shadow-md">
+<div class="flex flex-col">
+<span class="font-headline text-2xl font-bold text-primary tracking-tight">-45%</span>
+<span class="font-label text-[11px] text-primary-fixed uppercase tracking-wider font-semibold">p95 Latency</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="font-label text-xs font-semibold text-on-surface truncate">PostgreSQL &amp; Redis Tuning</p>
+<p class="font-body text-[11px] text-on-surface-variant mt-0.5 line-clamp-1">Query optimization under 40k RPM sustained peak</p>
+<!-- Sparkline visualization (Inline SVG) -->
+<div class="mt-2 w-full h-3 flex items-center gap-1.5">
+<div class="h-1.5 w-1/3 bg-surface-variant rounded-full"></div>
+<div class="h-1.5 w-2/3 bg-primary rounded-full"></div>
+<span class="font-headline text-[9px] text-on-surface-variant ml-auto whitespace-nowrap">680→370ms</span>
+</div>
+</div>
+</div>
+<!-- Bento 2: Deterministic Playwright CI -->
+<div class="p-4 bg-surface-container rounded-xl flex items-center justify-between gap-4 shadow-md">
+<div class="flex flex-col">
+<span class="font-headline text-2xl font-bold text-secondary tracking-tight">90%+</span>
+<span class="font-label text-[11px] text-secondary-fixed uppercase tracking-wider font-semibold">Stability</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="font-label text-xs font-semibold text-on-surface truncate">Deterministic Playwright CI</p>
+<p class="font-body text-[11px] text-on-surface-variant mt-0.5 line-clamp-2">8 parallel shards, zero flakes, deterministic 4m 12s gate</p>
+</div>
+</div>
+<!-- Bento 3: Multi-Squad Design System -->
+<div class="p-4 bg-surface-container rounded-xl flex items-center justify-between gap-4 shadow-md">
+<div class="flex flex-col">
+<span class="font-headline text-2xl font-bold text-on-surface tracking-tight">4</span>
+<span class="font-label text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold">Squads</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="font-label text-xs font-semibold text-on-surface truncate">Enterprise Design System</p>
+<p class="font-body text-[11px] text-on-surface-variant mt-0.5 line-clamp-2">42 accessible Radix UI primitives, 100% WCAG AA compliance</p>
+</div>
+</div>
+</section>
+<!-- 5. 1-Column Featured Project Architecture Cards -->
+<section class="flex flex-col gap-4" id="projects">
+<div class="flex items-center justify-between px-1">
+<span class="font-headline text-xs uppercase tracking-wider font-bold text-on-surface-variant">Flagship Deployments</span>
+<span class="text-[11px] font-label text-secondary font-medium">Recruiter Scannable</span>
+</div>
+<!-- Project 1: OmniFlow -->
+<div class="p-4 bg-surface-container-high rounded-xl shadow-lg flex flex-col gap-3.5">
+<!-- Project Header -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-headline text-base font-bold text-on-surface">OmniFlow Engine</span>
+<span class="px-2 py-0.5 text-[10px] font-label font-bold uppercase rounded bg-primary text-on-primary">Flagship</span>
+</div>
+<p class="font-body text-xs text-on-surface-variant leading-relaxed">
+          Real-time collaborative state orchestration engine built for multi-tenant enterprise document canvas.
+        </p>
+</div>
+<!-- Architecture Visual / Placeholder Canvas -->
+<div class="relative w-full h-36 rounded-lg overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover opacity-80" data-alt="High-contrast dark mode blueprint schematic of distributed microservice architecture diagram showing Next.js client websockets passing CRDT deltas through PgBouncer into PostgreSQL databases in glowing electric cobalt and slate blue tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASKyEhX7PTV70vpflR7_asQP1TsWwUbHzmWlSOeMbjCIfy2TrtxdDTS75rw7LQsQ1vS5GbG-Uktj5-XWOD18BJpt6IeWb8OUwHuTg8A6qN_ubGVqFNPCAqYj_kEhRutTWefILKuvoCyeoUu6CYlRwUjxbOlgKdN1HS_wwxAOBUqCYdh1TYMs_44aBjhUj3lLBWPz77PL5WoUjxtkFn6xg1PYjwCgqoKlAdWXGT2XJuM0aV7GAGzicxFlaHRdFuXEQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-high via-transparent to-transparent"></div>
+<div class="absolute bottom-2 left-2 flex gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-primary font-semibold">Next.js 14</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-primary font-semibold">CRDT</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-primary font-semibold">WebSockets</span>
+</div>
+</div>
+<!-- Scannable Key Metrics -->
+<div class="grid grid-cols-2 gap-2 bg-surface-container p-2.5 rounded-lg">
+<div class="flex flex-col">
+<span class="text-[10px] font-label uppercase text-on-surface-variant">Daily Active Users</span>
+<span class="font-headline text-sm font-bold text-primary">120k Daily Users</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-label uppercase text-on-surface-variant">Sync Latency</span>
+<span class="font-headline text-sm font-bold text-secondary">&lt; 50ms p99</span>
+</div>
+</div>
+<!-- 2-Column Touch Buttons (44px target) -->
+<div class="grid grid-cols-2 gap-2 mt-1">
+<a class="h-11 bg-surface-variant text-on-surface font-label text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors hover:bg-surface-bright" href="#case-study">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span>Read Case Study</span>
+</a>
+<a class="h-11 bg-primary text-on-primary font-label text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow-md transition-colors hover:bg-primary-dim" href="#live-demo">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+<span>Live Demo</span>
+</a>
+</div>
+</div>
+<!-- Project 2: DataPulse -->
+<div class="p-4 bg-surface-container-high rounded-xl shadow-lg flex flex-col gap-3.5">
+<!-- Project Header -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-headline text-base font-bold text-on-surface">DataPulse Analytics</span>
+<span class="px-2 py-0.5 text-[10px] font-label font-bold uppercase rounded bg-surface-variant text-secondary-fixed">Distributed</span>
+</div>
+<p class="font-body text-xs text-on-surface-variant leading-relaxed">
+          High-throughput event ingestion gateway streaming clickstream actions into real-time analytical partitions.
+        </p>
+</div>
+<!-- Architecture Visual / Placeholder Canvas -->
+<div class="relative w-full h-36 rounded-lg overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover opacity-80" data-alt="Dark cobalt user interface telemetry dashboard showing streaming Kafka partition topics and ClickHouse columnar storage throughput nodes in glowing navy slate and ice blue." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRIyqSfrz3-DlvjZbycll5FattkzU9guaxLt-mKi6a6KXey8TsPBx28tQPYyEHpSSbVtvg_7q7dFyZXTym7c6Evm4P3Fy6u2QYetelbv75uaXbUGjwYrMWNT_mUL7BETrChZM7c9Vub-lnfFPwg7pFCfj-lOOya2AxIE6HPphp9UwzmD-ipzDVPwQ2po6B-bOOAc6L7vEg2oiXRJ9SgZAoqxmlx7l9vopPa01IqNwtLjIL67ro6lCFgXXCFRGiY5o"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-high via-transparent to-transparent"></div>
+<div class="absolute bottom-2 left-2 flex gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-secondary font-semibold">Node.js</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-secondary font-semibold">Kafka</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-headline text-secondary font-semibold">ClickHouse</span>
+</div>
+</div>
+<!-- Scannable Key Metrics -->
+<div class="grid grid-cols-2 gap-2 bg-surface-container p-2.5 rounded-lg">
+<div class="flex flex-col">
+<span class="text-[10px] font-label uppercase text-on-surface-variant">Throughput Volume</span>
+<span class="font-headline text-sm font-bold text-primary">50M Events/Day</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-label uppercase text-on-surface-variant">Uptime SLA</span>
+<span class="font-headline text-sm font-bold text-secondary">99.99% Reliability</span>
+</div>
+</div>
+<!-- 2-Column Touch Buttons (44px target) -->
+<div class="grid grid-cols-2 gap-2 mt-1">
+<a class="h-11 bg-surface-variant text-on-surface font-label text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors hover:bg-surface-bright" href="#arch-specs">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+<span>Specs</span>
+</a>
+<a class="h-11 bg-surface-container-low text-on-surface font-label text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors hover:bg-surface-container" href="#github-source">
+<span class="material-symbols-outlined text-[16px]">code</span>
+<span>GitHub Source</span>
+</a>
+</div>
+</div>
+</section>
+<!-- 6. Compact Recruiter Fast-Track Callout Card -->
+<section class="w-full" id="recruiter-intake">
+<div class="p-4 bg-gradient-to-b from-surface-container-high to-surface-container rounded-xl shadow-xl flex flex-col gap-3 relative overflow-hidden">
+<!-- Glow ambient accent -->
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">bolt</span>
+<span class="font-headline text-xs font-bold uppercase tracking-wider text-primary">Fast-Track Hiring</span>
+</div>
+<h2 class="font-headline text-base font-bold leading-snug text-on-surface">
+        Looking for a Senior / Staff engineer who treats craft and metrics with equal obsession?
+      </h2>
+<div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-container-lowest/50 rounded-lg self-start">
+<span class="text-xs">⚡</span>
+<span class="font-label text-xs font-medium text-secondary-fixed">100% recruiter response within 12 hours</span>
+</div>
+<!-- Full-Width Actions (>=48px touch primary, >=44px secondary) -->
+<div class="flex flex-col gap-2 mt-2">
+<button class="w-full h-12 bg-primary text-on-primary font-label font-semibold text-sm rounded-lg flex items-center justify-center gap-2 shadow-md transition-transform active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Download 1-Page Resume (PDF)</span>
+</button>
+<a class="w-full h-11 bg-surface-variant text-on-surface font-label font-medium text-xs rounded-lg flex items-center justify-center gap-2 transition-colors hover:bg-surface-bright" href="mailto:recruiter@lazy-guy.dev">
+<span class="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
+<span>Schedule 20-Min Intro Call</span>
+</a>
+</div>
+</div>
+</section>
+</div>
+<script>
+  // Local micro-interactions for haptic feedback feel
+  document.querySelectorAll('button, a').forEach(el => {
+    el.addEventListener('click', () => {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(8);
+      }
+    });
+  });
+</script><footer class="w-full px-5 py-8 mt-12 bg-surface-container-low/60 flex flex-col gap-6"><div class="flex flex-col gap-1"><span class="font-headline text-xs font-semibold text-on-surface">lazy-guy.dev</span><p class="text-[11px] font-label text-on-surface-variant leading-relaxed">Senior Full-Stack Engineer Portfolio. Built for 2-minute recruiter scannability.</p></div><div class="flex items-center justify-between text-[11px] font-label text-on-surface-variant"><span>© 2025 lazy-guy.dev</span><div class="flex items-center gap-4"><a class="hover:text-primary transition-colors" href="#">GitHub</a><a class="hover:text-primary transition-colors" href="#">LinkedIn</a><a class="hover:text-primary transition-colors" href="#">CV</a></div></div></footer></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-2"><a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 transition-colors text-primary font-semibold" data-path="home" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span class="text-[10px] font-label tracking-tight">Home</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">terminal</span><span class="text-[10px] font-label tracking-tight">Projects</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="case-study" href="#"><span class="material-symbols-outlined text-[20px]">insights</span><span class="text-[10px] font-label tracking-tight">Case Study</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="experience-&amp;-cv" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="text-[10px] font-label tracking-tight">CV</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="contact" href="#"><span class="material-symbols-outlined text-[20px]">mail</span><span class="text-[10px] font-label tracking-tight">Contact</span></a></div></nav></body></html>

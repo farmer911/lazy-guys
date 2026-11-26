@@ -2,19 +2,22 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 disabled:pointer-events-none disabled:opacity-50',
+export const buttonVariants = cva(
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
   {
     variants: {
       variant: {
-        default: 'bg-sky-500 text-slate-950 hover:bg-sky-400',
-        outline: 'border border-slate-700 bg-transparent text-slate-100 hover:bg-slate-800',
-        ghost: 'text-slate-300 hover:bg-slate-800 hover:text-slate-50',
+        default: 'bg-cobalt text-white shadow-xs hover:bg-cobalt-hover',
+        secondary: 'bg-surface-subtle text-ink hover:bg-subtle',
+        outline: 'border border-strong bg-surface text-ink hover:bg-surface-subtle',
+        ghost: 'text-ink-secondary hover:bg-surface-subtle hover:text-ink',
+        destructive: 'bg-status-err text-white hover:opacity-90',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-6',
+        default: 'h-10 px-4 py-2',
+        sm: 'h-8 rounded-lg px-3 text-xs',
+        lg: 'h-12 rounded-xl px-6 text-base',
+        icon: 'h-9 w-9',
       },
     },
     defaultVariants: {
