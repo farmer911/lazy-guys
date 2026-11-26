@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "id": "pool-query-begin-bug",
+      "guideId": "transactions-concurrency-and-idempotency",
+      "pattern": "\\bpool\\.query\\(\\s*['\"`]\\s*BEGIN\\b",
+      "flags": "gi",
+      "multiline": false,
+      "fileExtensions": [".ts", ".js", ".mjs", ".mts"],
+      "message": "Never call pool.query('BEGIN') on a shared pg.Pool; check out a dedicated client via await pool.connect() with try/catch/finally { client.release() } (retrieve transactions-concurrency-and-idempotency).",
+      "keepWhen": [
+        "Pool instance is a dedicated single-connection test harness (max: 1) isolating sequential statements in an integration test."
+      ],
+      "dropWhen": [
+        "Match occurs inside a code comment, documentation string literal, or negative scanner test fixture."
+      ]
+    },
+    {
+      "id": "await-query-in-loop",
+      "guideId": "query-optimization-and-eliminating-n-plus-1",
+      "pattern": "\\bfor\\s*(?:await\\s*)?\\((?:[^()]|\\([^()]*\\))*\\)\\s*\\{(?:[^{}]|\\{[^{}]*\\})*?\\bawait\\s+(?:pool|client)\\.query\\s*\\(",
+      "flags": "g",
+      "multiline": true,
+      "fileExtensions": [".ts", ".js", ".mjs", ".mts"],
+      "message": "Sequential await pool.query/client.query inside a for loop causes N+1 roundtrips; batch with LEFT JOIN LATERAL, UNNEST, or ANY($1::uuid[]) (retrieve query-optimization-and-eliminating-n-plus-1).",
+      "keepWhen": [
+        "Offline CLI migration, seed, or batch maintenance script intentionally throttling bounded sequential chunks outside HTTP request paths.",
+        "Each loop iteration executes heterogeneous administrative DDL that cannot be parameterized into a set-based SQL statement."
+      ],
+      "dropWhen": [
+        "Loop iterates over a tiny fixed compile-time constant tuple (2-3 items) or seeds isolated rows in a test fixture."
+      ]
+    }
+  ]
+}
