@@ -177,3 +177,14 @@ test('tech-lead-contract SKILL.md wires arch-kb CLI and preserves strict JSON re
   assert.match(raw, /omit|suppress|never append/i);
   assert.match(raw, /JSON/i);
 });
+
+test('response-envelopes-and-dto-inheritance Rule 4 requires "type": "module" for NodeNext shared contracts', () => {
+  const guidePath = path.join(
+    ARCH_KB_DIR,
+    'guides',
+    'contracts',
+    'response-envelopes-and-dto-inheritance.md'
+  );
+  const raw = fs.readFileSync(guidePath, 'utf8');
+  assert.match(raw, /"type":\s*"module"/);
+});

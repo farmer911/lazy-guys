@@ -91,8 +91,8 @@ export const toPublicProject = (row: unknown): ProjectSummary =>
 
 ### Rule 4: Zero-build monorepo contract sharing
 
-- **DO** include `<repo-root>/specs/contracts/**/*.ts` directly in both backend (`NodeNext` with widened `rootDir`) and frontend (`bundler`) `tsconfig.json` files so new contracts typecheck immediately with zero intermediate build step.
-- **DON'T** introduce a separate compiled `@scope/contracts` workspace requiring `tsc -b` emit to `dist/` before downstream `apps/api` or `apps/web` checks can resolve newly added types.
+- **DO** include `<repo-root>/specs/contracts/**/*.ts` directly in both backend (`NodeNext` with widened `rootDir`) and frontend (`bundler` with `@contracts/*` alias) `tsconfig.json` files, and place `{"private": true, "type": "module"}` in `specs/contracts/package.json` (or root `package.json`) so `NodeNext` `tsc` emits native ESM rather than CommonJS into `dist/`.
+- **DON'T** introduce a separate compiled `@scope/contracts` workspace requiring `tsc -b` emit to `dist/` before downstream `apps/api` or `apps/web` checks can resolve newly added types, or omit `"type": "module"` above `specs/contracts/` when `apps/api` runs as ESM.
 
 ## When NOT to replace legacy code
 
