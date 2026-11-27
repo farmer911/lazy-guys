@@ -10,14 +10,17 @@ export const CardHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDiv
 );
 
 export const CardTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h3 className={cn('text-lg font-semibold leading-snug tracking-tight text-ink', className)} {...props} />
+  <h3
+    className={cn('font-headline text-lg font-bold leading-snug tracking-tight text-on-surface', className)}
+    {...props}
+  />
 );
 
 export const CardDescription = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn('text-sm text-ink-muted', className)} {...props} />
+  <p className={cn('text-sm text-on-surface-variant', className)} {...props} />
 );
 
 export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

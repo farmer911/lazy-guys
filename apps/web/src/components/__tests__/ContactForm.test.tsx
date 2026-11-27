@@ -1,12 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContactSubmissionInput } from '@contracts/portfolio';
 import { ContactForm } from '@/components/ContactForm';
 import { portfolioApi } from '@/lib/api';
+import { usePortfolioStore } from '@/store/usePortfolioStore';
 
-describe('ContactForm', () => {
-  it('exposes accessible labels, trims whitespace, and handles API errors cleanly', async () => {
+describe('ContactForm (Zod RHF, IME Guard, Drag-Drop PDF & Error Preservation)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.lang = 'en';
+    usePortfolioStore.setState({ locale: 'en' });
+  });
+  it('validates required fields, trims whitespace, preserves inputs on API failure, and resets on success', async () => {
     const user = userEvent.setup();
     const sendSpy = vi.spyOn(portfolioApi, 'sendContact');
 
@@ -31,14 +37,23 @@ describe('ContactForm', () => {
       email: 'recruiter@acme.com',
       message: 'Open Senior Engineer role',
     };
-    sendSpy.mockResolvedValueOnce({ ok: true, receivedAt: '2026-11-22T00:00:00.000Z' });
+    sendSpy.mockResolvedValueOnce({
+      ok: true,
+      id: 'sub-1',
+      submittedDate: '2026-11-27',
+      jdType: 'none',
+      receivedAt: '2026-11-27T00:00:00.000Z',
+    });
+
     await user.clear(nameInput);
     await user.clear(messageInput);
     await user.type(nameInput, validPayload.name);
     await user.type(messageInput, validPayload.message);
     await user.click(screen.getByRole('button', { name: /send message/i }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/message sent\. thank you!/i);
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent(/message sent\. thank you!/i);
+    expect(status).toHaveTextContent(/2026-11-27/);
 
     sendSpy.mockRejectedValueOnce(new Error('Network failure'));
     await user.type(nameInput, 'Jane');
@@ -55,11 +70,11 @@ describe('ContactForm', () => {
     sendSpy.mockRestore();
   });
 
-  it('suppresses premature Enter submit during Vietnamese IME composition and preserves focus-visible rings', async () => {
+  it('guards Vietnamese IME Enter composition and maintains focus-visible rings', async () => {
     const user = userEvent.setup();
     const sendSpy = vi.spyOn(portfolioApi, 'sendContact').mockResolvedValue({
       ok: true,
-      receivedAt: '2026-11-26T00:00:00.000Z',
+      receivedAt: '2026-11-27T00:00:00.000Z',
     });
 
     render(<ContactForm />);
@@ -90,26 +105,31 @@ describe('ContactForm', () => {
     sendSpy.mockRestore();
   });
 
-  it('supports switching between JD Link URL and PDF upload while rejecting non-PDF files', async () => {
+  it('supports None / JD Link / Upload PDF modes, accepts %PDF- even when file.type is empty, and rejects non-PDFs', async () => {
     const user = userEvent.setup();
     const sendSpy = vi.spyOn(portfolioApi, 'sendContact').mockResolvedValue({
       ok: true,
       id: 'sub-123',
-      submittedDate: '2026-11-26',
+      submittedDate: '2026-11-27',
       jdType: 'link',
-      receivedAt: '2026-11-26T00:00:00.000Z',
+      receivedAt: '2026-11-27T00:00:00.000Z',
     });
 
-    render(<ContactForm preferredSlot="Thursday · 02:00 PM ICT" />);
+    render(<ContactForm />);
 
     await user.type(screen.getByLabelText(/name/i), 'Sarah Jenkins');
     await user.type(screen.getByLabelText(/email/i), 'sarah@scaleup.io');
     await user.type(screen.getByLabelText(/message/i), 'Staff Full-Stack inquiry');
 
+    const noneBtn = screen.getByRole('button', { name: /^none$/i });
     const jdLinkBtn = screen.getByRole('button', { name: /jd link/i });
+    const pdfBtn = screen.getByRole('button', { name: /upload pdf/i });
+
+    expect(noneBtn).toHaveAttribute('aria-pressed', 'true');
     expect(jdLinkBtn).toHaveAttribute('aria-pressed', 'false');
     await user.click(jdLinkBtn);
     expect(jdLinkBtn).toHaveAttribute('aria-pressed', 'true');
+
     await user.type(screen.getByLabelText(/jd url/i), 'https://boards.greenhouse.io/scaleup/123');
     await user.click(screen.getByRole('button', { name: /send message/i }));
 
@@ -117,20 +137,22 @@ describe('ContactForm', () => {
       expect.objectContaining({
         name: 'Sarah Jenkins',
         jdUrl: 'https://boards.greenhouse.io/scaleup/123',
-        preferredSlot: 'Thursday · 02:00 PM ICT',
         idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/i),
       })
     );
 
-    await user.click(screen.getByRole('button', { name: /upload pdf/i }));
+    await user.click(pdfBtn);
+    expect(pdfBtn).toHaveAttribute('aria-pressed', 'true');
     const fileInput = screen.getByLabelText(/upload jd pdf/i);
 
     const badFile = new File(['<html>not a pdf</html>'], 'evil.pdf', { type: 'application/pdf' });
     await user.upload(fileInput, badFile);
     expect(await screen.findByRole('alert')).toHaveTextContent(/valid pdf/i);
 
-    const validPdf = new File(['%PDF-1.4\n%%EOF\n'], 'staff-jd.pdf', { type: 'application/pdf' });
-    await user.upload(fileInput, validPdf);
+    const emptyMimeValidPdf = new File(['%PDF-1.4\n%%EOF\n'], 'staff-jd.pdf', { type: '' });
+    await user.upload(fileInput, emptyMimeValidPdf);
+    expect(screen.getByText(/staff-jd\.pdf/i)).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(/name/i), 'Sarah Jenkins');
     await user.type(screen.getByLabelText(/email/i), 'sarah@scaleup.io');
     await user.type(screen.getByLabelText(/message/i), 'Attached PDF JD');
@@ -146,5 +168,32 @@ describe('ContactForm', () => {
     );
 
     sendSpy.mockRestore();
+  });
+
+  it('translates visible Zod validation alerts and labels dynamically when switching EN <-> VI without clearing user input', async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    const nameInput = screen.getByLabelText(/your full name/i);
+    const emailInput = screen.getByLabelText(/work email/i);
+
+    await user.type(nameInput, '   ');
+    await user.type(emailInput, 'invalid-email');
+    await user.click(screen.getByRole('button', { name: /send message/i }));
+
+    expect(await screen.findByText('Name is required')).toBeInTheDocument();
+    expect(screen.getByText('Valid email is required')).toBeInTheDocument();
+    expect(screen.getByText('Message is required')).toBeInTheDocument();
+
+    act(() => {
+      usePortfolioStore.getState().setLocale('vi');
+    });
+
+    expect(screen.getByLabelText('Họ và tên của bạn')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email công việc')).toHaveValue('invalid-email');
+    expect(screen.getByText('Vui lòng nhập họ và tên')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập địa chỉ email hợp lệ')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập nội dung tin nhắn')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /gửi tin nhắn/i })).toBeInTheDocument();
   });
 });

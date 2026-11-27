@@ -1,7 +1,7 @@
-import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, Link2, Send, Upload, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { CheckCircle2, CloudUpload, FileText, Link2, Lock, Send, Upload, X } from 'lucide-react';
+import { useForm, useWatch } from 'react-hook-form';
 import {
   ContactSubmissionSchema,
   MAX_JD_PDF_BYTES,
@@ -11,31 +11,17 @@ import {
 } from '@contracts/portfolio';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations, type Translations } from '@/i18n/translations';
 import { portfolioApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 type JdMode = 'none' | 'link' | 'pdf';
+type JdFileErrorKey = 'pdfSize' | 'pdfMagic' | 'pdfMissing' | null;
 
-interface ContactFormProps {
-  readonly preferredSlot?: string;
-  readonly onSlotChange?: (slot: string) => void;
-}
-
-const ENGAGEMENT_OPTIONS: ReadonlyArray<{
-  readonly value: EngagementType;
-  readonly label: string;
-  readonly sub: string;
-}> = [
-  { value: 'full_time', label: 'Full-Time IC', sub: 'Senior / Staff Role' },
-  { value: 'fractional', label: 'Fractional / Lead', sub: 'Part-Time Architecture' },
-  { value: 'arch_audit', label: 'Arch Audit', sub: 'Sprint Performance Review' },
-];
-
-const COMP_TIERS = [
-  '$140,000 - $185,000+ USD (Senior / Staff)',
-  '$185,000 - $220,000+ USD (Principal / Staff IC)',
-  'Advisory Retainer / Fractional ($120 - $160/hr)',
-  'Open — Let us discuss scope & equity',
+const ENGAGEMENT_VALUES: readonly EngagementType[] = [
+  'full_time',
+  'fractional',
+  'arch_audit',
 ] as const;
 
 const uint8ToBase64 = (bytes: Uint8Array): string => {
@@ -47,29 +33,45 @@ const uint8ToBase64 = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
-export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) => {
+const translateValidationMessage = (
+  rawMessage: string | undefined,
+  t: Translations
+): string | undefined => {
+  if (!rawMessage) return undefined;
+  const map: Record<string, string> = {
+    'Name is required': t.contactForm.validation.nameRequired,
+    'Email is required': t.contactForm.validation.emailRequired,
+    'Valid email is required': t.contactForm.validation.emailInvalid,
+    'Message is required': t.contactForm.validation.messageRequired,
+    'JD URL must start with http:// or https://': t.contactForm.validation.jdUrlProtocol,
+    'Valid JD URL is required': t.contactForm.validation.jdUrlInvalid,
+    'Provide either a JD link or a PDF file, not both': t.contactForm.validation.jdExclusive,
+  };
+  return map[rawMessage] ?? rawMessage;
+};
+
+export const ContactForm = () => {
+  const t = useTranslations();
   const [submittedInfo, setSubmittedInfo] = useState<{
     submittedDate?: string;
     jdType?: string;
   } | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [hasSubmitError, setHasSubmitError] = useState(false);
   const [jdMode, setJdMode] = useState<JdMode>('none');
   const [jdPdf, setJdPdf] = useState<JdPdfAttachmentInput | undefined>(undefined);
-  const [jdFileError, setJdFileError] = useState<string | null>(null);
-  const [localSlot, setLocalSlot] = useState(preferredSlot ?? '');
+  const [jdFileErrorKey, setJdFileErrorKey] = useState<JdFileErrorKey>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() =>
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : undefined
   );
 
-  const effectiveSlot = onSlotChange ? (preferredSlot ?? '') : localSlot;
-
   const {
     register,
+    control,
     handleSubmit,
     reset,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ContactSubmissionInput>({
@@ -81,12 +83,12 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
       company: '',
       engagementType: 'full_time',
       compTier: '',
-      preferredSlot: preferredSlot ?? '',
+      preferredSlot: '',
       jdUrl: '',
     },
   });
 
-  const selectedEngagement = watch('engagementType') ?? 'full_time';
+  const selectedEngagement = useWatch({ control, name: 'engagementType' }) ?? 'full_time';
 
   const handleCompositionEnter = (event: KeyboardEvent<HTMLFormElement>) => {
     if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.keyCode === 229)) {
@@ -96,7 +98,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
 
   const switchJdMode = (nextMode: JdMode) => {
     setJdMode(nextMode);
-    setJdFileError(null);
+    setJdFileErrorKey(null);
     if (nextMode !== 'link') {
       setValue('jdUrl', '');
     }
@@ -105,23 +107,27 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
     }
   };
 
-  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    setJdFileError(null);
-    const file = event.target.files?.[0];
+  const processPdfFile = async (file: File | undefined) => {
+    setJdFileErrorKey(null);
     if (!file) {
       setJdPdf(undefined);
       return;
     }
     if (file.size === 0 || file.size > MAX_JD_PDF_BYTES) {
       setJdPdf(undefined);
-      setJdFileError('Please select a valid PDF file up to 5 MB.');
+      setJdFileErrorKey('pdfSize');
+      return;
+    }
+    if (file.type && file.type !== 'application/pdf') {
+      setJdPdf(undefined);
+      setJdFileErrorKey('pdfMagic');
       return;
     }
     const buffer = new Uint8Array(await file.arrayBuffer());
     const header = String.fromCharCode(...buffer.subarray(0, 5));
-    if (file.type !== 'application/pdf' || header !== '%PDF-') {
+    if (header !== '%PDF-') {
       setJdPdf(undefined);
-      setJdFileError('Only valid PDF files (%PDF-) are accepted.');
+      setJdFileErrorKey('pdfMagic');
       return;
     }
     setJdPdf({
@@ -131,19 +137,30 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
     });
   };
 
+  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    await processPdfFile(event.target.files?.[0]);
+  };
+
+  const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    await processPdfFile(event.dataTransfer.files?.[0]);
+  };
+
   const onSubmit = async (values: ContactSubmissionInput) => {
-    if (jdMode === 'pdf' && jdFileError) return;
+    if (jdMode === 'pdf' && jdFileErrorKey) return;
     if (jdMode === 'pdf' && !jdPdf) {
-      setJdFileError('Please select a valid PDF file or switch JD mode.');
+      setJdFileErrorKey('pdfMissing');
       return;
     }
     setSubmittedInfo(null);
-    setSubmitError(null);
+    setHasSubmitError(false);
 
     const payload: ContactSubmissionInput = {
       ...values,
       idempotencyKey,
-      preferredSlot: effectiveSlot.trim() || undefined,
+      preferredSlot: values.preferredSlot?.trim() || undefined,
+      compTier: values.compTier?.trim() || undefined,
       jdUrl: jdMode === 'link' ? values.jdUrl?.trim() || undefined : undefined,
       jdPdf: jdMode === 'pdf' ? jdPdf : undefined,
     };
@@ -169,27 +186,38 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
       if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         setIdempotencyKey(crypto.randomUUID());
       }
-      if (onSlotChange) onSlotChange('');
-      else setLocalSlot('');
     } catch {
-      setSubmitError('Failed to send message. Please try again.');
+      setHasSubmitError(true);
     }
   };
 
   const onInvalid = () => {
     setSubmittedInfo(null);
-    setSubmitError(null);
+    setHasSubmitError(false);
   };
+
+  const nameErrorText = translateValidationMessage(errors.name?.message, t);
+  const emailErrorText = translateValidationMessage(errors.email?.message, t);
+  const jdUrlErrorText = translateValidationMessage(errors.jdUrl?.message, t);
+  const messageErrorText = translateValidationMessage(errors.message?.message, t);
 
   return (
     <section id="contact">
-      <Card>
-        <CardHeader>
-          <CardTitle>Recruiter Quick Contact</CardTitle>
-          <CardDescription>
-            Send a direct role brief, interview slot, or attach a JD via link or PDF.
-          </CardDescription>
+      <Card className="shadow-md">
+        <CardHeader className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-container px-2.5 py-1 font-mono text-[11px] font-semibold text-on-surface">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span>{t.contactForm.headerBadge}</span>
+            </span>
+            <span className="font-mono text-[11px] text-on-surface-variant">
+              {t.contactForm.pgPersisted}
+            </span>
+          </div>
+          <CardTitle className="text-xl sm:text-2xl">{t.contactForm.title}</CardTitle>
+          <CardDescription>{t.contactForm.description}</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form
             onSubmit={handleSubmit(onSubmit, onInvalid)}
@@ -199,9 +227,9 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <div className="flex items-center gap-1 text-xs font-semibold text-ink">
-                  <label htmlFor="contact-name">Name</label>
-                  <span aria-hidden="true" className="text-status-err">
+                <div className="flex items-center gap-1 font-label text-xs font-semibold text-on-surface">
+                  <label htmlFor="contact-name">{t.contactForm.nameLabel}</label>
+                  <span aria-hidden="true" className="font-mono text-error">
                     *
                   </span>
                 </div>
@@ -210,20 +238,23 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={errors.name ? 'contact-name-error' : undefined}
                   {...register('name')}
-                  placeholder="Your name"
-                  className="input-control focus-visible:ring-2 focus-visible:ring-cobalt/35"
+                  placeholder={t.contactForm.namePlaceholder}
+                  className={cn(
+                    'input-control focus-visible:ring-2 focus-visible:ring-primary/35',
+                    errors.name && 'border-error bg-error-bg focus-visible:ring-error/35'
+                  )}
                 />
-                {errors.name && (
-                  <p id="contact-name-error" role="alert" className="text-xs text-status-err">
-                    {errors.name.message}
+                {nameErrorText && (
+                  <p id="contact-name-error" role="alert" className="font-mono text-xs text-error">
+                    {nameErrorText}
                   </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center gap-1 text-xs font-semibold text-ink">
-                  <label htmlFor="contact-email">Email</label>
-                  <span aria-hidden="true" className="text-status-err">
+                <div className="flex items-center gap-1 font-label text-xs font-semibold text-on-surface">
+                  <label htmlFor="contact-email">{t.contactForm.emailLabel}</label>
+                  <span aria-hidden="true" className="font-mono text-error">
                     *
                   </span>
                 </div>
@@ -233,12 +264,15 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={errors.email ? 'contact-email-error' : undefined}
                   {...register('email')}
-                  placeholder="recruiter@company.com"
-                  className="input-control focus-visible:ring-2 focus-visible:ring-cobalt/35"
+                  placeholder={t.contactForm.emailPlaceholder}
+                  className={cn(
+                    'input-control focus-visible:ring-2 focus-visible:ring-primary/35',
+                    errors.email && 'border-error bg-error-bg focus-visible:ring-error/35'
+                  )}
                 />
-                {errors.email && (
-                  <p id="contact-email-error" role="alert" className="text-xs text-status-err">
-                    {errors.email.message}
+                {emailErrorText && (
+                  <p id="contact-email-error" role="alert" className="font-mono text-xs text-error">
+                    {emailErrorText}
                   </p>
                 )}
               </div>
@@ -246,57 +280,70 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="contact-company" className="block text-xs font-semibold text-ink">
-                  Company / Organization
+                <label
+                  htmlFor="contact-company"
+                  className="block font-label text-xs font-semibold text-on-surface"
+                >
+                  {t.contactForm.companyLabel}
                 </label>
                 <input
                   id="contact-company"
                   {...register('company')}
-                  placeholder="e.g. Acme FinTech"
+                  placeholder={t.contactForm.companyPlaceholder}
                   className="input-control"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="contact-slot" className="block text-xs font-semibold text-ink">
-                  Preferred Slot
+                <label
+                  htmlFor="contact-slot"
+                  className="block font-label text-xs font-semibold text-on-surface"
+                >
+                  {t.contactForm.slotLabel}
                 </label>
                 <input
                   id="contact-slot"
-                  value={effectiveSlot}
-                  onChange={(e) => {
-                    if (onSlotChange) onSlotChange(e.target.value);
-                    else setLocalSlot(e.target.value);
-                  }}
-                  placeholder="Select an ICT slot or type availability"
+                  {...register('preferredSlot')}
+                  placeholder={t.contactForm.slotPlaceholder}
                   className="input-control"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <span className="block text-xs font-semibold text-ink">Engagement Type</span>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {ENGAGEMENT_OPTIONS.map((opt) => {
-                  const active = selectedEngagement === opt.value;
+              <span className="block font-label text-xs font-semibold text-on-surface">
+                {t.contactForm.engagementLabel}
+              </span>
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {ENGAGEMENT_VALUES.map((val) => {
+                  const active = selectedEngagement === val;
+                  const opt = t.contactForm.engagementOptions[val];
                   return (
                     <label
-                      key={opt.value}
+                      key={val}
                       className={cn(
-                        'focus-within:ring-2 focus-within:ring-cobalt flex cursor-pointer flex-col rounded-xl border p-3 transition-colors',
+                        'focus-within:ring-2 focus-within:ring-primary flex cursor-pointer flex-col rounded-xl border p-3 transition-all select-none',
                         active
-                          ? 'border-cobalt bg-cobalt-tint text-ink'
-                          : 'border-subtle bg-surface-subtle/60 text-ink-secondary hover:bg-surface-subtle'
+                          ? 'border-primary bg-surface-container text-on-surface shadow-xs'
+                          : 'border-outline-variant/25 bg-surface-low text-on-surface-variant hover:bg-surface-container/60'
                       )}
                     >
                       <input
                         type="radio"
-                        value={opt.value}
+                        value={val}
                         {...register('engagementType')}
                         className="sr-only"
                       />
-                      <span className="text-xs font-semibold">{opt.label}</span>
-                      <span className="text-[11px] text-ink-muted">{opt.sub}</span>
+                      <span className="flex items-center justify-between font-label text-xs font-semibold">
+                        <span>{opt.label}</span>
+                        <CheckCircle2
+                          className={cn(
+                            'h-4 w-4 text-primary transition-opacity',
+                            active ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                      </span>
+                      <span className="mt-0.5 text-[11px] text-on-surface-variant">{opt.sub}</span>
                     </label>
                   );
                 })}
@@ -304,25 +351,30 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="contact-comp" className="block text-xs font-semibold text-ink">
-                Compensation / Level Tier
+              <label
+                htmlFor="contact-comp"
+                className="block font-label text-xs font-semibold text-on-surface"
+              >
+                {t.contactForm.compLabel}
               </label>
-              <select id="contact-comp" {...register('compTier')} className="input-control">
-                <option value="">Select compensation tier (optional)</option>
-                {COMP_TIERS.map((tier) => (
-                  <option key={tier} value={tier}>
-                    {tier}
-                  </option>
-                ))}
-              </select>
+              <input
+                id="contact-comp"
+                {...register('compTier')}
+                placeholder={t.contactForm.compPlaceholder}
+                className="input-control"
+              />
             </div>
 
-            <div className="space-y-2 rounded-xl border border-subtle bg-surface-subtle/40 p-4">
+            <div className="space-y-3 rounded-xl border border-outline-variant/25 bg-surface-low/60 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-ink">
-                  Attach Job Description (Link or PDF, Optional)
+                <span className="font-label text-xs font-semibold text-on-surface">
+                  {t.contactForm.attachJdLabel}
                 </span>
-                <div className="flex flex-wrap gap-1.5" role="group" aria-label="JD attachment mode">
+                <div
+                  className="flex flex-wrap gap-1.5"
+                  role="group"
+                  aria-label={t.contactForm.jdModeAria}
+                >
                   <Button
                     type="button"
                     size="sm"
@@ -330,7 +382,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                     variant={jdMode === 'none' ? 'default' : 'outline'}
                     onClick={() => switchJdMode('none')}
                   >
-                    None
+                    {t.contactForm.jdNone}
                   </Button>
                   <Button
                     type="button"
@@ -340,7 +392,7 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                     onClick={() => switchJdMode('link')}
                   >
                     <Link2 className="h-3.5 w-3.5" />
-                    <span>JD Link</span>
+                    <span>{t.contactForm.jdLink}</span>
                   </Button>
                   <Button
                     type="button"
@@ -350,15 +402,18 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                     onClick={() => switchJdMode('pdf')}
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    <span>Upload PDF</span>
+                    <span>{t.contactForm.jdUploadPdf}</span>
                   </Button>
                 </div>
               </div>
 
               {jdMode === 'link' && (
-                <div className="space-y-1 pt-1">
-                  <label htmlFor="contact-jd-url" className="block text-xs font-medium text-ink-secondary">
-                    JD URL
+                <div className="space-y-1.5 pt-1">
+                  <label
+                    htmlFor="contact-jd-url"
+                    className="block font-label text-xs font-medium text-on-surface-variant"
+                  >
+                    {t.contactForm.jdUrlLabel}
                   </label>
                   <input
                     id="contact-jd-url"
@@ -369,45 +424,71 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
                     placeholder="https://boards.greenhouse.io/company/jobs/123"
                     className="input-control"
                   />
-                  {errors.jdUrl && (
-                    <p id="contact-jd-url-error" role="alert" className="text-xs text-status-err">
-                      {errors.jdUrl.message}
+                  {jdUrlErrorText && (
+                    <p
+                      id="contact-jd-url-error"
+                      role="alert"
+                      className="font-mono text-xs text-error"
+                    >
+                      {jdUrlErrorText}
                     </p>
                   )}
                 </div>
               )}
 
               {jdMode === 'pdf' && (
-                <div className="space-y-2 pt-1">
-                  <label htmlFor="contact-jd-pdf" className="block text-xs font-medium text-ink-secondary">
-                    Upload JD PDF (max 5 MB)
+                <div className="space-y-2.5 pt-1">
+                  <label
+                    htmlFor="contact-jd-pdf"
+                    className="block font-label text-xs font-medium text-on-surface-variant"
+                  >
+                    {t.contactForm.jdPdfLabel}
                   </label>
-                  <input
-                    id="contact-jd-pdf"
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={handlePdfUpload}
-                    className="input-control file:mr-3 file:rounded-lg file:border-0 file:bg-cobalt-tint file:px-3 file:py-1 file:text-xs file:font-medium file:text-cobalt"
-                  />
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={cn(
+                      'rounded-xl border-2 border-dashed p-4 text-center transition-colors',
+                      isDragging
+                        ? 'border-primary bg-surface-container'
+                        : 'border-outline-variant/40 bg-surface-lowest'
+                    )}
+                  >
+                    <CloudUpload className="mx-auto mb-1.5 h-6 w-6 text-primary" />
+                    <p className="font-label text-xs font-medium text-on-surface">
+                      {t.contactForm.dropzonePrompt}
+                    </p>
+                    <input
+                      id="contact-jd-pdf"
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={handlePdfUpload}
+                      className="input-control mt-3 cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary"
+                    />
+                  </div>
                   {jdPdf && (
-                    <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface px-3 py-2 text-xs text-ink">
+                    <div className="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-lowest px-3 py-2 text-xs text-on-surface">
                       <span className="flex items-center gap-2 font-mono">
-                        <FileText className="h-3.5 w-3.5 text-cobalt" />
-                        {jdPdf.fileName}
+                        <FileText className="h-3.5 w-3.5 text-primary" />
+                        <span>{jdPdf.fileName}</span>
                       </span>
                       <button
                         type="button"
-                        aria-label="Remove PDF"
+                        aria-label={t.contactForm.removePdfAria}
                         onClick={() => setJdPdf(undefined)}
-                        className="focus-ring rounded p-1 text-ink-muted hover:text-ink"
+                        className="focus-ring rounded p-1.5 text-on-surface-variant hover:text-on-surface"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   )}
-                  {jdFileError && (
-                    <p role="alert" className="text-xs text-status-err">
-                      {jdFileError}
+                  {jdFileErrorKey && (
+                    <p role="alert" className="font-mono text-xs text-error">
+                      {t.contactForm.errors[jdFileErrorKey]}
                     </p>
                   )}
                 </div>
@@ -415,44 +496,65 @@ export const ContactForm = ({ preferredSlot, onSlotChange }: ContactFormProps) =
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1 text-xs font-semibold text-ink">
-                <label htmlFor="contact-message">Message</label>
-                <span aria-hidden="true" className="text-status-err">
+              <div className="flex items-center gap-1 font-label text-xs font-semibold text-on-surface">
+                <label htmlFor="contact-message">{t.contactForm.messageLabel}</label>
+                <span aria-hidden="true" className="font-mono text-error">
                   *
                 </span>
               </div>
               <textarea
                 id="contact-message"
-                rows={3}
+                rows={4}
                 aria-invalid={Boolean(errors.message)}
                 aria-describedby={errors.message ? 'contact-message-error' : undefined}
                 {...register('message')}
-                placeholder="Role details or interview availability..."
-                className="input-control focus-visible:ring-2 focus-visible:ring-cobalt/35"
+                placeholder={t.contactForm.messagePlaceholder}
+                className={cn(
+                  'input-control resize-y focus-visible:ring-2 focus-visible:ring-primary/35',
+                  errors.message && 'border-error bg-error-bg focus-visible:ring-error/35'
+                )}
               />
-              {errors.message && (
-                <p id="contact-message-error" role="alert" className="text-xs text-status-err">
-                  {errors.message.message}
+              {messageErrorText && (
+                <p id="contact-message-error" role="alert" className="font-mono text-xs text-error">
+                  {messageErrorText}
                 </p>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={isSubmitting}>
-                <Send className="h-4 w-4" />
-                <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
-              </Button>
-              {submittedInfo && (
-                <span role="status" className="text-sm font-medium text-status-ok">
-                  Message sent. Thank you!
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
+              className="w-full shadow-md"
+            >
+              <Send className="h-4 w-4" />
+              <span>{isSubmitting ? t.contactForm.sending : t.contactForm.sendMessage}</span>
+            </Button>
+
+            {submittedInfo && (
+              <div role="status" className="rounded-xl bg-status-ok-bg p-4 text-xs text-status-ok">
+                <p className="font-headline font-bold uppercase tracking-tight">
+                  {t.contactForm.sentHeading}
                   {submittedInfo.submittedDate ? ` (${submittedInfo.submittedDate})` : ''}
-                </span>
-              )}
-              {submitError && (
-                <p role="alert" className="text-sm text-status-err">
-                  {submitError}
                 </p>
-              )}
+                <p className="mt-1 text-on-surface-variant">
+                  {t.contactForm.sentBody(submittedInfo.jdType)}
+                </p>
+              </div>
+            )}
+
+            {hasSubmitError && (
+              <div role="alert" className="rounded-xl bg-error-bg p-4 text-xs text-error">
+                {t.contactForm.errors.submitFailed}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-[11px] text-on-surface-variant">
+              <span className="flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                <span>{t.contactForm.privacyNote}</span>
+              </span>
             </div>
           </form>
         </CardContent>

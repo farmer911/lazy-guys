@@ -7,6 +7,9 @@ interface SkeletonProps {
 export const Skeleton = ({ className }: SkeletonProps) => (
   <div
     aria-hidden="true"
-    className={cn('animate-pulse rounded-xl border border-subtle bg-surface-subtle/70', className)}
+    className={cn(
+      'animate-pulse rounded-2xl border border-outline-variant/20 bg-surface-container/60',
+      className
+    )}
   />
 );

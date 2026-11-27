@@ -2,43 +2,11 @@
   "features": [
     {
       "id": "feat-001",
-      "name": "Monorepo, Docker PostgreSQL & init.sh Bootstrap",
-      "description": "Set up npm workspaces (apps/web, apps/api, apps/e2e), docker-compose.yml, .env.example, and idempotent ./init.sh with 0 errors and 0 warnings.",
+      "name": "1-to-1 Electric Cobalt Studio Stitch UI & Zero-Fake Data Fidelity",
+      "description": "Implement 1-to-1 Electric Cobalt Studio UI (projects/15082605221977705976) across apps/web (Light/Dark tokens, Public Sans/Space Grotesk/Inter/JetBrains Mono typography, Navbar pill bar + segmented theme toggle + 44px mobile drawer, Home 7/5 hero + telemetry card + KPI + featured architecture cards, Projects spotlight + chip rail + standards, Case Study 5-chapter ADR deep dive, Experience & CV 7/5 timeline + skillset matrix, Contact 5/7 channels/FAQ + drag-drop PDF form), remove fake fallbackProfile and seeded fake analytics rows, and verify with RTL + responsive E2E + live screenshots.",
       "dependencies": [],
-      "status": "done",
-      "evidence": "./init.sh exited 0; independent evaluator PASS at 3a0f893 (rubric 9/8/8/8, evaluations/feat-001.json)."
-    },
-    {
-      "id": "feat-002",
-      "name": "PostgreSQL Schema, Seed & Express REST API",
-      "description": "Create db/schema.sql and db/seed.sql for profiles, experiences, projects, tech_stacks and expose Express REST endpoints.",
-      "dependencies": ["feat-001"],
-      "status": "done",
-      "evidence": "7/7 API integration tests green; independent evaluator PASS at b4c6985 (rubric 9/8/8/9, evaluations/feat-002.json)."
-    },
-    {
-      "id": "feat-003",
-      "name": "Portfolio UI & RTL Unit Test",
-      "description": "Build About, Experience, Projects, Tech Stack (Zustand filter), and ContactForm (react-hook-form) with shadcn/ui, Tailwind CSS, TanStack Query, and sample RTL unit test.",
-      "dependencies": ["feat-002"],
-      "status": "done",
-      "evidence": "5/5 RTL suites and 2/2 Playwright E2E green (desktop + mobile 375x812 + UTC-5 safe); independent evaluator PASS at b4c6985 (rubric 9/8/8/9, evaluations/feat-003.json)."
-    },
-    {
-      "id": "feat-004",
-      "name": "Live Playwright E2E Smoke Verification",
-      "description": "Install Playwright Chromium browser and run apps/e2e smoke test against running API + Web dev servers.",
-      "dependencies": ["feat-003"],
-      "status": "done",
-      "evidence": "Playwright Chromium v1255 + dual webServer auto-boot verified; independent evaluator PASS at 3a0f893 (rubric 8/7/7/8, evaluations/feat-004.json)."
-    },
-    {
-      "id": "feat-005",
-      "name": "Electric Cobalt Multi-Page Portfolio, Contact JD (Link/PDF + Date), CV PDF Export & Daily Analytics",
-      "description": "Freeze Stitch Electric Cobalt Studio (projects/15082605221977705976) into designs/; extend PostgreSQL schema/seed and specs/contracts/portfolio.ts; implement GET /api/projects/:slug, persistent POST /api/contact (JD URL or PDF upload <= 5MB with YYYY-MM-DD submitted_date) + GET /api/contact/:id/jd-pdf, dynamic GET /api/cv/pdf via pdf-lib, and privacy-safe POST /api/analytics/visit + GET /api/analytics/daily; build Light/Dark Tailwind v4 + global CSS design system, 2-tier reusable components, and 5 responsive React Router pages (/, /projects, /case-study/:slug, /experience, /contact).",
-      "dependencies": ["feat-004"],
       "status": "ready-for-eval",
-      "evidence": "./init.sh (95 Node + 24 Python + 17/17 API PG + 15/15 Web RTL) and 4/4 Playwright E2E passed at 652c728; Independent Evaluator Round 2 (3d9c147f) graded PASS 9/9/9/9 (0 blockingIssues; evaluations/feat-005.json blocked from subagent write by host SYSTEM_MESSAGE envelope)."
+      "evidence": "./init.sh (95 Node + 24 Python + 15/15 Web RTL + 0 build warnings) and 5/5 Playwright E2E across 375x812/768x1024/1280x800 Light & Dark in both EN and VI on all 5 routes."
     }
   ]
 }

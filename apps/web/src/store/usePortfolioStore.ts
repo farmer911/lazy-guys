@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Locale } from '@/i18n/translations';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -22,6 +23,41 @@ const syncDomTheme = (theme: ThemeMode) => {
   }
 };
 
+export const readInitialLocale = (): Locale => {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('lg-lang');
+      const resolved: Locale = saved === 'vi' ? 'vi' : 'en';
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = resolved;
+      }
+      return resolved;
+    } catch {
+      // Fall through to document.documentElement.lang when storage is blocked
+    }
+  }
+  if (typeof document !== 'undefined') {
+    if (document.documentElement.lang === 'vi') {
+      return 'vi';
+    }
+    document.documentElement.lang = 'en';
+  }
+  return 'en';
+};
+
+const syncDomLocale = (locale: Locale) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = locale;
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('lg-lang', locale);
+    } catch {
+      // Ignore storage quota / privacy mode restrictions
+    }
+  }
+};
+
 interface PortfolioState {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
@@ -30,6 +66,9 @@ interface PortfolioState {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  toggleLocale: () => void;
 }
 
 export const usePortfolioStore = create<PortfolioState>((set) => ({
@@ -47,5 +86,16 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
       const next: ThemeMode = state.theme === 'dark' ? 'light' : 'dark';
       syncDomTheme(next);
       return { theme: next };
+    }),
+  locale: readInitialLocale(),
+  setLocale: (locale) => {
+    syncDomLocale(locale);
+    set({ locale });
+  },
+  toggleLocale: () =>
+    set((state) => {
+      const next: Locale = state.locale === 'en' ? 'vi' : 'en';
+      syncDomLocale(next);
+      return { locale: next };
     }),
 }));

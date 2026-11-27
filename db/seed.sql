@@ -193,10 +193,3 @@ WHERE NOT EXISTS (
   WHERE t.profile_id = v.profile_id::uuid
     AND t.name = v.name
 );
-
-INSERT INTO analytics_daily_metrics (metric_date, total_views, unique_visitors, cv_downloads, contact_inquiries)
-VALUES
-  ((NOW() AT TIME ZONE 'UTC')::date - 3, 28, 16, 4, 1),
-  ((NOW() AT TIME ZONE 'UTC')::date - 2, 42, 23, 6, 2),
-  ((NOW() AT TIME ZONE 'UTC')::date - 1, 35, 19, 5, 1)
-ON CONFLICT (metric_date) DO NOTHING;

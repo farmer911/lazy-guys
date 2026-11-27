@@ -3,94 +3,139 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-canvas: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-subtle: #f1f5f9;
-  --border-subtle: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --ink-primary: #0f172a;
-  --ink-secondary: #334155;
-  --ink-muted: #64748b;
-  --accent-cobalt: #2563eb;
-  --accent-cobalt-hover: #1d4ed8;
-  --accent-cobalt-tint: #eff6ff;
-  --accent-sky: #0ea5e9;
-  --status-emerald: #059669;
-  --status-rose: #e11d48;
+  --surface: #f8f5ff;
+  --surface-lowest: #ffffff;
+  --surface-low: #f1efff;
+  --surface-container: #e7e6ff;
+  --surface-high: #e0e0ff;
+  --surface-highest: #d9daff;
+  --on-surface: #282b51;
+  --on-surface-variant: #555881;
+  --outline: #71749e;
+  --outline-variant: #a7aad7;
+  --primary: #0050d4;
+  --primary-dim: #0046bb;
+  --on-primary: #f1f2ff;
+  --primary-container: #7b9cff;
+  --on-primary-container: #001e5a;
+  --secondary: #4850b7;
+  --secondary-container: #cbceff;
+  --on-secondary-container: #323aa2;
+  --tertiary: #8e3a8a;
+  --tertiary-container: #fe9cf4;
+  --on-tertiary-container: #661466;
+  --status-ok: #047857;
+  --status-ok-dot: #10b981;
+  --status-ok-bg: #ecfdf5;
+  --error: #b31b25;
+  --error-dim: #9f0519;
+  --on-error: #ffefee;
+  --error-bg: rgba(179, 27, 37, 0.1);
 
-  --text-hero: clamp(1.875rem, 1.25rem + 2.5vw, 3.25rem);
-  --text-h1: clamp(1.625rem, 1.25rem + 1.5vw, 2.5rem);
-  --text-h2: clamp(1.25rem, 1.05rem + 0.8vw, 1.75rem);
-  --text-kpi: clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem);
+  --text-hero: clamp(1.875rem, 1.25rem + 2.6vw, 3.375rem);
+  --text-h1: clamp(1.625rem, 1.25rem + 1.6vw, 2.5rem);
+  --text-h2: clamp(1.25rem, 1.05rem + 0.8vw, 1.875rem);
+  --text-kpi: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
 }
 
 .dark {
-  --bg-canvas: #0b1120;
-  --bg-surface: #111827;
-  --bg-surface-subtle: #1e293b;
-  --border-subtle: #1e293b;
-  --border-strong: #334155;
-  --ink-primary: #f8fafc;
-  --ink-secondary: #cbd5e1;
-  --ink-muted: #94a3b8;
-  --accent-cobalt: #3b82f6;
-  --accent-cobalt-hover: #60a5fa;
-  --accent-cobalt-tint: rgba(37, 99, 235, 0.18);
-  --accent-sky: #38bdf8;
-  --status-emerald: #34d399;
-  --status-rose: #fb7185;
+  --surface: #0b1120;
+  --surface-lowest: #111827;
+  --surface-low: #161f32;
+  --surface-container: #1e293b;
+  --surface-high: #263349;
+  --surface-highest: #334155;
+  --on-surface: #f8fafc;
+  --on-surface-variant: #94a3b8;
+  --outline: #64748b;
+  --outline-variant: #334155;
+  --primary: #3b82f6;
+  --primary-dim: #2563eb;
+  --on-primary: #ffffff;
+  --primary-container: #2563eb;
+  --on-primary-container: #ffffff;
+  --secondary: #60a5fa;
+  --secondary-container: #1e293b;
+  --on-secondary-container: #cbd5e1;
+  --tertiary: #34d399;
+  --tertiary-container: #064e3b;
+  --on-tertiary-container: #a7f3d0;
+  --status-ok: #34d399;
+  --status-ok-dot: #10b981;
+  --status-ok-bg: rgba(16, 185, 129, 0.14);
+  --error: #ff716c;
+  --error-dim: #d7383b;
+  --on-error: #490006;
+  --error-bg: rgba(255, 113, 108, 0.14);
 }
 
 @theme {
-  --color-canvas: var(--bg-canvas);
-  --color-surface: var(--bg-surface);
-  --color-surface-subtle: var(--bg-surface-subtle);
-  --color-subtle: var(--border-subtle);
-  --color-strong: var(--border-strong);
-  --color-ink: var(--ink-primary);
-  --color-ink-secondary: var(--ink-secondary);
-  --color-ink-muted: var(--ink-muted);
-  --color-cobalt: var(--accent-cobalt);
-  --color-cobalt-hover: var(--accent-cobalt-hover);
-  --color-cobalt-tint: var(--accent-cobalt-tint);
-  --color-telemetry: var(--accent-sky);
-  --color-status-ok: var(--status-emerald);
-  --color-status-err: var(--status-rose);
+  --color-surface: var(--surface);
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-low: var(--surface-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-primary: var(--primary);
+  --color-primary-dim: var(--primary-dim);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-dot: var(--status-ok-dot);
+  --color-status-ok-bg: var(--status-ok-bg);
+  --color-error: var(--error);
+  --color-error-dim: var(--error-dim);
+  --color-on-error: var(--on-error);
+  --color-error-bg: var(--error-bg);
 
+  --font-headline: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-label: "Public Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   body {
-    font-family: var(--font-sans);
-    background-color: var(--bg-canvas);
-    color: var(--ink-primary);
+    font-family: var(--font-body);
+    background-color: var(--surface);
+    color: var(--on-surface);
+    overscroll-behavior: none;
   }
 
   h1,
   h2,
   h3 {
-    font-family: var(--font-display);
+    font-family: var(--font-headline);
   }
 }
 
 @layer components {
   .glass-header {
-    @apply sticky top-0 z-30 border-b border-subtle bg-canvas/85 backdrop-blur-md;
+    @apply sticky top-0 z-40 border-b border-outline-variant/25 bg-surface-lowest/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] dark:bg-surface/85 dark:border-outline-variant/40 dark:shadow-[0_1px_8px_rgba(0,0,0,0.4)];
   }
 
   .surface-card {
-    @apply rounded-xl border border-subtle bg-surface text-ink shadow-xs transition-colors;
+    @apply rounded-2xl border border-outline-variant/25 bg-surface-lowest text-on-surface shadow-sm transition-colors dark:border-outline-variant/40;
   }
 
   .surface-card-interactive {
-    @apply rounded-xl border border-subtle bg-surface text-ink shadow-xs transition-all hover:border-cobalt/50 hover:shadow-md;
+    @apply rounded-2xl border border-outline-variant/25 bg-surface-lowest text-on-surface shadow-sm transition-all hover:border-primary/40 hover:shadow-xl dark:border-outline-variant/40;
   }
 
   .blueprint-grid {
-    background-color: var(--bg-canvas);
+    background-color: var(--surface);
   }
 
   .dark .blueprint-grid {
@@ -101,7 +146,7 @@
   }
 
   .chip-rail {
-    @apply flex items-center gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0;
+    @apply flex items-center gap-2 overflow-x-auto py-1 pr-10 sm:flex-wrap sm:overflow-visible sm:py-0 sm:pr-0;
     scrollbar-width: none;
   }
 
@@ -110,36 +155,36 @@
   }
 
   .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
   }
 
   .input-control {
-    @apply min-h-11 w-full rounded-xl border border-strong bg-surface-subtle px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 transition-colors focus-visible:border-cobalt focus-visible:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt/35 sm:min-h-10;
+    @apply min-h-12 w-full rounded-xl border border-outline-variant/40 bg-surface-low px-3.5 py-2.5 text-base text-on-surface placeholder:text-on-surface-variant/60 transition-colors focus-visible:border-primary focus-visible:bg-surface-lowest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:min-h-11 sm:text-sm;
   }
 
   .heading-hero {
-    font-family: var(--font-display);
+    font-family: var(--font-headline);
     font-size: var(--text-hero);
-    line-height: 1.1;
+    line-height: 1.08;
     letter-spacing: -0.03em;
   }
 
   .heading-h1 {
-    font-family: var(--font-display);
+    font-family: var(--font-headline);
     font-size: var(--text-h1);
-    line-height: 1.15;
+    line-height: 1.12;
     letter-spacing: -0.025em;
   }
 
   .heading-h2 {
-    font-family: var(--font-display);
+    font-family: var(--font-headline);
     font-size: var(--text-h2);
     line-height: 1.25;
     letter-spacing: -0.02em;
   }
 
   .stat-kpi {
-    font-family: var(--font-display);
+    font-family: var(--font-headline);
     font-size: var(--text-kpi);
     line-height: 1.1;
     letter-spacing: -0.02em;
@@ -155,12 +200,12 @@
   .blueprint-grid {
     background: #ffffff !important;
     background-image: none !important;
-    color: #0f172a !important;
+    color: #282b51 !important;
   }
 
   .surface-card,
   .surface-card-interactive {
-    border-color: #cbd5e1 !important;
+    border-color: #a7aad7 !important;
     box-shadow: none !important;
     break-inside: avoid;
   }

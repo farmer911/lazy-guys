@@ -1,35 +1,30 @@
 import { useState } from 'react';
-import { Calendar, Check, Copy, HelpCircle } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Calendar,
+  Check,
+  ChevronDown,
+  Code2,
+  Copy,
+  Download,
+  FileText,
+  Globe,
+  HelpCircle,
+  Mail,
+  MapPin,
+  Radio,
+} from 'lucide-react';
 import { ContactForm } from '@/components/ContactForm';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Profile } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { useTranslations } from '@/i18n/translations';
+import { portfolioApi, type Profile } from '@/lib/api';
 
 interface ContactPageProps {
   readonly profile: Profile;
 }
 
-const ICT_SLOTS = [
-  'Tomorrow · 09:30 AM ICT (UTC+7)',
-  'Thursday · 02:00 PM ICT (UTC+7)',
-  'Friday · 10:00 AM ICT (UTC+7)',
-] as const;
-
-const FAQ_ITEMS = [
-  {
-    q: 'What timezone and notice period?',
-    a: 'Based in Ho Chi Minh City (UTC+7), overlapping smoothly with APAC, EU mornings, and US evenings; 2–4 weeks notice.',
-  },
-  {
-    q: 'Can we attach a JD link or PDF?',
-    a: 'Yes — attach either a public JD URL or a PDF up to 5 MB directly inside the inquiry form; submissions are timestamped by UTC calendar date.',
-  },
-] as const;
-
 export const ContactPage = ({ profile }: ContactPageProps) => {
-  const [selectedSlot, setSelectedSlot] = useState('');
+  const t = useTranslations();
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   const handleCopy = async () => {
@@ -45,88 +40,231 @@ export const ContactPage = ({ profile }: ContactPageProps) => {
   };
 
   return (
-    <div className="space-y-10">
-      <header className="space-y-2">
-        <Badge variant="emerald">
-          <span className="h-2 w-2 rounded-full bg-status-ok" aria-hidden="true" />
-          <span>{profile.availability_text || 'Open to Senior / Staff Roles'}</span>
-        </Badge>
-        <h1 className="heading-h1 font-bold text-ink">
-          Let&apos;s Build Something Resilient Together.
-        </h1>
-        <p className="max-w-2xl text-sm text-ink-secondary">
-          Pick a fast 20-minute intro slot or submit your role brief with a JD link or PDF attachment.
-        </p>
+    <div className="space-y-12">
+      <header className="space-y-6 pt-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full bg-surface-low px-3 py-1 font-mono text-xs font-medium text-on-surface-variant">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <span>{t.contactPage.heroBadge}</span>
+          </span>
+          {profile.availability_text && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-3 py-1 font-label text-xs font-semibold text-on-surface">
+              <span className="h-1.5 w-1.5 rounded-full bg-status-ok-dot" />
+              <span>{profile.availability_text}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="max-w-4xl space-y-3">
+          <h1 className="heading-hero font-bold text-on-surface">{t.contactPage.heroTitle}</h1>
+          <p className="max-w-3xl text-base leading-relaxed text-on-surface-variant sm:text-lg">
+            {t.contactPage.heroDesc}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 rounded-2xl bg-surface-low p-2 md:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-xl bg-surface-lowest px-4 py-3 shadow-xs">
+            <Mail className="h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <span className="block font-mono text-[11px] uppercase tracking-wider text-on-surface-variant">
+                {t.contactPage.directInbox}
+              </span>
+              <span className="block truncate font-label text-xs font-semibold text-on-surface">
+                {profile.email}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl bg-surface-lowest px-4 py-3 shadow-xs">
+            <MapPin className="h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <span className="block font-mono text-[11px] uppercase tracking-wider text-on-surface-variant">
+                {t.contactPage.location}
+              </span>
+              <span className="block truncate font-label text-xs font-semibold text-on-surface">
+                {profile.location || t.about.remote}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl bg-surface-lowest px-4 py-3 shadow-xs">
+            <Radio className="h-5 w-5 shrink-0 text-status-ok" />
+            <div className="min-w-0">
+              <span className="block font-mono text-[11px] uppercase tracking-wider text-on-surface-variant">
+                {t.contactPage.availability}
+              </span>
+              <span className="block truncate font-label text-xs font-semibold text-on-surface">
+                {profile.availability_text || t.contactPage.openToInquiries}
+              </span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
-        <aside className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-4 w-4 text-cobalt" />
-                <span>Live Availability Slots</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {ICT_SLOTS.map((slot) => {
-                const active = selectedSlot === slot;
-                return (
-                  <Button
-                    key={slot}
-                    type="button"
-                    aria-pressed={active}
-                    variant={active ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedSlot(active ? '' : slot)}
-                    className={cn('w-full justify-between text-left')}
-                  >
-                    <span>{slot}</span>
-                    <span className="font-mono text-[11px]">{active ? 'Selected' : 'Select'}</span>
-                  </Button>
-                );
-              })}
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+        <aside className="space-y-6 lg:col-span-5">
+          {profile.calendar_url && (
+            <div className="surface-card space-y-4 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <h2 className="font-headline text-sm font-bold uppercase tracking-tight text-on-surface">
+                    {t.contactPage.calendarTitle}
+                  </h2>
+                </div>
+                <span className="rounded-full bg-surface-container px-2 py-0.5 font-mono text-[11px] font-medium text-on-surface">
+                  {t.contactPage.externalBadge}
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-on-surface-variant">
+                {t.contactPage.calendarDesc}
+              </p>
+              <a
+                href={profile.calendar_url}
+                target="_blank"
+                rel="noreferrer"
+                className="focus-ring inline-flex items-center gap-1.5 rounded font-label text-xs font-semibold text-primary hover:text-primary-dim"
+              >
+                <span>{t.contactPage.openCalendar}</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Direct Verified Channel</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-subtle bg-surface-subtle/60 px-3 py-2 text-xs">
-                <span className="font-mono text-ink">{profile.email}</span>
-                <Button type="button" size="sm" variant="ghost" onClick={handleCopy}>
+          <div data-testid="direct-verified-channels" className="surface-card space-y-4 p-6">
+            <h2 className="font-headline text-sm font-bold uppercase tracking-tight text-on-surface">
+              {t.contactPage.verifiedChannelsTitle}
+            </h2>
+
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-surface-low p-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <span className="block font-mono text-[10px] uppercase text-on-surface-variant">
+                      {t.contactPage.primaryInbox}
+                    </span>
+                    <span className="block truncate font-mono text-xs font-medium text-on-surface">
+                      {profile.email}
+                    </span>
+                  </div>
+                </div>
+                <Button type="button" size="sm" variant="subtle" onClick={handleCopy}>
                   {copiedEmail ? (
                     <Check className="h-3.5 w-3.5 text-status-ok" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
-                  <span>{copiedEmail ? 'Copied' : 'Copy'}</span>
+                  <span>{copiedEmail ? t.contactPage.copied : t.contactPage.copy}</span>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+              {copiedEmail && (
+                <span role="status" className="block font-mono text-xs text-status-ok">
+                  {t.contactPage.emailCopied}
+                </span>
+              )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <HelpCircle className="h-4 w-4 text-cobalt" />
-                <span>Fast Recruiter FAQ</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              {FAQ_ITEMS.map((item) => (
-                <div key={item.q} className="space-y-1">
-                  <p className="font-semibold text-ink">{item.q}</p>
-                  <p className="leading-relaxed text-ink-muted">{item.a}</p>
+              {profile.github_url && (
+                <a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="focus-ring group flex items-center justify-between rounded-xl bg-surface-low p-3 hover:bg-surface-container transition-colors"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                      <Code2 className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <span className="block font-mono text-[10px] uppercase text-on-surface-variant">
+                        GitHub
+                      </span>
+                      <span className="block truncate font-mono text-xs font-medium text-on-surface">
+                        {profile.github_url}
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-on-surface-variant group-hover:text-primary" />
+                </a>
+              )}
+
+              {profile.linkedin_url && (
+                <a
+                  href={profile.linkedin_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="focus-ring group flex items-center justify-between rounded-xl bg-surface-low p-3 hover:bg-surface-container transition-colors"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                      <Globe className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <span className="block font-mono text-[10px] uppercase text-on-surface-variant">
+                        LinkedIn
+                      </span>
+                      <span className="block truncate font-mono text-xs font-medium text-on-surface">
+                        {profile.linkedin_url}
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-on-surface-variant group-hover:text-primary" />
+                </a>
+              )}
+
+              <a
+                href={portfolioApi.getCvPdfUrl()}
+                download="lazy-guy-resume.pdf"
+                className="focus-ring group flex items-center justify-between rounded-xl bg-surface-low p-3 hover:bg-surface-container transition-colors"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-high text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <span className="block font-mono text-[10px] uppercase text-on-surface-variant">
+                      {t.contactPage.officialResume}
+                    </span>
+                    <span className="block truncate font-mono text-xs font-medium text-on-surface">
+                      lazy-guy-resume.pdf
+                    </span>
+                  </div>
                 </div>
+                <Download className="h-4 w-4 shrink-0 text-on-surface-variant group-hover:text-primary" />
+              </a>
+            </div>
+          </div>
+
+          <div data-testid="contact-faq-accordion" className="surface-card space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              <h2 className="font-headline text-sm font-bold uppercase tracking-tight text-on-surface">
+                {t.contactPage.faqTitle}
+              </h2>
+            </div>
+
+            <div className="space-y-2.5">
+              {t.contactPage.faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="group rounded-xl bg-surface-low p-3.5 transition-all"
+                >
+                  <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-2 rounded font-label text-xs font-semibold text-on-surface">
+                    <span>{item.q}</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-on-surface-variant transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-2.5 text-xs leading-relaxed text-on-surface-variant">{item.a}</p>
+                </details>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </aside>
 
-        <ContactForm preferredSlot={selectedSlot} onSlotChange={setSelectedSlot} />
+        <div className="lg:col-span-7">
+          <ContactForm />
+        </div>
       </div>
     </div>
   );
